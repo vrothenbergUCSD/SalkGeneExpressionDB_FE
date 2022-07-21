@@ -1,8 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import Home from "../views/Home.vue"
-//import Data from "../views/Data.vue"
-//import Login from "../views/Login.vue"
 import Graph from "../views/Graph.vue"
 import Test from "../views/Test.vue"
 import Main from "../views/Main.vue"
@@ -10,7 +8,18 @@ import Main from "../views/Main.vue"
 //import "firebase/auth";
 
 const routes = [
-  
+  // will match everything and put it under `$route.params.pathMatch`
+  {
+    path: "/:pathMatch(.*)*",
+    name: 'Home',
+    component: Home,
+    meta: {
+      title: "Home",
+      requiresAuth: false,
+
+    }
+  },
+
   {
     path: "/",
     name: "Home",
@@ -19,7 +28,6 @@ const routes = [
       title: "Home",
       requiresAuth: false,
     },
-    current: true,
   },
   {
     path: "/main",
@@ -29,7 +37,6 @@ const routes = [
       title: "Main",
       requiresAuth: false,
     },
-    current: false,
   },
   {
     path: "/graph",
@@ -39,7 +46,6 @@ const routes = [
       title: "Graph",
       requiresAuth: false,
     },
-    current: false,
   },
   {
     path: "/test",
@@ -49,23 +55,17 @@ const routes = [
       title: "Test",
       requiresAuth: false,
     },
-    current: false,
   },
-  
-  
 ];
 
-
 const router = createRouter({
-  // 4. Provide the history implementation to use. We are using the hash history for simplicity here.
-  history: createWebHistory('/'),
+  history: createWebHistory(),
   routes, // short for `routes: routes`
   linkActiveClass: 'text-white bg-gray-900'
 })
 
-
 router.beforeEach((to, from, next) => {
-  document.title = `${to.meta.title} | Panda Data Viz`;
+  document.title = `${to.meta.title} | RBIO-P Data Sharing`;
   next();
 });
 

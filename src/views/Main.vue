@@ -34,8 +34,8 @@
 import Dropdown from "primevue/dropdown"
 import AutoComplete from "primevue/autocomplete"
 
-import Selection from "../components/Selection.vue"
-import Prime from "../components/Prime.vue"
+import Selection from "@/components/Selection.vue"
+import Prime from "@/components/Prime.vue"
 import LinePlot from "@/components/svg/LinePlot.vue"
 import BarPlot from "@/components/svg/BarPlot.vue"
 import MarginTranslation from "@/components/svg/MarginTranslation.vue"
