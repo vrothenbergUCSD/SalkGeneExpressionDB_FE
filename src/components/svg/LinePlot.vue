@@ -34,18 +34,13 @@ export default {
     }
   },
   created() {
-    console.log("LinePlot created")
-    console.log(this.genes)
   },
   async mounted() {
-    console.log("LinePlot mounted")
     this.genesData = this.genes.map((d) => d.name)
     this.initialize_line_plot()
     await this.update_line_plot()
   },
   async updated () {
-    console.log("LinePlot updated")
-    console.log(this.genes)
     this.genesData = this.genes.map((d) => d.name)
     this.update_line_plot()
   },
@@ -76,14 +71,30 @@ export default {
           .attr("transform", `translate(0, ${this.height})`)
           .attr("class","myXaxis")
 
+      // X axis label
+      this.svg.append("text")
+        .attr("class", "x-label")
+        .attr("text-anchor", "middle")
+        .attr("x", this.width * this.drawable_width_scale / 2)
+        .attr("y", this.height+40)
+        .text("Time Point (ZT)");
+
       // Initialize Y axis
       this.y = d3.scaleLinear().range([this.height, 0]);
       this.yAxis = d3.axisLeft().scale(this.y);
       this.svg.append("g")
         .attr("class","myYaxis")
+
+      // Y axis label 
+      this.svg.append("text")
+        .attr("class", "y-label")
+        .attr("text-anchor", "middle")
+        .attr("y", -45)
+        .attr("x",-this.height/2)
+        .attr("transform", "rotate(-90)")
+        .text("Gene Expression");
     },
     async update_line_plot() {
-      console.log('update_line_plot')
       if (this.genesData.length) {
         await this.get_dataset()
       } else {
@@ -92,9 +103,6 @@ export default {
 
       const sumstat = d3
         .group(this.dataset, d => `${d.gene_name}_${d.group_name}`);
-      console.log('sumstat: ')
-      console.log(sumstat)  
-      console.log('sumstat_map')
       const sumstat_arr = this.dataset.map((d,i) => [
         `${d.gene_name}_${d.group_name}_${d.time_point}`,{
         time_point: d.time_point,
@@ -281,13 +289,7 @@ export default {
             .style("pointer-events", "all")
             .attr("d", (d, i) => voronoi.renderCell(i))
             .on("mouseover", (d,i) => {
-              console.log('mouseover')
-              console.log(d)
-              console.log(i)
               if (d.y > 1) {
-                console.log('d.y > 1')
-                console.log(d.y)
-                console.log(i)
                 this.svg.append('g')
                   .attr('class', 'tooltip')
                   .attr("transform", `translate(${x(i[1].time_point)},${y(i[1].gene_expression)})`)
