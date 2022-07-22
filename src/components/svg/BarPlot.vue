@@ -13,8 +13,6 @@ import DataService from "../../services/DataService.js";
 export default {
   name: "BarPlot",
   props: {
-    //width: Number, 
-    //height: Number, 
     msg: String,
   },
   data() {
