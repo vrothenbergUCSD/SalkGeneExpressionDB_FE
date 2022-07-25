@@ -22,12 +22,14 @@ export default {
       dataset: [],
     }
   },
-  mounted() {
+  async mounted() {
     console.log("MarginTranslation mounted");
     // this.retrieveData();
     // console.log("After retrieve");
     // console.log(this.dataset)
-    this.display_gene_expression_data_table();
+    //this.display_gene_expression_data_table();
+    let result = await DataService.getAllSampleMetadata()
+    console.log(result)
     
   },
   methods: {
