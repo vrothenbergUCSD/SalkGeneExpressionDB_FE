@@ -96,7 +96,6 @@ export default {
       console.log('updatePlot')
       console.log(this.genesSelected)
 
-
     },
     buildList(list) {
       return list.map(object => {
@@ -151,11 +150,9 @@ export default {
       //console.log(this.genes)
       setTimeout(() => {
         if (!event.query.trim().length) {
-          //console.log('up here')
             this.genesFiltered = [...this.genes];
         }
         else {
-          console.log('down ehre')
             this.genesFiltered = this.genes.filter((gene) => {
                 return gene.name.toLowerCase().startsWith(event.query.toLowerCase());
             });

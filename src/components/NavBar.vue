@@ -34,7 +34,7 @@ const router = useRouter()
 
 const navigation = router.getRoutes();
 
-console.log(navigation)
+//console.log(navigation)
 
 
 
