@@ -1,7 +1,11 @@
 <template>
   <div class="mx-auto">
     <div class="text-center mb-5">Line Plot component</div>
-    <div id="plot-area" class="mt-10">
+
+    <div id="spinner" class="mx-auto" v-show="!this.complete" >
+      <ProgressSpinner class="w-full"/>
+    </div>
+    <div id="plot-area" class="mt-10" v-show="this.complete">
     </div>
     <div id="table-area" class=""></div>
   </div>
@@ -12,8 +16,13 @@ import * as d3 from "d3";
 //import {Delaunay} from "d3-delaunay";
 import DataService from "@/services/DataService.js";
 
+import ProgressSpinner from 'primevue/progressspinner';
+
 export default {
   name: "LinePlot",
+  components: {
+    ProgressSpinner,
+  },
   props: { 
     msg: String,
     genes: Array,
@@ -31,14 +40,20 @@ export default {
       y: null,
       yAxis: null,
       svg: null,
+      complete: false,
     }
   },
   created() {
   },
   async mounted() {
+    console.log('mounting')
+    console.log(this.complete)
     this.genesData = this.genes.map((d) => d.name)
     this.initialize_line_plot()
     await this.update_line_plot()
+    console.log('finished update_line_plot')
+    this.complete = true
+    console.log(this.complete)
   },
   async updated () {
     this.genesData = this.genes.map((d) => d.name)
