@@ -9,7 +9,7 @@ export default defineConfig({
       "/api": {
         target: "https://geneexpressiondbbe-w5oumbwxcq-uw.a.run.app",
         changeOrigin: true,
-        secure: false,
+        secure: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
     },
@@ -20,6 +20,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    outdir: "/public"
+  }
 
 })
 
