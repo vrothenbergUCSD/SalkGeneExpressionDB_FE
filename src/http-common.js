@@ -6,7 +6,7 @@ export default axios.create({
   headers: {
     "Content-type": "application/json",
     // 'Access-Control-Allow-Origin': '*',
-    'Host': 'rbio-p-datasharing.web.app',
+    // 'Host': 'rbio-p-datasharing.web.app',
   }
 });
 
