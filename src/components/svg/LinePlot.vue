@@ -3,7 +3,7 @@
     <!--<div class="text-center mb-5">Line Plot component</div>-->
 
     <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
-      <ProgressSpinner class="w-full"/>
+      <ProgressSpinner class="w-full mt-10" />
     </div>
     <div id="plot-area" class="mt-10" v-show="this.complete">
     </div>

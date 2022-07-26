@@ -1,13 +1,13 @@
 <!-- eslint-disable vue/multi-word-component-names -->
 <template>
-  <div class="p-5 font-semibold text-3xl text-center">
+  <div class="p-5 font-semibold text-5xl text-center">
     RBIO-P Data Sharing
   </div>
   <div id="call-to-action">
     <div class="surface-section px-4 py-8 md:px-6 lg:px-8">
     <div class="text-700 text-center">
-        <div class="text-blue-600 font-bold mb-3"><i class="pi pi-share-alt"></i>&nbsp;EMPOWERING DATA</div>
-        <div class="text-900 font-bold text-5xl mb-3">Join Our Data Sharing Community</div>
+        <div class="text-blue-600 font-bold mb-3"><i class="pi pi-share-alt px-1"></i>&nbsp;EMPOWERING RESEARCH</div>
+        <div class="text-900 font-bold text-3xl mb-3">Join Our Data Sharing Community</div>
         <div class="text-700 text-2xl mb-5">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Velit numquam eligendi quos.</div>
         <Button label="Join Now" icon="pi pi-cloud" class="font-bold px-5 py-3 p-button-raised p-button-rounded white-space-nowrap"></Button>
     </div>
