@@ -1,8 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import Home from "../views/Home.vue"
-import Graph from "../views/Graph.vue"
-import Test from "../views/Test.vue"
+// import Test from "../views/Test.vue"
 import Main from "../views/Main.vue"
 //import firebase from "firebase/app";
 //import "firebase/auth";
@@ -38,15 +37,6 @@ const routes = [
       requiresAuth: false,
     },
   },
-  // {
-  //   path: "/graph",
-  //   name: "Graph",
-  //   component: Graph,
-  //   meta: {
-  //     title: "Graph",
-  //     requiresAuth: false,
-  //   },
-  // },
   // {
   //   path: "/test",
   //   name: "Test",
