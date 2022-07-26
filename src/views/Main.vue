@@ -1,5 +1,5 @@
 <template>
-  <div class="p-5 font-semibold text-3xl text-center">Main</div>
+  <div class="p-5 font-semibold text-3xl text-center">Temporal Gene Expression</div>
   <div class="flex flex-wrap p-5 mx-auto w-11/12">
     <div class="w-1/3 min-w-max">
       <div class="font-semibold mb-2">Species</div>

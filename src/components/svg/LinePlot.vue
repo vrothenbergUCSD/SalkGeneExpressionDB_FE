@@ -1,8 +1,8 @@
 <template>
   <div class="mx-auto">
-    <div class="text-center mb-5">Line Plot component</div>
+    <!--<div class="text-center mb-5">Line Plot component</div>-->
 
-    <div id="spinner" class="mx-auto" v-show="!this.complete" >
+    <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
       <ProgressSpinner class="w-full"/>
     </div>
     <div id="plot-area" class="mt-10" v-show="this.complete">

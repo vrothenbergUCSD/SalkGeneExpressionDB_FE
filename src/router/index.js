@@ -19,43 +19,43 @@ const routes = [
 
     }
   },
-
   {
     path: "/",
-    name: "Home",
+    name: 'Home',
     component: Home,
     meta: {
       title: "Home",
       requiresAuth: false,
-    },
+
+    }
   },
   {
-    path: "/main",
-    name: "Main",
+    path: "/line",
+    name: "Line",
     component: Main,
     meta: {
-      title: "Main",
+      title: "Temporal Gene Expression",
       requiresAuth: false,
     },
   },
-  {
-    path: "/graph",
-    name: "Graph",
-    component: Graph,
-    meta: {
-      title: "Graph",
-      requiresAuth: false,
-    },
-  },
-  {
-    path: "/test",
-    name: "Test",
-    component: Test,
-    meta: {
-      title: "Test",
-      requiresAuth: false,
-    },
-  },
+  // {
+  //   path: "/graph",
+  //   name: "Graph",
+  //   component: Graph,
+  //   meta: {
+  //     title: "Graph",
+  //     requiresAuth: false,
+  //   },
+  // },
+  // {
+  //   path: "/test",
+  //   name: "Test",
+  //   component: Test,
+  //   meta: {
+  //     title: "Test",
+  //     requiresAuth: false,
+  //   },
+  // },
 ];
 
 const router = createRouter({
