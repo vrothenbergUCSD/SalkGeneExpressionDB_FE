@@ -30,7 +30,7 @@
   <div>
     <div class="card w-1/2 mx-auto mt-2">
       <!-- <div class="font-semibold text-center mt-3">Chart Types</div> -->
-      <TabMenu :model="items" />
+      <TabMenu :model="items"/>
       <router-view :genes="this.genesSelected"/>
     </div>
   </div>
@@ -76,7 +76,6 @@ export default {
 },
   data() {
     return {
-      active: 3,
       items: [
         {
           label: 'Bar',
@@ -90,8 +89,6 @@ export default {
 
         }
       ],
-
-
 
       species: ["Mouse", "Human", "Baboon"],
       speciesFiltered: null,
@@ -112,6 +109,7 @@ export default {
     }
   },
   created() {
+    console.log('Main created')
     this.species = this.buildList(this.species)
     this.speciesFiltered = this.species
     this.experiments = this.buildList(this.experiments)
@@ -119,15 +117,20 @@ export default {
     this.tissues = this.buildList(this.tissues)
     this.tissuesFiltered = this.tissues
     this.genesSelected = this.buildList(this.genesSelected)
+
+    // console.log('this.menuIndex: ' + this.menuIndex)
+    // console.log()
+    // Default chart selection is bar
+    this.$router.push('/main/bar')
   },
   async mounted() {
     // Populate array with all genes
+    // console.log('Main mounted, await genes: ')
     this.genes = await DataService.getGenes()
     this.genes = this.buildList(this.genes.data.map((d) => d.gene_name))
-    // console.log('mounted, await genes: ')
     // console.log(this.genes)
-    console.log('Main mounted')
-    console.log(this.genesSelected)
+    // console.log(this.genesSelected)
+    
   },
   methods: {
     updatePlot() {
