@@ -5,8 +5,8 @@ export default axios.create({
   baseURL: "https://geneexpressiondbbe-w5oumbwxcq-uw.a.run.app",
   headers: {
     "Content-type": "application/json",
-    // 'Access-Control-Allow-Origin': '*',
-    'Host': 'rbio-p-datasharing.web.app',
+    'Access-Control-Allow-Origin': '*',
+    // 'Host': 'rbio-p-datasharing.web.app',
   }
 });
 

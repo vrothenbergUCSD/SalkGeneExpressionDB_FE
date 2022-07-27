@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import Home from "../views/Home.vue"
-// import Test from "../views/Test.vue"
 import Main from "../views/Main.vue"
+import BarPlot from "@/components/svg/BarPlot.vue"
+import LinePlot from "@/components/svg/LinePlot.vue"
 //import firebase from "firebase/app";
 //import "firebase/auth";
 
@@ -15,7 +16,7 @@ const routes = [
     meta: {
       title: "Home",
       requiresAuth: false,
-
+      hideNavbar: true,
     }
   },
   {
@@ -25,18 +26,44 @@ const routes = [
     meta: {
       title: "Home",
       requiresAuth: false,
+      hideNavbar: false,
 
     }
   },
   {
-    path: "/line",
-    name: "Line",
+    path: "/main",
+    name: "Main",
     component: Main,
     meta: {
-      title: "Temporal Gene Expression",
+      title: "Main",
       requiresAuth: false,
+      hideNavbar: false,
     },
+    children: [
+      {
+        path: "bar",
+        name: "Bar",
+        component: BarPlot,
+        meta: {
+          title: "Bar",
+          requiresAuth: false,
+          hideNavbar: true,
+        }
+      },
+      {
+        path: "line",
+        name: "Line",
+        component: LinePlot,
+        meta: {
+          title: "Line",
+          requiresAuth: false,
+          hideNavbar: true,
+        }
+      }
+
+    ]
   },
+
   // {
   //   path: "/test",
   //   name: "Test",
