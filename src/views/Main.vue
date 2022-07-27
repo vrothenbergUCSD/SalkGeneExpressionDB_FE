@@ -1,5 +1,9 @@
 <template>
   <div class="p-5 font-semibold text-3xl text-center">Temporal Gene Expression</div>
+
+
+
+
   <div class="flex flex-wrap p-5 mx-auto w-11/12">
     <div class="w-1/3 min-w-max">
       <div class="font-semibold mb-2">Species</div>
@@ -22,10 +26,20 @@
 
   </div>
 
-  <div class="mx-auto w-full">
-    <LinePlot :genes="this.genesSelected"/>
-    <!--<MarginTranslation/>-->
+
+  <div>
+    <div class="card w-1/2 mx-auto mt-2">
+      <!-- <div class="font-semibold text-center mt-3">Chart Types</div> -->
+      <TabMenu :model="items" />
+      <router-view :genes="this.genesSelected"/>
+    </div>
   </div>
+
+  <!-- <div class="mx-auto w-full">
+    <LinePlot :genes="this.genesSelected"/>
+  </div> -->
+
+
   
 
 </template>
@@ -33,6 +47,8 @@
 <script>
 import Dropdown from "primevue/dropdown"
 import AutoComplete from "primevue/autocomplete"
+import TabMenu from 'primevue/tabmenu'
+import Button from 'primevue/button'
 
 import Selection from "@/components/Selection.vue"
 import Prime from "@/components/Prime.vue"
@@ -46,16 +62,37 @@ import {FilterService,FilterMatchMode} from 'primevue/api';
 export default {
   name: "Main",
   components: {
+    Dropdown,
     AutoComplete,
+    TabMenu,
+    Button,
+
     Selection,
     Prime,
-    Dropdown,
+    
     LinePlot,
     BarPlot,
     MarginTranslation,
 },
   data() {
     return {
+      active: 3,
+      items: [
+        {
+          label: 'Bar',
+          icon: 'pi pi-fw pi-chart-bar',
+          to: '/main/bar'
+        },
+        {
+          label: 'Line',
+          icon: 'pi pi-fw pi-chart-line',
+          to: '/main/line',
+
+        }
+      ],
+
+
+
       species: ["Mouse", "Human", "Baboon"],
       speciesFiltered: null,
       speciesSelected: null,
@@ -71,6 +108,7 @@ export default {
       genes: null,
       genesFiltered: null,
       genesSelected: ['Alb', 'Fga','Trf'],
+
     }
   },
   created() {
@@ -141,7 +179,6 @@ export default {
       }
       if (this.speciesSelected && this.experimentSelected && this.tissueSelected) {
         console.log("All selected")
-
       }
     },
     searchGenes(event) {
