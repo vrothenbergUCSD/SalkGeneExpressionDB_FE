@@ -226,7 +226,22 @@ export default {
                     .attr("y", d => y(d.value))
                     .attr("width", xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value))
-                    .attr("fill", d => color(d.key));
+                    .attr("fill", d => color(d.key))
+                    .on("mouseover", (d,i) => {
+                      let zt = d.path[1].__data__[0]
+                      console.log(i)
+                      if (d.y > 1) {
+                        this.svg.append('g')
+                          .attr('class', 'tooltip')
+                          .attr("transform", `translate(${
+                            x(parseInt(zt)) + xSubgroup(i.key) + xSubgroup.bandwidth()/2},
+                            ${y(i.value) - 63})`)
+                          .call(popover, `${i.key} 
+                          Time: ZT${zt}
+                          Expr: ${Math.round(i.value)}`, i.key)
+                      }
+                    })
+                    .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
                 },
                 (update) => {
                   // console.log('enter > update')
@@ -300,8 +315,8 @@ export default {
               .data(d => d[1])
               .join(
                 (exit) => {
-                  console.log('exit > exit')
-                  console.log(exit)
+                  // console.log('exit > exit')
+                  // console.log(exit)
                   exit
                     .style('opacity', 0)
                     .transition()
@@ -373,120 +388,53 @@ export default {
 
             }
           )
-    
-      // // Draw dots on points
-      // this.svg.selectAll(".dot")
-      //   // Flattened sumstat array with gene_group keys
-      //   .data(sumstat_map)
-      //   .join(
-      //     (enter) => {
-      //       enter.append("circle")
-      //         .attr("class", "dot")
-      //         .style("fill", d => color(d[1].gene_group))
-      //         .attr("cx", d => x(d[1].time_point))
-      //         .attr("cy", d => y(d[1].gene_expression))
-      //         .attr("r", 2)
-      //         .transition()
-      //         .ease(Math.sqrt)
-      //         .duration(updateInterval)
-      //         .style('fill-opacity', 1)
-      //     },
-      //     (update) => {
-      //       //update
-      //       update.attr('cx', d => x(d[1].time_point))
-      //         .attr('cy', d => y(d[1].gene_expression))
-      //         .style('fill', d => color(d[1].gene_group))
-      //         .transition()
-      //         .ease(Math.sqrt)
-      //         .duration(updateInterval)
-      //         .style('fill-opacity', 1)
-      //     },
-      //     (exit) => {
-      //       exit.transition()
-      //         .ease(Math.sqrt)
-      //         .duration(updateInterval)
-      //         .style('fill-opacity', 0)
-      //         .remove()
-      //     }
-      //   )
-
-      // // Voronoi cells to select nearest point
-      // var voronoi = d3.Delaunay
-      //   .from(sumstat_map, d => x(d[1].time_point), d => y(d[1].gene_expression))
-      //   .voronoi([0, 0, this.width * this.drawable_width_scale, this.height])
-
-      // //Create the voronoi grid
-      // this.svg.append("g")
-      //   .attr("class", "voronoiWrapper")
-      //   .selectAll("path")
-      //   .data(sumstat_map)
-      //   .join(
-      //     (enter) => {
-      //       enter.append("path")
-      //       .attr("opacity", 0.5)
-      //       //.attr("stroke", "#ff1493") // Hide overlay
-      //       .attr("fill", "none")
-      //       .style("pointer-events", "all")
-      //       .attr("d", (d, i) => voronoi.renderCell(i))
-      //       .on("mouseover", (d,i) => {
-      //         if (d.y > 1) {
-      //           this.svg.append('g')
-      //             .attr('class', 'tooltip')
-      //             .attr("transform", `translate(${x(i[1].time_point)},${y(i[1].gene_expression)})`)
-      //             .call(popover, `${i[1].gene_group} 
-      //             Time: ZT${i[1].time_point} 
-      //             Expr: ${Math.round(i[1].gene_expression)}`, i[1].gene_group)
-      //         }
-      //       })
-      //       .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
-      //     },
-      //     (update) => {
-
-      //     },
-      //     (exit) => {
-      //       exit.remove()
-
-      //     }
-      //   )
            
-      // function popover(g, value, key) {
-      //   if (!value) return g.style("display", "none");
+      function popover(g, value, key) {
+        if (!value) return g.style("display", "none");
+        // tooltip group
+        g
+          .style("display", null)
+          .style("pointer-events", "none")
+          .style("font", "10px sans-serif");
 
-      //   // tooltip group
-      //   g
-      //     .style("display", null)
-      //     .style("pointer-events", "none")
-      //     .style("font", "10px sans-serif");
+        // tooltip container stroke
+        const path = g.selectAll("path")
+          .data([null])
+          .join("path")
+            .attr("fill", "white")
+            .attr("fill-opacity", 1)
+            .attr("stroke", color(key));
 
-      //   // tooltip container stroke
-      //   const path = g.selectAll("path")
-      //     .data([null])
-      //     .join("path")
-      //       .attr("fill", "white")
-      //       .attr("fill-opacity", 1)
-      //       .attr("stroke", color(key));
+        // tooltip content
+        const text = g.selectAll("text")
+          .data([null])
+          .join("text")
+          .call(text => text
+            .selectAll("tspan")
+            .data((value + "").split(/\n/))
+            .join("tspan")
+              .attr("x", 0)
+              .attr("y", (d, i) => `${i * 1.1}em`)
+              .style("text-align", "center")
+              .style("font-weight", (_, i) => i ? null : "bold")
+              .text(d => d));
 
-      //   // tooltip content
-      //   const text = g.selectAll("text")
-      //     .data([null])
-      //     .join("text")
-      //     .call(text => text
-      //       .selectAll("tspan")
-      //       .data((value + "").split(/\n/))
-      //       .join("tspan")
-      //         .attr("x", 0)
-      //         .attr("y", (d, i) => `${i * 1.1}em`)
-      //         .style("text-align", "center")
-      //         .style("font-weight", (_, i) => i ? null : "bold")
-      //         .text(d => d));
-
-      //   // tooltip positioning
-      //   const {x, y, width: w, height: h} = text.node().getBBox();
-      //   text.attr("transform", `translate(${-w / 2},${15 - y})`);
+        // tooltip positioning
+        const {x, y, width: w, height: h} = text.node().getBBox();
+        text.attr("transform", `translate(${-w / 2},${15 - y})`);
+        // console.log('w: ' + w) // 57
+        // console.log('h: ' + h) // 34
+        // console.log(-w / 2 - 10) // -38.4
+        // console.log(w / 2 + 10) // 38.4
+        // console.log(h + 20) // 53.6
+        // console.log(w + 20) // 76.7
         
-      //   // tooltip container path
-      //   path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
-      // }
+        // tooltip container path
+        //path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+        // path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+        // path.attr("d", `M${-w / 2 - 10},5 H${w+20} v${h+20} h -${w/2 + 5} l-5,5 l-5,-5 h -${w/2 + 5} z`)
+        path.attr("d", `M${-w / 2 - 10},5 H${w / 2 + 10},H ${w / 2 + 10} v ${h+20} h ${-w/2-5} l-5,5 l-5,-5 h${-w/2-5} z`)
+      }
           
     },
   }
