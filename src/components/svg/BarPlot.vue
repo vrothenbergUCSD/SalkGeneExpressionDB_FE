@@ -125,8 +125,7 @@ export default {
 
       const dataset_filtered = this.dataset
         .filter(d => time_points.includes(d.time_point))
-      // console.log('dataset_filtered')
-      // console.log(dataset_filtered)
+
       const gene_groups = dataset_filtered.map((d,i) => [
         `${d.gene_name}_${d.group_name}`,{
         time_point: d.time_point,
@@ -135,13 +134,6 @@ export default {
         i: i,
         }]
       )
-      // console.log('gene_groups')
-      // console.log(gene_groups)
-
-      // const sumstat = d3
-      //   .group(this.dataset, d => `${d.gene_name}_${d.group_name}`);
-      // console.log('sumstat')
-      // console.log(sumstat)
       let timeGroups = d3
         .group(gene_groups, d => `${d[1].time_point}`)
       // console.log('timeGroups')
@@ -163,8 +155,6 @@ export default {
       }
 
       const data = flatten(timeGroups)
-      // console.log('flatten data')
-      // console.log(data)
 
       const subgroups = Object.keys(data[0]).filter(el => el !== 'group')
       // console.log('subgroups')
@@ -188,9 +178,6 @@ export default {
         .range([0, x.bandwidth()])
         .padding([0.05])
 
-      // console.log('xSubgroup')
-      // console.log(xSubgroup.bandwidth())
-
       // Create the Y axis
       var y = this.y
       y.domain([0, d3.max(dataset_filtered, (d) => +d.gene_expression)])
@@ -200,29 +187,6 @@ export default {
           .call(this.yAxis)
 
       var updateInterval = 500
-
-      // console.log('data')
-      // console.log(data)
-      var i =0
-
-      // // Show the bars
-      // this.svg.append("g")
-      //   .selectAll("g")
-      //   // Enter in data = loop group per group
-      //   .data(data)
-      //   .join("g")
-      //     .attr("transform", d => {return `translate(${x(d.group)}, 0)`})
-      //   .selectAll("rect")
-      //   .data(function(d) { 
-      //     return subgroups.map(function(key) { 
-      //       return {key: key, value: d[key]}; }); })
-      //   .join("rect")
-      //     .attr("x", d => xSubgroup(d.key))
-      //     .attr("y", d => y(d.value))
-      //     .attr("width", xSubgroup.bandwidth())
-      //     .attr("height", d => this.height - y(d.value))
-      //     .attr("fill", d => color(d.key));
-      // const timeMap = timeGroups.map(el => el)
 
       // Flatten internMap object
       function changeValues(iMap) {
@@ -238,18 +202,15 @@ export default {
       console.log("================")
       console.log(timeGroups)
       console.log("================")
-      
 
-      // Show the bars
+      // Display grouped bars
       this.svg
-        //.append("g")
         .selectAll(".time-group")
-        // Enter in data = loop group per group
         .data(timeGroups)
         .join(
           (enter) => {
-            console.log('enter')
-            console.log(enter)
+            // console.log('enter')
+            // console.log(enter)
             enter.append('g')
               .attr("transform", d => `translate(${x(parseInt(d[0]))}, 0)`)
               .attr("class", "time-group")
@@ -257,10 +218,9 @@ export default {
               .data(d => d[1])
               .join(
                 (enter) => {
-                  console.log('enter > enter')
-                  console.log(enter)
+                  // console.log('enter > enter')
+                  // console.log(enter)
                   enter.append('rect')
-                    .style("opacity", 0.5)
                     .attr("class", 'time-group-rect')
                     .attr("x", d => xSubgroup(d.key))
                     .attr("y", d => y(d.value))
@@ -269,20 +229,18 @@ export default {
                     .attr("fill", d => color(d.key));
                 },
                 (update) => {
-                  console.log('enter > update')
-                  console.log(update)
+                  // console.log('enter > update')
+                  // console.log(update)
                   update
-                    .style("opacity", 1)
                     .attr("x", d => xSubgroup(d.key))
                     .attr("y", d => y(d.value))
                     .attr("width", xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value))
                     .attr("fill", d => color(d.key));
-                  
                 },
                 (exit) => {
-                  console.log('enter > exit')
-                  console.log(exit)
+                  // console.log('enter > exit')
+                  // console.log(exit)
                   exit
                     .style('opacity', 0)
                     .transition()
@@ -293,20 +251,18 @@ export default {
               )
           },
           (update) => {
-            console.log('update')
-            console.log(update)
+            // console.log('update')
+            // console.log(update)
             update
-              //.selectAll(".time-group")
               .attr("transform", d => `translate(${x(parseInt(d[0]))}, 0)`)
               .selectAll(".time-group-rect")
               .data(d => d[1])
               .join(
                 (enter) => {
-                  console.log('update > enter')
-                  console.log(enter)
+                  // console.log('update > enter')
+                  // console.log(enter)
                   enter.append('rect')
                     .attr("class", "time-group-rect")
-                    .style("opacity", 0.5)
                     .attr("x", d => xSubgroup(d.key))
                     .attr("y", d => y(d.value))
                     .attr("width", xSubgroup.bandwidth())
@@ -314,10 +270,9 @@ export default {
                     .attr("fill", d => color(d.key));
                 },
                 (update) => {
-                  console.log('update > update')
-                  console.log(update)
+                  // console.log('update > update')
+                  // console.log(update)
                   update
-                    .style("opacity", 1)
                     .attr("x", d => xSubgroup(d.key))
                     .attr("y", d => y(d.value))
                     .attr("width", xSubgroup.bandwidth())
@@ -326,10 +281,9 @@ export default {
                   
                 },
                 (exit) => {
-                  console.log('update > exit')
-                  console.log(exit)
+                  // console.log('update > exit')
+                  // console.log(exit)
                   exit
-                    // .selectAll('rect')
                     .style('opacity', 0)
                     .transition()
                     .ease(Math.sqrt)
@@ -339,8 +293,8 @@ export default {
               )
           },
           (exit) => {
-            console.log('exit')
-            console.log(exit)
+            // console.log('exit')
+            // console.log(exit)
             exit
               .selectAll(".time-group-rect")
               .data(d => d[1])
@@ -358,154 +312,67 @@ export default {
               )
           },
         )
-
-      // subgroups = Nitrogen,normal,stress
-      // subgroups = 
-      // X axis = time_point 
-      // subgroups = gene_group
-      // columns = 
-
       
-      // let sumstat_arr = this.dataset.map((d,i) => [
-      //   `${d.gene_name}_${d.group_name}_${d.time_point}`,{
-      //   time_point: d.time_point,
-      //   gene_expression: d.gene_expression,
-      //   gene_group: `${d.gene_name}_${d.group_name}`,
-      //   i: i,
-      //   }]
-      // )
-      // console.log(sumstat_arr)
+      // Legend color
+      var legendX = this.width*this.drawable_width_scale+20
+      this.svg.selectAll(".legendLines")
+          .data(subgroups)
+          .join(
+            (enter) => {
+              enter.append('line')
+                .attr('class', 'legendLines')
+                .attr('x1', legendX)
+                .attr('x2', legendX + 15)
+                .attr('y1', (d,i) => i*25 )
+                .attr('y2', (d,i) => i*25 )
+                .style("stroke", (d) => color(d))
+                .style("stroke-width", 1.5)
+            },
+            (update) => {
+              update.attr('x1', legendX)
+                .attr('x2', legendX + 15)
+                .attr('y1', (d,i) =>  i*25 )
+                .attr('y2', (d,i) =>  i*25 )
+                .style("stroke", (d) => color(d))
+            },
+            (exit) => {
+              exit.transition()
+                .ease(Math.sqrt)
+                .duration(updateInterval)
+                .style('stroke-opacity', 0)
+                .remove()
+            }
+          )
       
-      // sumstat_arr = sumstat_arr.filter((el) => time_points.includes(el[1].time_point))
-      // console.log('sumstat_arr')
-      // console.log(sumstat_arr)
-      // const sumstat_map = new Map(sumstat_arr)
-      // console.log('sumstat_map')
-      // console.log(sumstat_map)
+      // Legend text
+      this.svg.selectAll('.legendText')
+          .data(subgroups)
+          .join(
+            (enter) => {
+              enter.append('text')
+                .attr('class', 'legendText')
+                .attr('x', legendX+20)
+                .attr('y', (d,i) => i*25)
+                .style('fill', (d) => color(d))
+                .text(d => d)
+                .attr('text-anchor', 'left')
+                .attr('font-size', '0.7em')
+                .style('fill-opacity', 1)
+            },
+            (update) => {
+              update.attr('y', (d,i) => i*25 )
+                .style('fill', (d) => color(d))
+                .text(d => d)
+            },
+            (exit) => {
+              exit.transition()
+                .ease(Math.sqrt)
+                .duration(updateInterval)
+                .style('fill-opacity', 0)
+                .remove()
 
-    
-
-
-
-
-
-      // const sumstat = d3
-      //   .group(this.dataset, d => `${d.gene_name}_${d.group_name}`);
-      // const sumstat_arr = this.dataset.map((d,i) => [
-      //   `${d.gene_name}_${d.group_name}_${d.time_point}`,{
-      //   time_point: d.time_point,
-      //   gene_expression: d.gene_expression,
-      //   gene_group: `${d.gene_name}_${d.group_name}`,
-      //   i: i,
-      //   }]
-      // )
-      // const sumstat_map = new Map(sumstat_arr)
-      // var color = d3.scaleOrdinal(d3.schemeCategory10);
-
-
-
-      // // Logic for plotting lines
-      // this.svg.selectAll(".line")
-      //     .data(sumstat)
-      //     .join(
-      //       function(enter) {
-      //         enter.append('path')
-      //           .attr('class', 'line')
-      //           .attr("d", (d) => d3.line()
-      //               .curve(d3.curveNatural)
-      //               .x((d) => x(d.time_point))
-      //               .y((d) => y(+d.gene_expression))
-      //               (d[1])
-      //           )
-      //           .attr("fill", "none")
-      //           .attr("stroke-width", 1.5)
-      //           .attr("stroke", (d) => color(d[0]))
-              
-      //         enter.append('g')
-
-      //       },
-      //       (update) => {
-      //         update
-      //           .transition()
-      //           .duration(500)
-      //           .attr("d", (d) => d3.line()
-      //               .curve(d3.curveNatural)
-      //               .x((d) => x(d.time_point))
-      //               .y((d) => y(+d.gene_expression))
-      //               (d[1]))
-      //           .attr('stroke', (d) => color(d[0]))
-      //       },
-      //       (exit) => {
-      //         exit  
-      //           .style('stroke-opacity', 0)
-      //           .transition()
-      //           .ease(Math.sqrt)
-      //           .duration(updateInterval)
-      //           .remove()
-      //       }
-      //     )
-      
-      // // Legend color
-      // var legendX = this.width*this.drawable_width_scale+20
-      // this.svg.selectAll(".legendLines")
-      //     .data(sumstat)
-      //     .join(
-      //       (enter) => {
-      //         enter.append('line')
-      //           .attr('class', 'legendLines')
-      //           .attr('x1', legendX)
-      //           .attr('x2', legendX + 15)
-      //           .attr('y1', (d,i) => i*25 )
-      //           .attr('y2', (d,i) => i*25 )
-      //           .style("stroke", (d) => color(d[0]))
-      //           .style("stroke-width", 1.5)
-      //       },
-      //       (update) => {
-      //         update.attr('x1', legendX)
-      //           .attr('x2', legendX + 15)
-      //           .attr('y1', (d,i) =>  i*25 )
-      //           .attr('y2', (d,i) =>  i*25 )
-      //           .style("stroke", (d) => color(d[0]))
-      //       },
-      //       (exit) => {
-      //         exit.transition()
-      //           .ease(Math.sqrt)
-      //           .duration(updateInterval)
-      //           .style('stroke-opacity', 0)
-      //           .remove()
-      //       }
-      //     )
-      
-      // // Legend text
-      // this.svg.selectAll('.legendText')
-      //     .data(sumstat)
-      //     .join(
-      //       (enter) => {
-      //         enter.append('text')
-      //           .attr('class', 'legendText')
-      //           .attr('x', legendX+20)
-      //           .attr('y', (d,i) => i*25)
-      //           .style('fill', (d) => color(d[0]))
-      //           .text((d) => d[0] )
-      //           .attr('text-anchor', 'left')
-      //           .attr('font-size', '0.7em')
-      //           .style('fill-opacity', 1)
-      //       },
-      //       (update) => {
-      //         update.attr('y', (d,i) => i*25 )
-      //           .style('fill', (d) => color(d[0]))
-      //           .text((d) => d[0])
-
-      //       },
-      //       (exit) => {
-      //         exit.transition()
-      //           .ease(Math.sqrt)
-      //           .duration(updateInterval)
-      //           .style('fill-opacity', 0)
-      //           .remove()
-
-      //       }
-      //     )
+            }
+          )
     
       // // Draw dots on points
       // this.svg.selectAll(".dot")
