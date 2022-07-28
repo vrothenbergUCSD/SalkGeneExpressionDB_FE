@@ -1,10 +1,15 @@
 <template>
   <div class="mx-auto">
     <div class="text-center mb-5">Bar Plot component</div>
+    <div id="group-by">
+      <div class="">Group by:</div>
+      <SelectButton v-model="grouped_by" :options="grouped_by_options"/>
+    </div>
 
     <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
       <ProgressSpinner class="w-full mt-10" />
     </div>
+    
     <div id="plot-area" class="mt-10" v-show="this.complete">
     </div>
     <div id="table-area" class=""></div>
@@ -17,11 +22,13 @@ import * as d3 from "d3";
 import DataService from "@/services/DataService.js";
 
 import ProgressSpinner from 'primevue/progressspinner';
+import SelectButton from 'primevue/selectbutton';
 
 export default {
   name: "BarPlot",
   components: {
     ProgressSpinner,
+    SelectButton,
   },
   props: { 
     msg: String,
@@ -40,27 +47,33 @@ export default {
       y: null,
       yAxis: null,
       svg: null,
+
       complete: false,
+
+      grouped_by: 'Time',
+      grouped_by_options: ['Gene', 'Time'],
+
     }
   },
   created() {
   },
   async mounted() {
     console.log('mounting')
-    console.log(this.complete)
     this.genesData = this.genes.map((d) => d.name)
     this.initialize_bar_plot()
-    await this.update_bar_plot()
-    console.log('finished update_bar_plot')
+    await this.update_grouped_bar_plot(this.grouped_by)
+    console.log('mounted() > finished update plot')
     this.complete = true
-    console.log(this.complete)
   },
   async updated () {
     this.genesData = this.genes.map((d) => d.name)
-    this.update_bar_plot()
+    // Don't need await?  Last command in function
+    // this.update_grouped_bar_plot()
+    await this.update_grouped_bar_plot(this.grouped_by)
   },
   methods: {
     async get_dataset() {
+      // Idea: Check for cached results?
       let data = await DataService
         .getExpressionDataByGenes(this.genesData.toString())
       this.dataset = data.data
@@ -94,7 +107,7 @@ export default {
         .attr("text-anchor", "middle")
         .attr("x", this.width * this.drawable_width_scale / 2)
         .attr("y", this.height+40)
-        .text("Time Point (ZT)");
+        //.text("Time Point (ZT)");
 
       // Initialize Y axis
       this.y = d3.scaleLinear().range([this.height, 0]);
@@ -111,7 +124,1020 @@ export default {
         .attr("transform", "rotate(-90)")
         .text("Gene Expression");
     },
-    async update_bar_plot() {
+    async update_grouped_time_bar_plot() {
+      if (this.genesData.length) {
+        await this.get_dataset()
+      } else {
+        this.dataset = []
+      }
+      console.log('update_grouped_time_bar_plot')
+      // console.log(this.dataset)
+      let time_points = [10, 2, 20].map(el => el.toString())
+      var collator = new Intl.Collator([], {numeric: true});
+      time_points.sort((a, b) => collator.compare(a, b));
+      // console.log(time_test)
+
+      // const time_points = [0, 2, 4, 6].map(el => el.toString())
+      const groups = time_points
+      console.log('groups')
+      console.log(groups)
+
+      const dataset_filtered = this.dataset
+        .filter(d => time_points.includes(d.time_point.toString()))
+
+      console.log('dataset_filtered')
+      console.log(dataset_filtered)
+
+      const gene_groups_map = dataset_filtered.map((d) => ({
+        time_point: d.time_point.toString(),
+        gene_expression: d.gene_expression,
+        gene_group: `${d.gene_name}_${d.group_name}`
+        })
+      )
+      console.log('gene_groups_map')
+      console.log(gene_groups_map)
+      const time_groups = d3
+        .group(gene_groups_map, d => `${d.time_point}`)
+      console.log('time_groups')
+      console.log(time_groups)
+      // console.log(time_groups.keys())
+      // console.log('timeGroup: ')
+      // console.log(timeGroups)
+      // console.log('timeGroups.keys()')
+      // console.log(timeGroups.keys())
+      const firstKey = time_groups.keys().next().value
+      // console.log(firstKey)
+      const subgroups = time_groups.get(firstKey).map(el => el.gene_group)
+      console.log('subgroups')
+      console.log(subgroups)
+      // console.log(subgroups)
+      // ['Alb_ALF', 'Fga_ALF', 'Trf_ALF', 'Alb_TRF', 'Fga_TRF', 'Trf_TRF']
+
+      // Flatten internMap object
+      function changeValues(iMap) {
+        for (const key of iMap.keys()) {
+          // console.log(key)
+          let arrOfObj = iMap.get(key).map(el => ({
+            key: el.gene_group, value: el.gene_expression}))
+          // console.log(arrOfArrs)
+          iMap.set(key, arrOfObj)
+        }
+      }
+      changeValues(time_groups)
+      console.log("================")
+      console.log(time_groups)
+      console.log("================")
+
+      const data = time_groups
+      // console.log(data)
+
+
+      var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+      // // Create the X axis
+      // var x = this.x
+      // x.domain(groups)
+      //   .padding([0.1])
+
+      // this.svg.selectAll(".myXaxis").transition()
+      //   .duration(1000)
+      //   .call(this.xAxis);
+
+      // // Another scale for subgroup position?
+      // const xSubgroup = d3.scaleBand()
+      //   .domain(subgroups)
+      //   .range([0, x.bandwidth()])
+      //   .padding([0.05])
+
+      // // Create the Y axis
+      // var y = this.y
+      // y.domain([0, d3.max(dataset_filtered, (d) => +d.gene_expression)])
+      // this.svg.selectAll('.myYaxis')
+      //     .transition()
+      //     .duration(1000)
+      //     .call(this.yAxis)
+
+      // var updateInterval = 500
+
+      console.log('data')
+      console.log(data)
+
+      this.display_grouped_bar_plot(data, groups, subgroups)
+      return
+
+      // Display grouped bars
+      this.svg
+        .selectAll(".group")
+        .data(data)
+        .join(
+          (enter) => {
+            // console.log('enter')
+            // console.log(enter)
+            enter.append('g')
+              .attr("transform", d => `translate(${x(d[0])}, 0)`)
+              .attr("class", "group")
+              .selectAll(".group-rect")
+              .data(d => d[1])
+              .join(
+                (enter) => {
+                  // console.log('enter > enter')
+                  // console.log(enter)
+                  enter.append('rect')
+                    .attr("class", 'group-rect')
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key))
+                    .on("mouseover", (d,i) => {
+                      console.log('mouseover')
+                      console.log(d)
+                      const zt = d.path[1].__data__[0]
+                      console.log(i)
+                      if (d.y > 1) {
+                        this.svg.append('g')
+                          .attr('class', 'tooltip')
+                          .attr("transform", `translate(${
+                            x(zt) + xSubgroup(i.key) + xSubgroup.bandwidth()/2},
+                            ${y(i.value) - 63})`)
+                          .call(popover, `${i.key} 
+                          Time: ZT${zt}
+                          Expr: ${Math.round(i.value)}`, i.key)
+                      }
+                    })
+                    .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
+                },
+                (update) => {
+                  // console.log('enter > update')
+                  // console.log(update)
+                  update
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key));
+                },
+                (exit) => {
+                  // console.log('enter > exit')
+                  // console.log(exit)
+                  exit
+                    .style('opacity', 0)
+                    .transition()
+                    .ease(Math.sqrt)
+                    .duration(updateInterval)
+                    .remove()
+                }
+              )
+          },
+          (update) => {
+            // console.log('update')
+            // console.log(update)
+            update
+              .attr("transform", d => `translate(${x(d[0])}, 0)`)
+              .selectAll(".group-rect")
+              .data(d => d[1])
+              .join(
+                (enter) => {
+                  // console.log('update > enter')
+                  // console.log(enter)
+                  enter.append('rect')
+                    .attr("class", "group-rect")
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key));
+                },
+                (update) => {
+                  // console.log('update > update')
+                  // console.log(update)
+                  update
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key));
+                  
+                },
+                (exit) => {
+                  // console.log('update > exit')
+                  // console.log(exit)
+                  exit
+                    .style('opacity', 0)
+                    .transition()
+                    .ease(Math.sqrt)
+                    .duration(updateInterval)
+                    .remove()
+                }
+              )
+          },
+          (exit) => {
+            // console.log('exit')
+            // console.log(exit)
+            exit
+              .selectAll(".group-rect")
+              .data(d => d[1])
+              .join(
+                (exit) => {
+                  // console.log('exit > exit')
+                  // console.log(exit)
+                  exit
+                    .style('opacity', 0)
+                    .transition()
+                    .ease(Math.sqrt)
+                    .duration(updateInterval)
+                    .remove()
+                },
+              )
+          },
+        )
+      
+      // Legend color
+      var legendX = this.width*this.drawable_width_scale+20
+      this.svg.selectAll(".legendLines")
+          .data(subgroups)
+          .join(
+            (enter) => {
+              enter.append('line')
+                .attr('class', 'legendLines')
+                .attr('x1', legendX)
+                .attr('x2', legendX + 15)
+                .attr('y1', (d,i) => i*25 )
+                .attr('y2', (d,i) => i*25 )
+                .style("stroke", (d) => color(d))
+                .style("stroke-width", 1.5)
+            },
+            (update) => {
+              update.attr('x1', legendX)
+                .attr('x2', legendX + 15)
+                .attr('y1', (d,i) =>  i*25 )
+                .attr('y2', (d,i) =>  i*25 )
+                .style("stroke", (d) => color(d))
+            },
+            (exit) => {
+              exit.transition()
+                .ease(Math.sqrt)
+                .duration(updateInterval)
+                .style('stroke-opacity', 0)
+                .remove()
+            }
+          )
+      
+      // Legend text
+      this.svg.selectAll('.legendText')
+          .data(subgroups)
+          .join(
+            (enter) => {
+              enter.append('text')
+                .attr('class', 'legendText')
+                .attr('x', legendX+20)
+                .attr('y', (d,i) => i*25)
+                .style('fill', (d) => color(d))
+                .text(d => d)
+                .attr('text-anchor', 'left')
+                .attr('font-size', '0.7em')
+                .style('fill-opacity', 1)
+            },
+            (update) => {
+              update.attr('y', (d,i) => i*25 )
+                .style('fill', (d) => color(d))
+                .text(d => d)
+            },
+            (exit) => {
+              exit.transition()
+                .ease(Math.sqrt)
+                .duration(updateInterval)
+                .style('fill-opacity', 0)
+                .remove()
+
+            }
+          )
+           
+      function popover(g, value, key) {
+        if (!value) return g.style("display", "none");
+        // tooltip group
+        g
+          .style("display", null)
+          .style("pointer-events", "none")
+          .style("font", "10px sans-serif");
+
+        // tooltip container stroke
+        const path = g.selectAll("path")
+          .data([null])
+          .join("path")
+            .attr("fill", "white")
+            .attr("fill-opacity", 1)
+            .attr("stroke", color(key));
+
+        // tooltip content
+        const text = g.selectAll("text")
+          .data([null])
+          .join("text")
+          .call(text => text
+            .selectAll("tspan")
+            .data((value + "").split(/\n/))
+            .join("tspan")
+              .attr("x", 0)
+              .attr("y", (d, i) => `${i * 1.1}em`)
+              .style("text-align", "center")
+              .style("font-weight", (_, i) => i ? null : "bold")
+              .text(d => d));
+
+        // tooltip positioning
+        const {x, y, width: w, height: h} = text.node().getBBox();
+        text.attr("transform", `translate(${-w / 2},${15 - y})`);
+        // console.log('w: ' + w) // 57
+        // console.log('h: ' + h) // 34
+        // console.log(-w / 2 - 10) // -38.4
+        // console.log(w / 2 + 10) // 38.4
+        // console.log(h + 20) // 53.6
+        // console.log(w + 20) // 76.7
+        
+        // tooltip container path
+        //path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+        // path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+        // path.attr("d", `M${-w / 2 - 10},5 H${w+20} v${h+20} h -${w/2 + 5} l-5,5 l-5,-5 h -${w/2 + 5} z`)
+        path.attr("d", `M${-w / 2 - 10},5 H${w / 2 + 10},H ${w / 2 + 10} v ${h+20} h ${-w/2-5} l-5,5 l-5,-5 h${-w/2-5} z`)
+      }
+          
+    },
+    async update_grouped_gene_bar_plot() {
+      if (this.genesData.length) {
+        await this.get_dataset()
+      } else {
+        this.dataset = []
+      }
+      console.log('update_grouped_gene_bar_plot')
+      // console.log(this.dataset)
+      
+
+      const time_points = [10, 2, 20].map(el => el.toString())
+      var collator = new Intl.Collator([], {numeric: true});
+      time_points.sort((a, b) => collator.compare(a, b));
+      // const groups = time_points
+      const subgroups = time_points
+      console.log('subgroups')
+      console.log(subgroups)
+
+      const dataset_filtered = this.dataset
+        .filter(d => time_points.includes(d.time_point.toString()))
+
+      const gene_groups_map = dataset_filtered.map((d,i) => ({
+        time_point: d.time_point.toString(),
+        gene_expression: d.gene_expression,
+        gene_group: `${d.gene_name}_${d.group_name}`,
+        })
+      )
+      // console.log('gene_groups_arrs')
+      // console.log(gene_groups_arrs)
+      const gene_groups = d3
+        .group(gene_groups_arrs, d => `${d.gene_group}`)
+
+      const data = gene_groups
+
+      // console.log('gene_groups.keys()')
+      // console.log(gene_groups.keys())
+      const groups = Array.from(gene_groups.keys())
+      console.log('groups')
+      console.log(groups)
+      // ['Alb_ALF', 'Fga_ALF', 'Trf_ALF', 'Alb_TRF', 'Fga_TRF', 'Trf_TRF']
+
+      console.log('gene_groups: ')
+      console.log(gene_groups)
+
+      var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+      // Create the X axis
+      var x = this.x
+      x.domain(groups)
+        .padding([0.1])
+
+      this.svg.selectAll(".myXaxis").transition()
+        .duration(1000)
+        .call(this.xAxis);
+
+      // Another scale for subgroup position?
+      const xSubgroup = d3.scaleBand()
+        .domain(subgroups)
+        .range([0, x.bandwidth()])
+        .padding([0.05])
+
+      // Create the Y axis
+      var y = this.y
+      y.domain([0, d3.max(dataset_filtered, (d) => +d.gene_expression)])
+      this.svg.selectAll('.myYaxis')
+          .transition()
+          .duration(1000)
+          .call(this.yAxis)
+
+      var updateInterval = 500
+
+      // // Flatten internMap object
+      // function changeValues(iMap) {
+      //   for (const key of iMap.keys()) {
+      //     // console.log(key)
+      //     let arrOfArrs = iMap.get(key).map(el => ({
+      //       key: el[0], value: el[1].gene_expression}))
+      //     // console.log(arrOfArrs)
+      //     iMap.set(key, arrOfArrs)
+      //   }
+      // }
+      // changeValues(timeGroups)
+      // console.log("================")
+      // console.log(timeGroups)
+      // console.log("================")
+
+      // Display grouped bars
+      this.svg
+        .selectAll(".group")
+        .data(data)
+        .join(
+          (enter) => {
+            // console.log('enter')
+            // console.log(enter)
+            enter.append('g')
+              .attr("transform", d => `translate(${x(parseInt(d[0]))}, 0)`)
+              .attr("class", "group")
+              .selectAll(".group-rect")
+              .data(d => d[1])
+              .join(
+                (enter) => {
+                  // console.log('enter > enter')
+                  // console.log(enter)
+                  enter.append('rect')
+                    .attr("class", 'group-rect')
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key))
+                    .on("mouseover", (d,i) => {
+                      let zt = d.path[1].__data__[0]
+                      console.log(i)
+                      if (d.y > 1) {
+                        this.svg.append('g')
+                          .attr('class', 'tooltip')
+                          .attr("transform", `translate(${
+                            x(parseInt(zt)) + xSubgroup(i.key) + xSubgroup.bandwidth()/2},
+                            ${y(i.value) - 63})`)
+                          .call(popover, `${i.key} 
+                          Time: ZT${zt}
+                          Expr: ${Math.round(i.value)}`, i.key)
+                      }
+                    })
+                    .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
+                },
+                (update) => {
+                  // console.log('enter > update')
+                  // console.log(update)
+                  update
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key));
+                },
+                (exit) => {
+                  // console.log('enter > exit')
+                  // console.log(exit)
+                  exit
+                    .style('opacity', 0)
+                    .transition()
+                    .ease(Math.sqrt)
+                    .duration(updateInterval)
+                    .remove()
+                }
+              )
+          },
+          (update) => {
+            // console.log('update')
+            // console.log(update)
+            update
+              .attr("transform", d => `translate(${x(parseInt(d[0]))}, 0)`)
+              .selectAll(".time-group-rect")
+              .data(d => d[1])
+              .join(
+                (enter) => {
+                  // console.log('update > enter')
+                  // console.log(enter)
+                  enter.append('rect')
+                    .attr("class", "time-group-rect")
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key));
+                },
+                (update) => {
+                  // console.log('update > update')
+                  // console.log(update)
+                  update
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key));
+                  
+                },
+                (exit) => {
+                  // console.log('update > exit')
+                  // console.log(exit)
+                  exit
+                    .style('opacity', 0)
+                    .transition()
+                    .ease(Math.sqrt)
+                    .duration(updateInterval)
+                    .remove()
+                }
+              )
+          },
+          (exit) => {
+            // console.log('exit')
+            // console.log(exit)
+            exit
+              .selectAll(".time-group-rect")
+              .data(d => d[1])
+              .join(
+                (exit) => {
+                  // console.log('exit > exit')
+                  // console.log(exit)
+                  exit
+                    .style('opacity', 0)
+                    .transition()
+                    .ease(Math.sqrt)
+                    .duration(updateInterval)
+                    .remove()
+                },
+              )
+          },
+        )
+      
+      // Legend color
+      var legendX = this.width*this.drawable_width_scale+20
+      this.svg.selectAll(".legendLines")
+          .data(subgroups)
+          .join(
+            (enter) => {
+              enter.append('line')
+                .attr('class', 'legendLines')
+                .attr('x1', legendX)
+                .attr('x2', legendX + 15)
+                .attr('y1', (d,i) => i*25 )
+                .attr('y2', (d,i) => i*25 )
+                .style("stroke", (d) => color(d))
+                .style("stroke-width", 1.5)
+            },
+            (update) => {
+              update.attr('x1', legendX)
+                .attr('x2', legendX + 15)
+                .attr('y1', (d,i) =>  i*25 )
+                .attr('y2', (d,i) =>  i*25 )
+                .style("stroke", (d) => color(d))
+            },
+            (exit) => {
+              exit.transition()
+                .ease(Math.sqrt)
+                .duration(updateInterval)
+                .style('stroke-opacity', 0)
+                .remove()
+            }
+          )
+      
+      // Legend text
+      this.svg.selectAll('.legendText')
+          .data(subgroups)
+          .join(
+            (enter) => {
+              enter.append('text')
+                .attr('class', 'legendText')
+                .attr('x', legendX+20)
+                .attr('y', (d,i) => i*25)
+                .style('fill', (d) => color(d))
+                .text(d => d)
+                .attr('text-anchor', 'left')
+                .attr('font-size', '0.7em')
+                .style('fill-opacity', 1)
+            },
+            (update) => {
+              update.attr('y', (d,i) => i*25 )
+                .style('fill', (d) => color(d))
+                .text(d => d)
+            },
+            (exit) => {
+              exit.transition()
+                .ease(Math.sqrt)
+                .duration(updateInterval)
+                .style('fill-opacity', 0)
+                .remove()
+
+            }
+          )
+           
+      function popover(g, value, key) {
+        if (!value) return g.style("display", "none");
+        // tooltip group
+        g
+          .style("display", null)
+          .style("pointer-events", "none")
+          .style("font", "10px sans-serif");
+
+        // tooltip container stroke
+        const path = g.selectAll("path")
+          .data([null])
+          .join("path")
+            .attr("fill", "white")
+            .attr("fill-opacity", 1)
+            .attr("stroke", color(key));
+
+        // tooltip content
+        const text = g.selectAll("text")
+          .data([null])
+          .join("text")
+          .call(text => text
+            .selectAll("tspan")
+            .data((value + "").split(/\n/))
+            .join("tspan")
+              .attr("x", 0)
+              .attr("y", (d, i) => `${i * 1.1}em`)
+              .style("text-align", "center")
+              .style("font-weight", (_, i) => i ? null : "bold")
+              .text(d => d));
+
+        // tooltip positioning
+        const {x, y, width: w, height: h} = text.node().getBBox();
+        text.attr("transform", `translate(${-w / 2},${15 - y})`);
+        // console.log('w: ' + w) // 57
+        // console.log('h: ' + h) // 34
+        // console.log(-w / 2 - 10) // -38.4
+        // console.log(w / 2 + 10) // 38.4
+        // console.log(h + 20) // 53.6
+        // console.log(w + 20) // 76.7
+        
+        // tooltip container path
+        //path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+        // path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+        // path.attr("d", `M${-w / 2 - 10},5 H${w+20} v${h+20} h -${w/2 + 5} l-5,5 l-5,-5 h -${w/2 + 5} z`)
+        path.attr("d", `M${-w / 2 - 10},5 H${w / 2 + 10},H ${w / 2 + 10} v ${h+20} h ${-w/2-5} l-5,5 l-5,-5 h${-w/2-5} z`)
+      }
+          
+    },
+    async update_grouped_bar_plot(grouped_by) {
+      const debug = false 
+
+      if (this.genesData.length) {
+        await this.get_dataset()
+      } else {
+        this.dataset = []
+      }
+
+      let time_points = [10, 2, 20].map(el => el.toString())
+      var collator = new Intl.Collator([], {numeric: true});
+      time_points.sort((a, b) => collator.compare(a, b));
+
+      const dataset_filtered = this.dataset
+        .filter(d => time_points.includes(d.time_point.toString()))
+      const y_max = d3.max(dataset_filtered, d => +d.gene_expression)
+
+      const gene_groups_map = dataset_filtered.map((d) => ({
+        time_point: d.time_point.toString(),
+        gene_expression: d.gene_expression,
+        gene_group: `${d.gene_name}_${d.group_name}`
+        })
+      )
+
+      let data, groups, subgroups
+
+      if (grouped_by == 'Gene') {
+        if (debug) console.log('grouped_by Gene')
+        this.svg.select('.x-label').text('Gene and Group')
+        subgroups = time_points
+        data = d3.group(gene_groups_map, d => `${d.gene_group}`)
+        groups = Array.from(data.keys())
+
+        for (const key of data.keys()) {
+          data.set(key, data.get(key).map(el => ({
+            key: el.time_point, value: el.gene_expression
+          })))
+        }
+      } else if (grouped_by == 'Time') {
+        if (debug) console.log('grouped_by Time')
+        this.svg.select('.x-label').text('Time Point (ZT)')
+        groups = time_points
+        data = d3
+          .group(gene_groups_map, d => `${d.time_point}`)
+        const firstKey = data.keys().next().value
+        subgroups = data.get(firstKey).map(el => el.gene_group)
+        
+        for (const key of data.keys()) {
+          data.set(key, data.get(key).map(el => ({
+            key: el.gene_group, value: el.gene_expression})))
+        }
+      }
+      if (debug) {
+        console.log('groups')
+        console.log(groups)
+        console.log('subgroups')
+        console.log(subgroups)
+      }
+      
+      var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+      // Create the X axis
+      var x = this.x
+      x.domain(groups)
+        .padding([0.1])
+
+      this.svg.selectAll(".myXaxis").transition()
+        .duration(1000)
+        .call(this.xAxis);
+
+      // Another scale for subgroup position?
+      let xSubgroup = d3.scaleBand()
+        .domain(subgroups)
+        .range([0, x.bandwidth()])
+        .padding([0.05])
+
+      // Create the Y axis
+      var y = this.y
+      y.domain([0, y_max])
+      this.svg.selectAll('.myYaxis')
+          .transition()
+          .duration(1000)
+          .call(this.yAxis)
+
+      var updateInterval = 500
+
+      if (debug) {
+        console.log("======================")
+        console.log(data)
+        console.log("======================")
+      }
+      
+      this.svg.selectAll("g.group").remove()
+
+      // Display grouped bars
+      this.svg
+        .selectAll("g.group")
+        .data(data)
+        .join(
+          (enter) => {
+            if (debug) {
+              console.log('enter')
+              console.log(enter)
+            }
+            enter.append('g')
+              .attr("transform", d => `translate(${x(d[0])}, 0)`)
+              .attr("class", "group")
+              .selectAll("rect.group-rect")
+              .data(d => d[1])
+              .join(
+                (enter) => {
+                  if (debug) {
+                    console.log('enter > enter')
+                    console.log(enter)
+                  }
+                  enter.append('rect')
+                    .attr("class", 'group-rect')
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key))
+                    .on("mouseover", (d,i) => {
+                      if (debug) {
+                        console.log('mouseover')
+                        console.log(d)
+                        console.log(i)
+                      }
+                      let text
+                      let parentVal = d.path[1].__data__[0]
+                      if (grouped_by == 'Gene') {
+                        text = `${parentVal}\nZT${i.key}\nExpr: ${Math.round(i.value)}`          
+                      } else if (grouped_by == 'Time') {
+                        text = `${i.key}\nZT${parentVal}\nExpr: ${Math.round(i.value)}`
+                      }
+                      if (debug) {
+                        console.log('parentVal: ' + parentVal)
+                        console.log(typeof(parentVal))
+                        console.log('x(parentVal): ' + x(parentVal))
+                        console.log('i.key: ' + i.key)
+                        console.log(typeof(i.key))
+                        console.log('xSubgroup(i.key): ' + xSubgroup(i.key))
+                        console.log(subgroups)
+                      }
+                      if (d.y > 1) {
+                        this.svg.append('g')
+                          .attr('class', 'tooltip')
+                          .attr("transform", `translate(${
+                            x(parentVal) + xSubgroup(i.key) + xSubgroup.bandwidth()/2},
+                            ${y(i.value) - 63})`)
+                          .call(popover, text, i.key)
+                      }
+                    })
+                    .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
+                },
+                (update) => {
+                  if (debug) {
+                    console.log('enter > update')
+                    console.log(update)
+                  }
+                  update
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key));
+                },
+                (exit) => {
+                  if (debug) {
+                    console.log('enter > exit')
+                    console.log(exit)
+                  }
+                  exit
+                    .style('opacity', 0)
+                    .transition()
+                    .ease(Math.sqrt)
+                    .duration(updateInterval)
+                    .remove()
+                }
+              )
+          },
+          (update) => {
+            if (debug) {
+              console.log('update')
+              console.log(update)
+            }
+            update
+              .attr("transform", d => `translate(${x(d[0])}, 0)`)
+              .selectAll(".group-rect")
+              .data(d => d[1])
+              .join(
+                (enter) => {
+                  if (debug) {
+                    console.log('update > enter')
+                    console.log(enter)
+                  }                  
+                  enter.append('rect')
+                    .attr("class", "group-rect")
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key));
+                },
+                (update) => {
+                  if (debug) {
+                    console.log('update > update')
+                    console.log(update)
+                  }
+                  update
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key));
+                  
+                },
+                (exit) => {
+                  if (debug) {
+                    console.log('update > exit')
+                    console.log(exit)
+                  }
+                  exit
+                    .style('opacity', 0)
+                    .transition()
+                    .ease(Math.sqrt)
+                    .duration(updateInterval)
+                    .remove()
+                }
+              )
+          },
+          (exit) => {
+            if (debug) {
+              console.log('exit')
+              console.log(exit)
+            }
+            
+            exit
+              .selectAll(".group-rect")
+              .data(d => d[1])
+              .join(
+                (exit) => {
+                  if (debug) {
+                    console.log('exit > exit')
+                    console.log(exit)
+                  }
+                  exit
+                    .style('opacity', 0)
+                    .transition()
+                    .ease(Math.sqrt)
+                    .duration(updateInterval)
+                    .remove()
+                },
+              )
+          },
+        )
+      
+      // Legend color
+      var legendX = this.width*this.drawable_width_scale+20
+      this.svg.selectAll(".legendLines")
+          .data(subgroups)
+          .join(
+            (enter) => {
+              enter.append('line')
+                .attr('class', 'legendLines')
+                .attr('x1', legendX)
+                .attr('x2', legendX + 15)
+                .attr('y1', (d,i) => i*25 )
+                .attr('y2', (d,i) => i*25 )
+                .style("stroke", (d) => color(d))
+                .style("stroke-width", 1.5)
+            },
+            (update) => {
+              update.attr('x1', legendX)
+                .attr('x2', legendX + 15)
+                .attr('y1', (d,i) =>  i*25 )
+                .attr('y2', (d,i) =>  i*25 )
+                .style("stroke", (d) => color(d))
+            },
+            (exit) => {
+              exit.transition()
+                .ease(Math.sqrt)
+                .duration(updateInterval)
+                .style('stroke-opacity', 0)
+                .remove()
+            }
+          )
+      
+      // Legend text
+      this.svg.selectAll('.legendText')
+          .data(subgroups)
+          .join(
+            (enter) => {
+              enter.append('text')
+                .attr('class', 'legendText')
+                .attr('x', legendX+20)
+                .attr('y', (d,i) => i*25)
+                .style('fill', (d) => color(d))
+                .text(d => d)
+                .attr('text-anchor', 'left')
+                .attr('font-size', '0.7em')
+                .style('fill-opacity', 1)
+            },
+            (update) => {
+              update.attr('y', (d,i) => i*25 )
+                .style('fill', (d) => color(d))
+                .text(d => d)
+            },
+            (exit) => {
+              exit.transition()
+                .ease(Math.sqrt)
+                .duration(updateInterval)
+                .style('fill-opacity', 0)
+                .remove()
+
+            }
+          )
+           
+      function popover(g, value, key) {
+        if (!value) return g.style("display", "none");
+        // tooltip group
+        g
+          .style("display", null)
+          .style("pointer-events", "none")
+          .style("font", "10px sans-serif");
+
+        // tooltip container stroke
+        const path = g.selectAll("path")
+          .data([null])
+          .join("path")
+            .attr("fill", "white")
+            .attr("fill-opacity", 1)
+            .attr("stroke", color(key));
+
+        // tooltip content
+        const text = g.selectAll("text")
+          .data([null])
+          .join("text")
+          .call(text => text
+            .selectAll("tspan")
+            .data((value + "").split(/\n/))
+            .join("tspan")
+              .attr("x", 0)
+              .attr("y", (d, i) => `${i * 1.1}em`)
+              .style("text-align", "center")
+              .style("font-weight", (_, i) => i ? null : "bold")
+              .text(d => d));
+
+        // tooltip positioning
+        const {x, y, width: w, height: h} = text.node().getBBox();
+        text.attr("transform", `translate(${-w / 2},${15 - y})`);
+        path.attr("d", `M${-w / 2 - 10},5 H${w / 2 + 10},H ${w / 2 + 10} v ${h+20} h ${-w/2-5} l-5,5 l-5,-5 h${-w/2-5} z`)
+      }
+      return;
+
+    },
+    async update_stacked_time_bar_plot() {
       if (this.genesData.length) {
         await this.get_dataset()
       } else {
@@ -119,6 +1145,8 @@ export default {
       }
       console.log('update_bar_plot')
       // console.log(this.dataset)
+
+
 
       const time_points = [0, 2, 4, 6]
       const groups = time_points
@@ -134,32 +1162,334 @@ export default {
         i: i,
         }]
       )
-      let timeGroups = d3
+      // console.log('gene_groups')
+      // console.log(gene_groups)
+      const timeGroups = d3
         .group(gene_groups, d => `${d[1].time_point}`)
-      // console.log('timeGroups')
+      // console.log('timeGroup: ')
       // console.log(timeGroups)
+      // console.log('timeGroups.keys()')
       // console.log(timeGroups.keys())
+      const firstKey = timeGroups.keys().next().value
+      // console.log(firstKey)
+      const subgroups = timeGroups.get(firstKey).map(el => el[0])
+      // console.log(subgroups)
+      // ['Alb_ALF', 'Fga_ALF', 'Trf_ALF', 'Alb_TRF', 'Fga_TRF', 'Trf_TRF']
+
+      var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+      // Create the X axis
+      var x = this.x
+      x.domain(groups)
+        .padding([0.1])
+
+      this.svg.selectAll(".myXaxis").transition()
+        .duration(1000)
+        .call(this.xAxis);
+
+      // Another scale for subgroup position?
+      const xSubgroup = d3.scaleBand()
+        .domain(subgroups)
+        .range([0, x.bandwidth()])
+        .padding([0.05])
+
+      // Create the Y axis
+      var y = this.y
+      y.domain([0, d3.max(dataset_filtered, (d) => +d.gene_expression)])
+      this.svg.selectAll('.myYaxis')
+          .transition()
+          .duration(1000)
+          .call(this.yAxis)
+
+      var updateInterval = 500
 
       // Flatten internMap object
-      function flatten(arr) {
-        let result = []
-        for (const key of arr.keys()) {
-          let obj = {}
-          obj.group = parseInt(key)
-          arr.get(key).forEach(el => {
-            obj[el[0]] = el[1].gene_expression
-          })
-          result.push(obj)
+      function changeValues(iMap) {
+        for (const key of iMap.keys()) {
+          // console.log(key)
+          let arrOfArrs = iMap.get(key).map(el => ({
+            key: el[0], value: el[1].gene_expression}))
+          // console.log(arrOfArrs)
+          iMap.set(key, arrOfArrs)
         }
-        return result
       }
+      changeValues(timeGroups)
+      console.log("================")
+      console.log(timeGroups)
+      console.log("================")
 
-      const data = flatten(timeGroups)
+      // Display grouped bars
+      this.svg
+        .selectAll(".time-group")
+        .data(timeGroups)
+        .join(
+          (enter) => {
+            // console.log('enter')
+            // console.log(enter)
+            enter.append('g')
+              .attr("transform", d => `translate(${x(parseInt(d[0]))}, 0)`)
+              .attr("class", "time-group")
+              .selectAll(".time-group-rect")
+              .data(d => d[1])
+              .join(
+                (enter) => {
+                  // console.log('enter > enter')
+                  // console.log(enter)
+                  enter.append('rect')
+                    .attr("class", 'time-group-rect')
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key))
+                    .on("mouseover", (d,i) => {
+                      let zt = d.path[1].__data__[0]
+                      console.log(i)
+                      if (d.y > 1) {
+                        this.svg.append('g')
+                          .attr('class', 'tooltip')
+                          .attr("transform", `translate(${
+                            x(parseInt(zt)) + xSubgroup(i.key) + xSubgroup.bandwidth()/2},
+                            ${y(i.value) - 63})`)
+                          .call(popover, `${i.key} 
+                          Time: ZT${zt}
+                          Expr: ${Math.round(i.value)}`, i.key)
+                      }
+                    })
+                    .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
+                },
+                (update) => {
+                  // console.log('enter > update')
+                  // console.log(update)
+                  update
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key));
+                },
+                (exit) => {
+                  // console.log('enter > exit')
+                  // console.log(exit)
+                  exit
+                    .style('opacity', 0)
+                    .transition()
+                    .ease(Math.sqrt)
+                    .duration(updateInterval)
+                    .remove()
+                }
+              )
+          },
+          (update) => {
+            // console.log('update')
+            // console.log(update)
+            update
+              .attr("transform", d => `translate(${x(parseInt(d[0]))}, 0)`)
+              .selectAll(".time-group-rect")
+              .data(d => d[1])
+              .join(
+                (enter) => {
+                  // console.log('update > enter')
+                  // console.log(enter)
+                  enter.append('rect')
+                    .attr("class", "time-group-rect")
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key));
+                },
+                (update) => {
+                  // console.log('update > update')
+                  // console.log(update)
+                  update
+                    .attr("x", d => xSubgroup(d.key))
+                    .attr("y", d => y(d.value))
+                    .attr("width", xSubgroup.bandwidth())
+                    .attr("height", d => this.height - y(d.value))
+                    .attr("fill", d => color(d.key));
+                  
+                },
+                (exit) => {
+                  // console.log('update > exit')
+                  // console.log(exit)
+                  exit
+                    .style('opacity', 0)
+                    .transition()
+                    .ease(Math.sqrt)
+                    .duration(updateInterval)
+                    .remove()
+                }
+              )
+          },
+          (exit) => {
+            // console.log('exit')
+            // console.log(exit)
+            exit
+              .selectAll(".time-group-rect")
+              .data(d => d[1])
+              .join(
+                (exit) => {
+                  // console.log('exit > exit')
+                  // console.log(exit)
+                  exit
+                    .style('opacity', 0)
+                    .transition()
+                    .ease(Math.sqrt)
+                    .duration(updateInterval)
+                    .remove()
+                },
+              )
+          },
+        )
+      
+      // Legend color
+      var legendX = this.width*this.drawable_width_scale+20
+      this.svg.selectAll(".legendLines")
+          .data(subgroups)
+          .join(
+            (enter) => {
+              enter.append('line')
+                .attr('class', 'legendLines')
+                .attr('x1', legendX)
+                .attr('x2', legendX + 15)
+                .attr('y1', (d,i) => i*25 )
+                .attr('y2', (d,i) => i*25 )
+                .style("stroke", (d) => color(d))
+                .style("stroke-width", 1.5)
+            },
+            (update) => {
+              update.attr('x1', legendX)
+                .attr('x2', legendX + 15)
+                .attr('y1', (d,i) =>  i*25 )
+                .attr('y2', (d,i) =>  i*25 )
+                .style("stroke", (d) => color(d))
+            },
+            (exit) => {
+              exit.transition()
+                .ease(Math.sqrt)
+                .duration(updateInterval)
+                .style('stroke-opacity', 0)
+                .remove()
+            }
+          )
+      
+      // Legend text
+      this.svg.selectAll('.legendText')
+          .data(subgroups)
+          .join(
+            (enter) => {
+              enter.append('text')
+                .attr('class', 'legendText')
+                .attr('x', legendX+20)
+                .attr('y', (d,i) => i*25)
+                .style('fill', (d) => color(d))
+                .text(d => d)
+                .attr('text-anchor', 'left')
+                .attr('font-size', '0.7em')
+                .style('fill-opacity', 1)
+            },
+            (update) => {
+              update.attr('y', (d,i) => i*25 )
+                .style('fill', (d) => color(d))
+                .text(d => d)
+            },
+            (exit) => {
+              exit.transition()
+                .ease(Math.sqrt)
+                .duration(updateInterval)
+                .style('fill-opacity', 0)
+                .remove()
 
-      const subgroups = Object.keys(data[0]).filter(el => el !== 'group')
-      // console.log('subgroups')
-      //['Alb_ALF', 'Fga_ALF', 'Trf_ALF', 'Alb_TRF', 'Fga_TRF', 'Trf_TRF']
+            }
+          )
+           
+      function popover(g, value, key) {
+        if (!value) return g.style("display", "none");
+        // tooltip group
+        g
+          .style("display", null)
+          .style("pointer-events", "none")
+          .style("font", "10px sans-serif");
+
+        // tooltip container stroke
+        const path = g.selectAll("path")
+          .data([null])
+          .join("path")
+            .attr("fill", "white")
+            .attr("fill-opacity", 1)
+            .attr("stroke", color(key));
+
+        // tooltip content
+        const text = g.selectAll("text")
+          .data([null])
+          .join("text")
+          .call(text => text
+            .selectAll("tspan")
+            .data((value + "").split(/\n/))
+            .join("tspan")
+              .attr("x", 0)
+              .attr("y", (d, i) => `${i * 1.1}em`)
+              .style("text-align", "center")
+              .style("font-weight", (_, i) => i ? null : "bold")
+              .text(d => d));
+
+        // tooltip positioning
+        const {x, y, width: w, height: h} = text.node().getBBox();
+        text.attr("transform", `translate(${-w / 2},${15 - y})`);
+        // console.log('w: ' + w) // 57
+        // console.log('h: ' + h) // 34
+        // console.log(-w / 2 - 10) // -38.4
+        // console.log(w / 2 + 10) // 38.4
+        // console.log(h + 20) // 53.6
+        // console.log(w + 20) // 76.7
+        
+        // tooltip container path
+        //path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+        // path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+        // path.attr("d", `M${-w / 2 - 10},5 H${w+20} v${h+20} h -${w/2 + 5} l-5,5 l-5,-5 h -${w/2 + 5} z`)
+        path.attr("d", `M${-w / 2 - 10},5 H${w / 2 + 10},H ${w / 2 + 10} v ${h+20} h ${-w/2-5} l-5,5 l-5,-5 h${-w/2-5} z`)
+      }
+          
+    },
+    async update_stacked_gene_bar_plot() {
+      if (this.genesData.length) {
+        await this.get_dataset()
+      } else {
+        this.dataset = []
+      }
+      console.log('update_bar_plot')
+      // console.log(this.dataset)
+
+
+
+      const time_points = [0, 2, 4, 6]
+      const groups = time_points
+
+      const dataset_filtered = this.dataset
+        .filter(d => time_points.includes(d.time_point))
+
+      const gene_groups = dataset_filtered.map((d,i) => [
+        `${d.gene_name}_${d.group_name}`,{
+        time_point: d.time_point,
+        gene_expression: d.gene_expression,
+        gene_group: `${d.gene_name}_${d.group_name}`,
+        i: i,
+        }]
+      )
+      // console.log('gene_groups')
+      // console.log(gene_groups)
+      const timeGroups = d3
+        .group(gene_groups, d => `${d[1].time_point}`)
+      // console.log('timeGroup: ')
+      // console.log(timeGroups)
+      // console.log('timeGroups.keys()')
+      // console.log(timeGroups.keys())
+      const firstKey = timeGroups.keys().next().value
+      // console.log(firstKey)
+      const subgroups = timeGroups.get(firstKey).map(el => el[0])
       // console.log(subgroups)
+      // ['Alb_ALF', 'Fga_ALF', 'Trf_ALF', 'Alb_TRF', 'Fga_TRF', 'Trf_TRF']
 
       var color = d3.scaleOrdinal(d3.schemeCategory10);
 
