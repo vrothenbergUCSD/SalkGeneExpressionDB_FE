@@ -47,7 +47,8 @@ export default {
   },
   async mounted() {
     console.log('mounting')
-    console.log(this.complete)
+    // console.log(this.complete)
+    console.log(this.genes)
     this.genesData = this.genes.map((d) => d.name)
     this.initialize_line_plot()
     await this.update_line_plot()
@@ -145,6 +146,9 @@ export default {
           .call(this.yAxis)
 
       var updateInterval = 500
+
+      console.log('sumstat')
+      console.log(sumstat)
 
       // Logic for plotting lines
       this.svg.selectAll(".line")
