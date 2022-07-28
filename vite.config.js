@@ -16,24 +16,24 @@ const defaultConfig = {
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
-  if (command === 'serve') {
-    const isDev = mode === 'development'
-    return {
-      ...defaultConfig,
-      server: {
-        proxy: {
-          '/api': {
-            target: isDev ? 'http://127.0.0.1:8000' : 'https://geneexpressiondbbe-w5oumbwxcq-uw.a.run.app',
-            changeOrigin: isDev,
-            secure: !isDev,
-            rewrite: (path) => path.replace(/^\/api/, ""),
-          }
-        }
-      }
-    }
-  } else {
-    return defaultConfig
+  return {
+    ...defaultConfig
   }
+  // const isDev = mode === 'development'
+  // return {
+  //   ...defaultConfig,
+  //   server: {
+  //     proxy: {
+  //       '/api': {
+  //         target: isDev ? 'http://127.0.0.1:8000' : 'https://geneexpressiondbbe-w5oumbwxcq-uw.a.run.app',
+  //         changeOrigin: isDev,
+  //         secure: !isDev,
+  //         rewrite: (path) => path.replace(/^\/api/, ""),
+  //       }
+  //     }
+  //   }
+  // }
+
 
   // server: {
   //   proxy: {

@@ -34,6 +34,9 @@ export default {
   },
   mounted() {
     console.log('Home mounted')
+    console.log(import.meta.env.VITE_API_URL)
+    console.log(import.meta.env.MODE)
+    console.log(import.meta.env.VITE_SOME_KEY)
   },
   methods: {
 
