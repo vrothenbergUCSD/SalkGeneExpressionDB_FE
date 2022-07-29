@@ -101,19 +101,19 @@ export default {
 
       database_metadata: null,
 
-      species: null, //["Mouse", "Human", "Baboon"],
-      speciesFiltered: null,
+      species: [], //["Mouse", "Human", "Baboon"],
+      speciesFiltered: [],
       speciesSelected: [],
 
-      experiments: null, //["Mouse_TRF_2018", "Mouse_TRF_2019", "Baboon_TRF_2020", "Human_ABC_2020"],
-      experimentsFiltered: null,
+      experiments: [], //["Mouse_TRF_2018", "Mouse_TRF_2019", "Baboon_TRF_2020", "Human_ABC_2020"],
+      experimentsFiltered: [],
       experimentsSelected: [],
 
-      tissues: null, //["Liver", "Muscle", "Adipose", "Heart", "Neuron", "Something", "Another", "Some more", "Over"],
-      tissuesFiltered: null,     
+      tissues: [], //["Liver", "Muscle", "Adipose", "Heart", "Neuron", "Something", "Another", "Some more", "Over"],
+      tissuesFiltered: [],     
       tissuesSelected: [],
 
-      genes: null,
+      genes: [],
       genesFiltered: [],
       genesSelected: ['Alb', 'Fga','Trf'],
 
