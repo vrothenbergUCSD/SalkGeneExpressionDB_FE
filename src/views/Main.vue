@@ -7,19 +7,20 @@
   <div class="flex flex-wrap p-5 mx-auto w-11/12">
     <div class="w-1/3">
       <div class="font-semibold mb-2">Species</div>
-      <MultiSelect v-model="speciesSelected" :options="this.speciesFiltered" optionLabel="name" placeholder="Species" @change="speciesChange" class="w-10 text-left"/>
+      <MultiSelect v-if="loaded" v-model="speciesSelected" :options="this.speciesFiltered" optionLabel="name" placeholder="Species" @change="speciesChange" class="w-10 text-left"/>
+      <MultiSelect v-else placeholder="Loading..." loading class="w-10 text-left"/>
       <!-- <Dropdown v-model="speciesSelected" :options="this.speciesFiltered" optionLabel="name" placeholder="Species" @change="speciesChange" :show-clear="true"  class="w-10 text-left"/> -->
     </div>
     <div class="w-1/3">
       <div class="font-semibold mb-2">Experiment</div>
-      <MultiSelect v-model="experimentsSelected" :options="this.experimentsFiltered" optionLabel="name" placeholder="Experiments" @change="experimentsChange" class="w-10 text-left"/>
-      
+      <MultiSelect v-if="loaded" v-model="experimentsSelected" :options="this.experimentsFiltered" optionLabel="name" placeholder="Experiments" @change="experimentsChange" class="w-10 text-left"/>
+      <MultiSelect v-else placeholder="Loading..." loading class="w-10 text-left"/>
       <!-- <Dropdown v-model="experimentsSelected" :options="this.experimentsFiltered" optionLabel="name" placeholder="Experiment" @change="experimentsChange" :show-clear="true" class="w-10 text-left"/> -->
     </div>
     <div class="w-1/3">
       <div class="font-semibold mb-2">Tissue</div>
-      <MultiSelect v-model="tissuesSelected" :options="this.tissuesFiltered" optionLabel="name" placeholder="Tissues" @change="tissuesChange" class="w-10 text-left"/>
-      
+      <MultiSelect v-if="loaded" v-model="tissuesSelected" :options="this.tissuesFiltered" optionLabel="name" placeholder="Tissues" @change="tissuesChange" class="w-10 text-left"/>
+      <MultiSelect v-else placeholder="Loading..." loading class="w-10 text-left"/>
       <!-- <Dropdown v-model="tissuesSelected" :options="this.tissuesFiltered" optionLabel="name" placeholder="Tissue" @change="tissuesChange" :show-clear="true" class="w-10 text-left"/> -->
     </div>
   </div>
@@ -96,18 +97,19 @@ export default {
 
         }
       ],
+      loaded: false,
 
       database_metadata: null,
 
-      species: ["Mouse", "Human", "Baboon"],
+      species: null, //["Mouse", "Human", "Baboon"],
       speciesFiltered: null,
       speciesSelected: [],
 
-      experiments: ["Mouse_TRF_2018", "Mouse_TRF_2019", "Baboon_TRF_2020", "Human_ABC_2020"],
+      experiments: null, //["Mouse_TRF_2018", "Mouse_TRF_2019", "Baboon_TRF_2020", "Human_ABC_2020"],
       experimentsFiltered: null,
       experimentsSelected: [],
 
-      tissues:["Liver", "Muscle", "Adipose", "Heart", "Neuron", "Something", "Another", "Some more", "Over"],
+      tissues: null, //["Liver", "Muscle", "Adipose", "Heart", "Neuron", "Something", "Another", "Some more", "Over"],
       tissuesFiltered: null,     
       tissuesSelected: [],
 
@@ -138,6 +140,7 @@ export default {
     this.genes = await DataService.getGenes()
     this.database_metadata = await DataService.getDatabaseMetadata()
     this.database_metadata = this.database_metadata.data
+    this.loaded = true
 
     this.genes = this.buildList(this.genes.data.map((d) => d.gene_name))
 
