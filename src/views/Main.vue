@@ -144,25 +144,19 @@ export default {
 
     this.genes = this.buildList(this.genes.data.map((d) => d.gene_name))
 
-  
-    console.log('Database metadata:')
     const metadata = this.database_metadata
-    console.log(metadata)
 
     const speciesUniq = [...new Set(metadata.map(item => item.species))]
-    console.log('Species')
-    console.log(speciesUniq)
     this.species = this.buildList(speciesUniq)
+    this.speciesFiltered = this.species
 
     const expUniq = [...new Set(metadata.map(item => item.experiment))]
-    console.log('Experiments')
-    console.log(expUniq)
     this.experiments = this.buildList(expUniq)
+    this.experimentsFiltered = this.experiments
 
     const tissuesUniq = [...new Set(metadata.map(item => item.tissue))]
-    console.log('Tissues')
-    console.log(tissuesUniq)
     this.tissues = this.buildList(tissuesUniq)
+    this.tissuesFiltered = this.tissues
     
 
     
