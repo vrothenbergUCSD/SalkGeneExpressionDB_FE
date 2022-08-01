@@ -5,17 +5,23 @@
 
 
   <div class="flex flex-wrap p-5 mx-auto w-11/12">
-    <div class="w-1/3 min-w-max">
+    <div class="w-1/3">
       <div class="font-semibold mb-2">Species</div>
-      <Dropdown v-model="speciesSelected" :options="this.speciesFiltered" optionLabel="name" placeholder="Species" @change="speciesChange" :show-clear="true"  class="w-10 text-left"/>
+      <MultiSelect v-if="loaded" v-model="speciesSelected" :options="this.speciesFiltered" optionLabel="name" placeholder="Species" @change="speciesChange" class="w-10 text-left"/>
+      <MultiSelect v-else placeholder="Loading..." loading class="w-10 text-left"/>
+      <!-- <Dropdown v-model="speciesSelected" :options="this.speciesFiltered" optionLabel="name" placeholder="Species" @change="speciesChange" :show-clear="true"  class="w-10 text-left"/> -->
     </div>
-    <div class="w-1/3 min-w-max">
+    <div class="w-1/3">
       <div class="font-semibold mb-2">Experiment</div>
-      <Dropdown v-model="experimentSelected" :options="this.experimentsFiltered" optionLabel="name" placeholder="Experiment" @change="experimentChange" :show-clear="true" class="w-10 text-left"/>
+      <MultiSelect v-if="loaded" v-model="experimentsSelected" :options="this.experimentsFiltered" optionLabel="name" placeholder="Experiments" @change="experimentsChange" class="w-10 text-left"/>
+      <MultiSelect v-else placeholder="Loading..." loading class="w-10 text-left"/>
+      <!-- <Dropdown v-model="experimentsSelected" :options="this.experimentsFiltered" optionLabel="name" placeholder="Experiment" @change="experimentsChange" :show-clear="true" class="w-10 text-left"/> -->
     </div>
-    <div class="w-1/3 min-w-max">
+    <div class="w-1/3">
       <div class="font-semibold mb-2">Tissue</div>
-      <Dropdown v-model="tissueSelected" :options="this.tissuesFiltered" optionLabel="name" placeholder="Tissue" @change="tissueChange" :show-clear="true" class="w-10 text-left"/>
+      <MultiSelect v-if="loaded" v-model="tissuesSelected" :options="this.tissuesFiltered" optionLabel="name" placeholder="Tissues" @change="tissuesChange" class="w-10 text-left"/>
+      <MultiSelect v-else placeholder="Loading..." loading class="w-10 text-left"/>
+      <!-- <Dropdown v-model="tissuesSelected" :options="this.tissuesFiltered" optionLabel="name" placeholder="Tissue" @change="tissuesChange" :show-clear="true" class="w-10 text-left"/> -->
     </div>
   </div>
   <div class="mx-auto w-3/4">
@@ -28,7 +34,7 @@
 
 
   <div>
-    <div class="card w-1/2 mx-auto mt-2">
+    <div class="card w-3/4 mx-auto mt-2">
       <!-- <div class="font-semibold text-center mt-3">Chart Types</div> -->
       <TabMenu :model="items"/>
       <router-view :genes="this.genesSelected"/>
@@ -49,12 +55,13 @@ import Dropdown from "primevue/dropdown"
 import AutoComplete from "primevue/autocomplete"
 import TabMenu from 'primevue/tabmenu'
 import Button from 'primevue/button'
+import MultiSelect from 'primevue/multiselect';
 
 import Selection from "@/components/Selection.vue"
 import Prime from "@/components/Prime.vue"
 import LinePlot from "@/components/svg/LinePlot.vue"
 import BarPlot from "@/components/svg/BarPlot.vue"
-import MarginTranslation from "@/components/svg/MarginTranslation.vue"
+// import MarginTranslation from "@/components/svg/MarginTranslation.vue"
 
 import DataService from "@/services/DataService.js"
 import {FilterService,FilterMatchMode} from 'primevue/api';
@@ -66,13 +73,14 @@ export default {
     AutoComplete,
     TabMenu,
     Button,
+    MultiSelect,
 
     Selection,
     Prime,
     
     LinePlot,
     BarPlot,
-    MarginTranslation,
+    // MarginTranslation,
 },
   data() {
     return {
@@ -89,21 +97,24 @@ export default {
 
         }
       ],
+      loaded: false,
 
-      species: ["Mouse", "Human", "Baboon"],
-      speciesFiltered: null,
-      speciesSelected: null,
+      database_metadata: null,
 
-      experiments: ["Mouse_TRF_2018", "Mouse_TRF_2019", "Baboon_TRF_2020", "Human_ABC_2020"],
-      experimentsFiltered: null,
-      experimentSelected: null,
+      species: [], //["Mouse", "Human", "Baboon"],
+      speciesFiltered: [],
+      speciesSelected: [],
 
-      tissues:["Liver", "Muscle", "Adipose", "Heart", "Neuron", "Something", "Another", "Some more", "Over"],
-      tissuesFiltered: null,     
-      tissueSelected: null,
+      experiments: [], //["Mouse_TRF_2018", "Mouse_TRF_2019", "Baboon_TRF_2020", "Human_ABC_2020"],
+      experimentsFiltered: [],
+      experimentsSelected: [],
 
-      genes: null,
-      genesFiltered: null,
+      tissues: [], //["Liver", "Muscle", "Adipose", "Heart", "Neuron", "Something", "Another", "Some more", "Over"],
+      tissuesFiltered: [],     
+      tissuesSelected: [],
+
+      genes: [],
+      genesFiltered: [],
       genesSelected: ['Alb', 'Fga','Trf'],
 
     }
@@ -127,9 +138,27 @@ export default {
     // Populate array with all genes
     // console.log('Main mounted, await genes: ')
     this.genes = await DataService.getGenes()
+    this.database_metadata = await DataService.getDatabaseMetadata()
+    this.database_metadata = this.database_metadata.data
+    this.loaded = true
+
     this.genes = this.buildList(this.genes.data.map((d) => d.gene_name))
-    // console.log(this.genes)
-    // console.log(this.genesSelected)
+
+    const metadata = this.database_metadata
+
+    const speciesUniq = [...new Set(metadata.map(item => item.species))]
+    this.species = this.buildList(speciesUniq)
+    this.speciesFiltered = this.species
+
+    const expUniq = [...new Set(metadata.map(item => item.experiment))]
+    this.experiments = this.buildList(expUniq)
+    this.experimentsFiltered = this.experiments
+
+    const tissuesUniq = [...new Set(metadata.map(item => item.tissue))]
+    this.tissues = this.buildList(tissuesUniq)
+    this.tissuesFiltered = this.tissues
+    
+
     
   },
   methods: {
@@ -150,39 +179,56 @@ export default {
     },
     speciesChange(e) {
       console.log('speciesChange')
-      if(!e.value) {
-        this.experimentsFiltered = this.experiments
-        return
-      }
-      //console.log(e.value.name)
-      console.log(this.speciesSelected)
-      this.experimentsFiltered = this.experiments.filter(obj => obj.name.toLowerCase().includes(e.value.name.toLowerCase()))
-      //console.log(this.experimentsFiltered)
+      const result = this.filterResults()
+      this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
+      this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
+      if (!e.value.length)
+        this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
+
     },
-    experimentChange(e) {
-      //console.log('experimentChange')
-      //console.log(e.value.name)
-      if(!e.value) {
-        this.tissuesFiltered = this.tissues
-        return
-      }
-      const searchString = e.value.name === "Human" ? "Heart" : "Liver";
-      this.tissuesFiltered = this.tissues.filter(obj => obj.name.toLowerCase().includes(searchString.toLowerCase()))
-      const speciesFromExperiment = e.value.name.split("_")[0]
-      this.speciesSelected = {'name' : speciesFromExperiment}
-      console.log('speciesFromExperiment: ' + speciesFromExperiment)
-      //this.speciesFiltered = this.species.filter(obj => obj.name.toLowerCase().includes(speciesFromExperiment.toLowerCase()))[0]
-      
+    experimentsChange(e) {
+      console.log('experimentsChange')
+      const result = this.filterResults()
+      this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
+      this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
+      if (!e.value.length)
+        this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
+
     },
-    tissueChange(e) {
-      //console.log('tissueChange')
-      //console.log(e.value.name)
-      if(!e.value) {
-        return
-      }
-      if (this.speciesSelected && this.experimentSelected && this.tissueSelected) {
-        console.log("All selected")
-      }
+    tissuesChange(e) {
+      console.log('tissuesChange')
+      const result = this.filterResults()
+      this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
+      this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
+      if (!e.value.length)
+        this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
+
+    },
+    filterResults() {
+      // Inputs are arrays of strings
+      // If array is empty then no filter is performed
+      const speciesSelectedNames = this.speciesSelected.map(el => el.name)
+      const experimentsSelectedNames = this.experimentsSelected.map(el => el.name)
+      const tissuesSelectedNames = this.tissuesSelected.map(el => el.name)
+
+      let result = this.database_metadata
+
+      if (speciesSelectedNames.length)
+        result = result.filter(
+          ({ species }) => speciesSelectedNames.some(
+            (s) => species.toLowerCase().includes(s.toLowerCase())))
+
+      if (experimentsSelectedNames.length) 
+        result = result.filter(
+          ({ experiment }) => experimentsSelectedNames.some(
+            (s) => experiment.toLowerCase().includes(s.toLowerCase())))
+
+      if (tissuesSelectedNames.length)
+        result = result.filter(
+          ({ tissue }) => tissuesSelectedNames.some(
+            (s) => tissue.toLowerCase().includes(s.toLowerCase())))
+
+      return result
     },
     searchGenes(event) {
       //console.log('searchGenes')

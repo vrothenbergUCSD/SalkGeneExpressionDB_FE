@@ -22,6 +22,9 @@ class DataService {
   async getGenes(limit = 20000) {
     return http.get(`gene_metadata/data?limit=${limit}`)
   }
+  async getDatabaseMetadata() {
+    return http.get('database_metadata/data')
+  }
   // getAllSampleMetadata = async () => {
   //   return axios.get("/samples_metadata");
   // }
