@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto">
-    <div class="text-center mb-5">Bar Plot component</div>
+    <!-- <div class="text-center mb-5">Bar Plot component</div> -->
     <div class="flex flex-wrap p-5 mx-auto w-full">
       <div id="group-by" class="px-5 mx-auto">
         <div class="font-semibold pb-2">Group by:</div>
@@ -75,6 +75,7 @@ export default {
     this.complete = true
   },
   async updated () {
+    // Check differential 
     this.genesData = this.genes.map((d) => d.name)
     // Don't need await?  Last command in function
     // this.update_grouped_bar_plot()
@@ -135,10 +136,10 @@ export default {
     },
     async load_chart() {
       if (this.chart_type == 'Grouped') {
-      await this.update_grouped_bar_plot(this.grouped_by)
-    } else if (this.chart_type == 'Stacked') {
-      await this.update_stacked_bar_plot(this.grouped_by)
-    }
+        await this.update_grouped_bar_plot(this.grouped_by)
+      } else if (this.chart_type == 'Stacked') {
+        await this.update_stacked_bar_plot(this.grouped_by)
+      }
 
     },
     async update_grouped_bar_plot(grouped_by) {
