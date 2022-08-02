@@ -3,7 +3,10 @@
   <div class="flex flex-wrap p-5 mx-auto w-11/12">
     <div class="w-1/3 px-2 border">
       <div class="font-semibold my-2">Species</div>
-      <DataTable :value="speciesFiltered" v-model:selection="speciesSelected" class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" @row-select="speciesRowChange" @row-unselect="speciesRowChange">
+      <DataTable :value="speciesFiltered" v-model:selection="speciesSelected" 
+        class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+        :loading="loading" @row-select="speciesRowChange(update=false)" 
+        @row-unselect="speciesRowChange(update=true)">
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
       <Column field="name" header=""></Column>
       <Column field="count" header="#">
@@ -20,7 +23,10 @@
     </div>
     <div class="w-1/3 px-2 border" >
       <div class="font-semibold my-2">Experiment</div>
-      <DataTable :value="experimentsFiltered" v-model:selection="experimentsSelected" class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" @row-select="experimentsRowChange" @row-unselect="experimentsRowChange">
+      <DataTable :value="experimentsFiltered" v-model:selection="experimentsSelected" 
+        class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+        :loading="loading" @row-select="experimentsRowChange(update=false)"
+        @row-unselect="experimentsRowChange(update=true)">
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
       <Column field="name" header=""></Column>
       <Column field="count" header="#">
@@ -39,7 +45,10 @@
     </div>
     <div class="w-1/3 px-2 border">
       <div class="font-semibold my-2">Tissue</div>
-      <DataTable :value="tissuesFiltered" v-model:selection="tissuesSelected" class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" @row-select="tissuesRowChange" @row-unselect="tissuesRowChange">
+      <DataTable :value="tissuesFiltered" v-model:selection="tissuesSelected" 
+        class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+        :loading="loading" @row-select="tissuesRowChange(update=false)" 
+        @row-unselect="tissuesRowChange(update=true)">
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
       <Column field="name" header=""></Column>
       <Column field="count" header="#">
@@ -184,62 +193,41 @@ export default {
     // Populate array with all genes
     console.log('Main mounted, await genes: ')
     const start = Date.now()
-    this.db_metadata = await DataService.getDatabaseMetadata()
-      .then((e) => {
-        console.log('return from getDatabaseMetadata');
-        console.log(Date.now() - start);
-        console.log(e)
-        return e
-        })
+
+    await this.loadMetadata()
+    await this.loadGenes()
     
-    this.genes = await DataService.getGenes().then((e) => {
-      console.log('After await getGenes')
-      console.log(Date.now() - start)
-      console.log(e)
-      return e
-    })
-    
-    this.db_metadata = this.db_metadata.data
-    this.loading = false
-    console.log(this.db_metadata)
-
-    // Initialize lookup table
-    this.lookup_table = this.initializeLookupTable(this.db_metadata)
-    console.log('this.lookup_table')
-    console.log(this.lookup_table)
-
-    this.genes = this.genes.data.map((d) => ({name: d.gene_name}))
-
-    const metadata = this.db_metadata
-    this.filtered_metadata = this.db_metadata
-
-    // this.species = this.countMetadata(this.db_metadata, 'species')
-    this.species = this.buildList([...new Set(metadata.map(item => item.species))])
-    this.speciesFiltered = this.species
-
-    console.log(this.speciesFiltered)
-
-    // this.experiments = this.countMetadata(this.db_metadata, 'experiment')
-    this.experiments = this.buildList([...new Set(metadata.map(item => item.experiment))])
-    this.experimentsFiltered = this.experiments
-
-    // this.tissues = this.countMetadata(this.db_metadata, 'tissue')
-    this.tissues = this.buildList([...new Set(metadata.map(item => item.tissue))])
-    this.tissuesFiltered = this.tissues
-
-    // const expUniq = [...new Set(metadata.map(item => item.experiment))]
-    // this.experiments = this.buildList(expUniq)
-    // this.experimentsFiltered = this.experiments
-
-    // const tissuesUniq = [...new Set(metadata.map(item => item.tissue))]
-    // this.tissues = this.buildList(tissuesUniq)
-    // this.tissuesFiltered = this.tissues
-
     console.log('Main mount finished')
     console.log('Time elapsed')
     console.log(Date.now() - start)
   },
   methods: {
+    async loadGenes() {
+      const start = Date.now()
+      this.genes = await DataService.getGenes()
+      this.genes = this.genes.data.map((d) => ({name: d.gene_name}))
+      console.log('loadGenes time elapsed: ')
+      console.log(Date.now() - start)
+    },
+    async loadMetadata() {
+      const start = Date.now()
+      this.db_metadata = await DataService.getDatabaseMetadata().then(e => e.data)
+      this.lookup_table = this.initializeLookupTable(this.db_metadata)
+      this.filtered_metadata = this.db_metadata
+
+      this.species = this.buildList([...new Set(this.db_metadata.map(item => item.species))])
+      this.speciesFiltered = this.species
+
+      this.experiments = this.buildList([...new Set(this.db_metadata.map(item => item.experiment))])
+      this.experimentsFiltered = this.experiments
+
+      this.tissues = this.buildList([...new Set(this.db_metadata.map(item => item.tissue))])
+      this.tissuesFiltered = this.tissues
+
+      this.loading = false
+      console.log('loadMetadata time elapsed:')
+      console.log(Date.now() - start)
+    },
     initializeLookupTable(metadata) {
       console.log('initializeLookupTable')
       const table = {}
@@ -260,7 +248,6 @@ export default {
         })
       })
       return table
-
     },
     updateLookupTable(metadata, origin) {
       console.log('updateLookupTable')
@@ -280,20 +267,7 @@ export default {
           this.lookup_table[cat][val].freq = this.lookup_table[cat][val].count / sum
         })
       })
-
     },
-    // countMetadata(metadata, attr) {
-    //   // console.log('countMetadata: ' + attr)
-    //   let arrObj = uniq.map(e => ({
-    //     name: e, 
-    //     count: metadata.reduce((acc, cur) => cur[attr] === e ? ++acc : acc, 0),
-    //     freq: 0}))
-    //   arrObj.forEach(e => e.freq = (e.count * 100 / metadata.length).toFixed(2) + '%')
-    //   console.log(arrObj)
-    //   // this.species = arrObj
-    //   return arrObj
-    //   // this.speciesFiltered = this.species
-    // },
     getCount(cat, value) {
       // cat = 'species' 
       // value = 'Human'
@@ -314,31 +288,18 @@ export default {
       return list.map(object => {
         return {'name' : object}
     })},
-    // filterList(list, s) {
-    //   // console.log('filterList')
-    //   list.forEach(object => {
-    //     object.visible = (object.name.toLowerCase().includes(s.toLowerCase()));
-    //   })
-    // },
-    speciesRowChange(e) {
-      // console.log('================')
-      // console.log('speciesRowChange')
-      // console.log('================')
-      // console.log('this.speciesSelected')
-      // console.log(this.speciesSelected)
+    speciesRowChange(update) {
+      console.log('speciesRowChange')
+      console.log(update)
       const result = this.filterResults()
-      // console.log('result')
-      // console.log(result)
-      this.updateLookupTable(result, 'species')
-      // console.log('lookup_table')
-      // console.log(this.lookup_table)
-      //
+      let origin = update ? '' : 'species'
+      this.updateLookupTable(result, origin)
       this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
       this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
       if (!this.speciesSelected.length)
         this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
-
     },
+
     // speciesChange(e) {
     //   console.log('speciesChange')
     //   const result = this.filterResults()
@@ -351,18 +312,11 @@ export default {
     //     this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
 
     // },
-    experimentsRowChange(e) {
-      // console.log('================')
-      // console.log('experimentsRowChange')
-      // console.log('================')
-      // console.log(e)
-      // console.log(this.experimentsSelected)
+    experimentsRowChange(update) {
       const result = this.filterResults()
 
-      // console.log('result')
-      // console.log(result)
-
-      this.updateLookupTable(result, 'experiment')
+      let origin = update ? '' : 'experiment'
+      this.updateLookupTable(result, origin)
 
       this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
       this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
@@ -383,28 +337,16 @@ export default {
     //     this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
 
     // },
-    tissuesRowChange(e) {
-      // console.log('================')
-      // console.log('tissuesRowChange')
-      // console.log('================')
-      // console.log(e)
-      // console.log(this.tissuesSelected)
+    tissuesRowChange(update) {
       const result = this.filterResults()
-      // console.log('result')
-      // console.log(result)
-      //let origin = this.tissuesSelected.length ? 'tissue' : ''
-      this.updateLookupTable(result, 'tissue')
+      
+      let origin = update ? '' : 'tissue'
+      this.updateLookupTable(result, origin)
       
       this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
       this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
       
-      // this.speciesFiltered = this.countMetadata(result, 'species')
-      // console.log('this.speciesFiltered')
-      // console.log(this.speciesFiltered)
-      // this.experimentsFiltered = this.countMetadata(result, 'experiment')
       if (!this.tissuesSelected.length) {
-        // console.log('No tissue selected')
-        // this.tissuesFiltered = this.countMetadata(result, 'tissue')
         this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
       }
         
