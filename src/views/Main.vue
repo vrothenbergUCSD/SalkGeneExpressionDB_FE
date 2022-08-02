@@ -199,8 +199,10 @@ export default {
     console.log('Main mounted, await genes: ')
     const start = Date.now()
 
-    await this.loadMetadata()
-    await this.loadGenes()
+    await Promise.all([this.loadMetadata(), this.loadGenes()])
+
+    // this.loadMetadata()
+    // this.loadGenes()
     
     console.log('Main mount finished')
     console.log('Time elapsed')
