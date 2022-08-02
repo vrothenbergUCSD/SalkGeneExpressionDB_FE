@@ -24,7 +24,6 @@
 
 <script>
 import * as d3 from "d3";
-//import {Delaunay} from "d3-delaunay";
 import DataService from "@/services/DataService.js";
 
 import ProgressSpinner from 'primevue/progressspinner';
@@ -514,7 +513,10 @@ export default {
 
       const dataset_filtered = this.dataset
         .filter(d => time_points.includes(d.time_point.toString()))
-      const y_max = d3.max(dataset_filtered, d => +d.gene_expression)
+      let y_max = d3.max(dataset_filtered, d => +d.gene_expression)
+
+      console.log('dataset_filtered')
+      console.log(dataset_filtered)
 
       const gene_groups_map = dataset_filtered.map((d) => ({
         time_point: d.time_point.toString(),
@@ -523,7 +525,7 @@ export default {
         })
       )
 
-      let data, groups, subgroups
+      let data, groups, subgroups, exp_sum
       let legendPrefix
 
       if (grouped_by == 'Gene') {
@@ -540,20 +542,35 @@ export default {
           })))
         }
       } else if (grouped_by == 'Time') {
+        // Time point on X axis
+        // Stacks are Genes
         if (debug) console.log('grouped_by Time')
         this.svg.select('.x-label').text('Time Point (ZT)')
         legendPrefix = "ZT "
         groups = time_points
-        data = d3
-          .group(gene_groups_map, d => `${d.time_point}`)
-        const firstKey = data.keys().next().value
-        subgroups = data.get(firstKey).map(el => el.gene_group)
+
+        const time_groupings = Array.from(d3.group(gene_groups_map, d=> `${d.time_point}`))
+        data = []
+
+        time_groupings.forEach((e) => {
+          const time_obj = {}
+          time_obj.group = e[0]
+          exp_sum = 0
+          e[1].forEach((g) => {
+            time_obj[g.gene_group] = g.gene_expression
+            exp_sum += g.gene_expression
+          })
+          if (exp_sum > y_max) y_max = exp_sum
+          data.push(time_obj)
+        })
+
+        subgroups = time_groupings[0][1].map(el => el.gene_group)
         
-        for (const key of data.keys()) {
-          console.log
-          data.set(key, data.get(key).map(el => ({
-            key: el.gene_group, value: el.gene_expression})))
-        }
+        // for (const key of data.keys()) {
+        //   console.log
+        //   data.set(key, data.get(key).map(el => ({
+        //     key: el.gene_group, value: el.gene_expression})))
+        // }
       }
       if (debug) {
         console.log('groups')
@@ -562,6 +579,8 @@ export default {
         console.log(subgroups)
         console.log('gene_groups_map')
         console.log(gene_groups_map)
+        console.log('data')
+        console.log(data)
 
       }
       
@@ -594,7 +613,13 @@ export default {
           .duration(updateInterval)
           .call(this.yAxis)
 
-      const stackedData = d3.stack().keys(subgroups)(gene_groups_map)
+      const stackedData = d3.stack().keys(subgroups)(data)
+      // Add subgroup key to each rect to track color 
+      stackedData.forEach(e => {
+        e.forEach(g => {
+          g.key = e.key
+        })
+      })
 
       if (debug) {
         console.log("======================")
@@ -620,9 +645,12 @@ export default {
             enter.append('g')
               // .attr("transform", d => `translate(${x(d[0])}, 0)`)
               .attr("class", "group")
-              .attr("fill", d => color(d.key))
+              .attr("fill", d => {
+                // console.log('enter.append(g)..fill')
+                // console.log(d);
+                return color(d.key)})
               .selectAll("rect.group-rect")
-              .data(d => d[1])
+              .data(d => d)
               .join(
                 (enter) => {
                   if (debug) {
@@ -631,40 +659,50 @@ export default {
                   }
                   enter.append('rect')
                     .attr("class", 'group-rect')
-                    .attr("x", d => xSubgroup(d.key))
-                    .attr("y", d => y(d.value))
-                    .attr("width", xSubgroup.bandwidth())
-                    .attr("height", d => this.height - y(d.value))
-                    .attr("fill", d => color(d.key))
-                    .on("mouseover", (d,i) => {
+                    .attr("x", d => {
+                      console.log('rect.x')
+                      console.log(d);
+                      // console.log('parentNode')
+                      // console.log(d.parentNode)
+                      return x(d.data.group)})
+                    .attr("y", d => y(d[1]))
+                    .attr("width", x.bandwidth())
+                    .attr("height", d => y(d[0]) - y(d[1]))
+                    // .attr("fill", d => color(d.key))
+                    .on("mouseover", (e,d) => {
+                      // const subgroupName = d3.select(this.parentNode)
+                      // const subgroupValue = d.data[subgroupName];
                       if (debug) {
                         console.log('mouseover')
+                        console.log(e)
                         console.log(d)
-                        console.log(i)
+                        
                       }
-                      let text
-                      let parentVal = d.path[1].__data__[0]
+                      let text  
+                      let group = d.data.group
+                      let subgroup = d.key
+
                       if (grouped_by == 'Gene') {
-                        text = `${parentVal}\nZT${i.key}\nExpr: ${Math.round(i.value)}`          
+                        text = `${group}\nZT${subgroup}\nExpr: ${Math.round(d.data[subgroup])}`          
                       } else if (grouped_by == 'Time') {
-                        text = `${i.key}\nZT${parentVal}\nExpr: ${Math.round(i.value)}`
+                        text = `${subgroup}\nZT${group}\nExpr: ${Math.round(d.data[subgroup])}`
                       }
                       if (debug) {
-                        console.log('parentVal: ' + parentVal)
-                        console.log(typeof(parentVal))
-                        console.log('x(parentVal): ' + x(parentVal))
-                        console.log('i.key: ' + i.key)
-                        console.log(typeof(i.key))
-                        console.log('xSubgroup(i.key): ' + xSubgroup(i.key))
-                        console.log(subgroups)
+                        console.log('text')
+                        console.log(text)
                       }
-                      if (d.y > 1) {
+
+                      if (y(d[0]) > 1) {
+                        let xCoord = x(group) + x.bandwidth()/2
+                        let yCoord = y(d[0]) - y(d[1])
+                        console.log('xCoord: ' + xCoord)
+                        console.log('yCoord: ' + yCoord)
                         this.svg.append('g')
                           .attr('class', 'tooltip')
                           .attr("transform", `translate(${
-                            x(parentVal) + xSubgroup(i.key) + xSubgroup.bandwidth()/2},
-                            ${y(i.value) - 63})`)
-                          .call(popover, text, i.key)
+                            x(group) + x.bandwidth()/2},
+                            ${y(d[1]) - 58})`)
+                          .call(popover, text, subgroup)
                       }
                     })
                     .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
@@ -833,6 +871,7 @@ export default {
           )
            
       function popover(g, value, key) {
+        console.log('popover')
         if (!value) return g.style("display", "none");
         // tooltip group
         g
@@ -864,6 +903,7 @@ export default {
 
         // tooltip positioning
         const {x, y, width: w, height: h} = text.node().getBBox();
+        console.log(x, y, w, h)
         text.attr("transform", `translate(${-w / 2},${15 - y})`);
         path.attr("d", `M${-w / 2 - 10},5 H${w / 2 + 10},H ${w / 2 + 10} v ${h+20} h ${-w/2-5} l-5,5 l-5,-5 h${-w/2-5} z`)
       }
