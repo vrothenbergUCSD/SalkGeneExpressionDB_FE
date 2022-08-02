@@ -1,28 +1,26 @@
 <template>
   <div class="p-5 font-semibold text-3xl text-center">Temporal Gene Expression</div>
   <div class="flex flex-wrap p-5 mx-auto w-11/12">
-    <div class="w-1/3 px-2 rounded border-2">
+    <div class="w-1/3 px-2 border">
       <div class="font-semibold my-2">Species</div>
-      <DataTable :value="speciesFiltered" v-model:selection="speciesSelected" class="p-datatable-sm" stripedRows responsiveLayout="scroll" :loading="loading" @row-select="speciesRowChange" @row-unselect="speciesRowChange">
+      <DataTable :value="speciesFiltered" v-model:selection="speciesSelected" class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" @row-select="speciesRowChange" @row-unselect="speciesRowChange">
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
       <Column field="name" header=""></Column>
       <Column field="count" header="#">
         <template #body="slotProps">
           {{getCount('species', slotProps.data.name)}}
-          <!-- {{this.lookup_table.species[slotProps.data.name].count}} -->
         </template>
       </Column>
       <Column field="freq" header="Freq">
         <template #body="slotProps">
           {{getFreq('species', slotProps.data.name)}}
-          <!-- {{this.lookup_table.species[slotProps.data.name].freq.toFixed(2) + '%'}} -->
         </template>
       </Column>
       </DataTable>
     </div>
-    <div class="w-1/3 px-2 rounded border-2">
+    <div class="w-1/3 px-2 border" >
       <div class="font-semibold my-2">Experiment</div>
-      <DataTable :value="experimentsFiltered" v-model:selection="experimentsSelected" class="p-datatable-sm" stripedRows responsiveLayout="scroll" :loading="loading" @row-select="experimentsRowChange" @row-unselect="experimentsRowChange">
+      <DataTable :value="experimentsFiltered" v-model:selection="experimentsSelected" class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" @row-select="experimentsRowChange" @row-unselect="experimentsRowChange">
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
       <Column field="name" header=""></Column>
       <Column field="count" header="#">
@@ -39,9 +37,9 @@
       </DataTable>
       
     </div>
-    <div class="w-1/3 px-2 rounded border-2">
+    <div class="w-1/3 px-2 border">
       <div class="font-semibold my-2">Tissue</div>
-      <DataTable :value="tissuesFiltered" v-model:selection="tissuesSelected" class="p-datatable-sm" stripedRows responsiveLayout="scroll" :loading="loading" @row-select="tissuesRowChange" @row-unselect="tissuesRowChange">
+      <DataTable :value="tissuesFiltered" v-model:selection="tissuesSelected" class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" @row-select="tissuesRowChange" @row-unselect="tissuesRowChange">
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
       <Column field="name" header=""></Column>
       <Column field="count" header="#">
