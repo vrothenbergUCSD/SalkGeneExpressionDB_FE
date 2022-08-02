@@ -71,7 +71,6 @@ export default {
     console.log('BarPlot mounting')
     const start = Date.now()
     this.genesArr = this.genes
-    console.log(this.genesArr)
     this.genesData = this.genes.map((d) => d.name)
     this.initialize_bar_plot()
     await this.get_dataset()
@@ -85,10 +84,7 @@ export default {
   async updated () {
     // Check differential 
     if (this.genesArr != this.genes) {
-      console.log('Differential')
-      console.log(this.genesArr)
       this.genesArr = this.genes
-      console.log(this.genesArr)
       this.genesData = this.genes.map((d) => d.name)
       await this.get_dataset()
     }
@@ -156,6 +152,7 @@ export default {
     },
     async update_grouped_bar_plot(grouped_by) {
       const debug = false 
+      const start = Date.now()
 
       if (this.genesData.length) {
         await this.get_dataset()
@@ -181,7 +178,6 @@ export default {
       let data, groups, subgroups
 
       if (grouped_by == 'Gene') {
-        if (debug) console.log('grouped_by Gene')
         this.svg.select('.x-label').text('Gene and Group')
         subgroups = time_points
         data = d3.group(gene_groups_map, d => `${d.gene_group}`)
@@ -193,7 +189,6 @@ export default {
           })))
         }
       } else if (grouped_by == 'Time') {
-        if (debug) console.log('grouped_by Time')
         this.svg.select('.x-label').text('Time Point (ZT)')
         groups = time_points
         data = d3
@@ -205,12 +200,6 @@ export default {
           data.set(key, data.get(key).map(el => ({
             key: el.gene_group, value: el.gene_expression})))
         }
-      }
-      if (debug) {
-        console.log('groups')
-        console.log(groups)
-        console.log('subgroups')
-        console.log(subgroups)
       }
       
       var color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -239,12 +228,6 @@ export default {
           .call(this.yAxis)
 
       var updateInterval = 500
-
-      if (debug) {
-        console.log("======================")
-        console.log(data)
-        console.log("======================")
-      }
       
       this.svg.selectAll("g.group").remove()
 
@@ -254,10 +237,6 @@ export default {
         .data(data)
         .join(
           (enter) => {
-            if (debug) {
-              console.log('enter')
-              console.log(enter)
-            }
             enter.append('g')
               .attr("transform", d => `translate(${x(d[0])}, 0)`)
               .attr("class", "group")
@@ -265,10 +244,6 @@ export default {
               .data(d => d[1])
               .join(
                 (enter) => {
-                  if (debug) {
-                    console.log('enter > enter')
-                    console.log(enter)
-                  }
                   enter.append('rect')
                     .attr("class", 'group-rect')
                     .attr("x", d => xSubgroup(d.key))
@@ -277,26 +252,12 @@ export default {
                     .attr("height", d => this.height - y(d.value))
                     .attr("fill", d => color(d.key))
                     .on("mouseover", (d,i) => {
-                      if (debug) {
-                        console.log('mouseover')
-                        console.log(d)
-                        console.log(i)
-                      }
                       let text
                       let parentVal = d.path[1].__data__[0]
                       if (grouped_by == 'Gene') {
                         text = `${parentVal}\nZT${i.key}\nExpr: ${Math.round(i.value)}`          
                       } else if (grouped_by == 'Time') {
                         text = `${i.key}\nZT${parentVal}\nExpr: ${Math.round(i.value)}`
-                      }
-                      if (debug) {
-                        console.log('parentVal: ' + parentVal)
-                        console.log(typeof(parentVal))
-                        console.log('x(parentVal): ' + x(parentVal))
-                        console.log('i.key: ' + i.key)
-                        console.log(typeof(i.key))
-                        console.log('xSubgroup(i.key): ' + xSubgroup(i.key))
-                        console.log(subgroups)
                       }
                       if (d.y > 1) {
                         this.svg.append('g')
@@ -310,10 +271,6 @@ export default {
                     .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
                 },
                 (update) => {
-                  if (debug) {
-                    console.log('enter > update')
-                    console.log(update)
-                  }
                   update
                     .attr("x", d => xSubgroup(d.key))
                     .attr("y", d => y(d.value))
@@ -322,10 +279,6 @@ export default {
                     .attr("fill", d => color(d.key));
                 },
                 (exit) => {
-                  if (debug) {
-                    console.log('enter > exit')
-                    console.log(exit)
-                  }
                   exit
                     .style('opacity', 0)
                     .transition()
@@ -336,20 +289,12 @@ export default {
               )
           },
           (update) => {
-            if (debug) {
-              console.log('update')
-              console.log(update)
-            }
             update
               .attr("transform", d => `translate(${x(d[0])}, 0)`)
               .selectAll(".group-rect")
               .data(d => d[1])
               .join(
-                (enter) => {
-                  if (debug) {
-                    console.log('update > enter')
-                    console.log(enter)
-                  }                  
+                (enter) => {              
                   enter.append('rect')
                     .attr("class", "group-rect")
                     .attr("x", d => xSubgroup(d.key))
@@ -359,10 +304,6 @@ export default {
                     .attr("fill", d => color(d.key));
                 },
                 (update) => {
-                  if (debug) {
-                    console.log('update > update')
-                    console.log(update)
-                  }
                   update
                     .attr("x", d => xSubgroup(d.key))
                     .attr("y", d => y(d.value))
@@ -372,10 +313,6 @@ export default {
                   
                 },
                 (exit) => {
-                  if (debug) {
-                    console.log('update > exit')
-                    console.log(exit)
-                  }
                   exit
                     .style('opacity', 0)
                     .transition()
@@ -386,20 +323,11 @@ export default {
               )
           },
           (exit) => {
-            if (debug) {
-              console.log('exit')
-              console.log(exit)
-            }
-            
             exit
               .selectAll(".group-rect")
               .data(d => d[1])
               .join(
                 (exit) => {
-                  if (debug) {
-                    console.log('exit > exit')
-                    console.log(exit)
-                  }
                   exit
                     .style('opacity', 0)
                     .transition()
@@ -507,12 +435,15 @@ export default {
         text.attr("transform", `translate(${-w / 2},${15 - y})`);
         path.attr("d", `M${-w / 2 - 10},5 H${w / 2 + 10},H ${w / 2 + 10} v ${h+20} h ${-w/2-5} l-5,5 l-5,-5 h${-w/2-5} z`)
       }
+      console.log('update_grouped_bar_plot time elapsed: ')
+      console.log(Date.now() - start)
+
       return;
 
     },
     async update_stacked_bar_plot(grouped_by) {
-      const debug = true 
-      if (debug) console.log('update_stacked_bar_plot: ' + grouped_by)
+      const debug = false
+      const start = Date.now()
 
       let time_points = [10, 2, 20].map(el => el.toString())
       var collator = new Intl.Collator([], {numeric: true});
@@ -521,9 +452,6 @@ export default {
       const dataset_filtered = this.dataset
         .filter(d => time_points.includes(d.time_point.toString()))
       let y_max = d3.max(dataset_filtered, d => +d.gene_expression)
-
-      console.log('dataset_filtered')
-      console.log(dataset_filtered)
 
       let gene_groups_map = dataset_filtered.map((d) => ({
         time_point: d.time_point.toString(),
@@ -535,16 +463,11 @@ export default {
       let data, groups, subgroups, exp_sum, legendPrefix
 
       if (grouped_by == 'Gene') {
-        if (debug) console.log('grouped_by Gene')
         this.svg.select('.x-label').text('Gene and Group')
         legendPrefix = "ZT"
         subgroups = time_points
-        console.log('subgroups')
-        console.log(subgroups)
         const gene_groupings = Array.from(
           d3.group(gene_groups_map, d => `${d.gene_group}`))
-        console.log('gene_groupings')
-        console.log(gene_groupings)
 
         data = []
 
@@ -565,7 +488,6 @@ export default {
       } else if (grouped_by == 'Time') {
         // Time point on X axis
         // Stacks are Genes
-        if (debug) console.log('grouped_by Time')
         this.svg.select('.x-label').text('Time Point (ZT)')
         legendPrefix = ""
         groups = time_points
@@ -586,17 +508,6 @@ export default {
         })
 
         subgroups = time_groupings[0][1].map(el => el.gene_group)
-      }
-      if (debug) {
-        console.log('groups')
-        console.log(groups)
-        console.log('subgroups')
-        console.log(subgroups)
-        console.log('gene_groups_map')
-        console.log(gene_groups_map)
-        console.log('data')
-        console.log(data)
-
       }
       
       // Color scheme
@@ -630,15 +541,6 @@ export default {
         })
       })
 
-      if (debug) {
-        console.log("======================")
-        console.log(data)
-        // console.log("======================")
-        console.log(stackedData)
-        console.log("======================")
-
-      }
-
       this.svg.selectAll("g.group").remove()
 
       // Display grouped bars
@@ -656,10 +558,7 @@ export default {
                 (enter) => {
                   enter.append('rect')
                     .attr("class", 'group-rect')
-                    .attr("x", d => {
-                      // console.log('rect.x')
-                      // console.log(d);
-                      return x(d.data.group)})
+                    .attr("x", d => x(d.data.group))
                     .attr("y", d => y(d[1]))
                     .attr("width", x.bandwidth())
                     .attr("height", d => y(d[0]) - y(d[1]))
@@ -720,10 +619,6 @@ export default {
                     .attr("fill", d => color(d.key));
                 },
                 (update) => {
-                  if (debug) {
-                    console.log('update > update')
-                    console.log(update)
-                  }
                   update
                     .attr("x", d => x(d.data.group))
                     .attr("y", d => y(d[1]))
@@ -821,7 +716,6 @@ export default {
           )
            
       function popover(g, value, key) {
-        console.log('popover')
         if (!value) return g.style("display", "none");
         // tooltip group
         g
@@ -853,14 +747,13 @@ export default {
 
         // tooltip positioning
         const {x, y, width: w, height: h} = text.node().getBBox();
-        console.log(x, y, w, h)
         text.attr("transform", `translate(${-w / 2},${15 - y})`);
         path.attr("d", `M${-w / 2 - 10},5 H${w / 2 + 10},H ${w / 2 + 10} v ${h+20} h ${-w/2-5} l-5,5 l-5,-5 h${-w/2-5} z`)
       }
+      console.log('update_stacked_bar_plot time elapsed: ')
+      console.log(Date.now() - start)
       return;
-
     },
-
   }
 
 }
