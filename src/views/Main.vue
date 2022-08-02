@@ -6,7 +6,9 @@
       <DataTable :value="speciesFiltered" v-model:selection="speciesSelected" 
         class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
         :loading="loading" @row-select="speciesRowChange(update=false)" 
-        @row-unselect="speciesRowChange(update=true)">
+        @row-unselect="speciesRowChange(update=true)"
+        @row-select-all="speciesRowChange(update=false)"
+        @row-unselect-all="speciesRowChange(update=true)">
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
       <Column field="name" header=""></Column>
       <Column field="count" header="#">
@@ -26,7 +28,9 @@
       <DataTable :value="experimentsFiltered" v-model:selection="experimentsSelected" 
         class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
         :loading="loading" @row-select="experimentsRowChange(update=false)"
-        @row-unselect="experimentsRowChange(update=true)">
+        @row-unselect="experimentsRowChange(update=true)"
+        @row-select-all="experimentsRowChange(update=false)"
+        @row-unselect-all="experimentsRowChange(update=true)">
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
       <Column field="name" header=""></Column>
       <Column field="count" header="#">
@@ -48,7 +52,9 @@
       <DataTable :value="tissuesFiltered" v-model:selection="tissuesSelected" 
         class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
         :loading="loading" @row-select="tissuesRowChange(update=false)" 
-        @row-unselect="tissuesRowChange(update=true)">
+        @row-unselect="tissuesRowChange(update=true)"
+        @row-select-all="tissuesRowChange(update=false)"
+        @row-unselect-all="tissuesRowChange(update=true)">
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
       <Column field="name" header=""></Column>
       <Column field="count" header="#">

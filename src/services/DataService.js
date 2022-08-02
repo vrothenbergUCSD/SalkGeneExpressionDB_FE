@@ -20,7 +20,7 @@ class DataService {
     return http.get(`gene_expression/gene_name?gene_name=${genes}`)
   }
   async getGenes(limit = 20000) {
-    return http.get(`gene_metadata/data?limit=${limit}`)
+    return http.get(`gene_metadata/names?limit=${limit}`)
   }
   async getDatabaseMetadata() {
     return http.get('database_metadata/data')
