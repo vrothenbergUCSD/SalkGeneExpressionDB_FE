@@ -102,7 +102,7 @@ import DataService from "@/services/DataService.js"
 export default {
   name: "Main",
   components: {
-    Dropdown,
+    // Dropdown,
     AutoComplete,
     TabMenu,
     Button,
