@@ -53,12 +53,14 @@ export default {
       yAxis: null,
       svg: null,
 
+      genesArr: null,
+
       complete: false,
 
-      chart_type: 'Grouped',
+      chart_type: 'Stacked',
       chart_type_options: ['Grouped', 'Stacked'],
 
-      grouped_by: 'Time',
+      grouped_by: 'Gene',
       grouped_by_options: ['Gene', 'Time'],
 
     }
@@ -66,23 +68,35 @@ export default {
   created() {
   },
   async mounted() {
-    console.log('mounting')
+    console.log('BarPlot mounting')
+    const start = Date.now()
+    this.genesArr = this.genes
+    console.log(this.genesArr)
     this.genesData = this.genes.map((d) => d.name)
     this.initialize_bar_plot()
-    await this.load_chart()
-    console.log('mounted() > finished update plot')
+    await this.get_dataset()
+    this.load_chart()
+    
     this.complete = true
+    console.log('BarPlot mounted, time elapsed:')
+    console.log(Date.now() - start)
+
   },
   async updated () {
     // Check differential 
-    this.genesData = this.genes.map((d) => d.name)
-    // Don't need await?  Last command in function
-    // this.update_grouped_bar_plot()
-    await this.load_chart()
+    if (this.genesArr != this.genes) {
+      console.log('Differential')
+      console.log(this.genesArr)
+      this.genesArr = this.genes
+      console.log(this.genesArr)
+      this.genesData = this.genes.map((d) => d.name)
+      await this.get_dataset()
+    }
+      
+    this.load_chart()
   },
   methods: {
     async get_dataset() {
-      // Idea: Check for cached results?
       let data = await DataService
         .getExpressionDataByGenes(this.genesData.toString())
       this.dataset = data.data
@@ -133,13 +147,12 @@ export default {
         .attr("transform", "rotate(-90)")
         .text("Gene Expression");
     },
-    async load_chart() {
+    load_chart() {
       if (this.chart_type == 'Grouped') {
-        await this.update_grouped_bar_plot(this.grouped_by)
+        this.update_grouped_bar_plot(this.grouped_by)
       } else if (this.chart_type == 'Stacked') {
-        await this.update_stacked_bar_plot(this.grouped_by)
+        this.update_stacked_bar_plot(this.grouped_by)
       }
-
     },
     async update_grouped_bar_plot(grouped_by) {
       const debug = false 
@@ -501,12 +514,6 @@ export default {
       const debug = true 
       if (debug) console.log('update_stacked_bar_plot: ' + grouped_by)
 
-      if (this.genesData.length) {
-        await this.get_dataset()
-      } else {
-        this.dataset = []
-      }
-
       let time_points = [10, 2, 20].map(el => el.toString())
       var collator = new Intl.Collator([], {numeric: true});
       time_points.sort((a, b) => collator.compare(a, b));
@@ -518,35 +525,49 @@ export default {
       console.log('dataset_filtered')
       console.log(dataset_filtered)
 
-      const gene_groups_map = dataset_filtered.map((d) => ({
+      let gene_groups_map = dataset_filtered.map((d) => ({
         time_point: d.time_point.toString(),
         gene_expression: d.gene_expression,
         gene_group: `${d.gene_name}_${d.group_name}`
         })
       )
 
-      let data, groups, subgroups, exp_sum
-      let legendPrefix
+      let data, groups, subgroups, exp_sum, legendPrefix
 
       if (grouped_by == 'Gene') {
         if (debug) console.log('grouped_by Gene')
         this.svg.select('.x-label').text('Gene and Group')
-        legendPrefix = ""
+        legendPrefix = "ZT"
         subgroups = time_points
-        data = d3.group(gene_groups_map, d => `${d.gene_group}`)
-        groups = Array.from(data.keys())
+        console.log('subgroups')
+        console.log(subgroups)
+        const gene_groupings = Array.from(
+          d3.group(gene_groups_map, d => `${d.gene_group}`))
+        console.log('gene_groupings')
+        console.log(gene_groupings)
 
-        for (const key of data.keys()) {
-          data.set(key, data.get(key).map(el => ({
-            key: el.time_point, value: el.gene_expression
-          })))
-        }
+        data = []
+
+        gene_groupings.forEach(e => {
+          const gene_obj = {}
+          gene_obj.group = e[0]
+          exp_sum = 0
+          e[1].forEach((g) => {
+            gene_obj[g.time_point] = g.gene_expression
+            exp_sum += g.gene_expression
+          })
+          if (exp_sum > y_max) y_max = exp_sum
+          data.push(gene_obj)
+        })
+
+        groups = gene_groupings.map(el => el[0])
+
       } else if (grouped_by == 'Time') {
         // Time point on X axis
         // Stacks are Genes
         if (debug) console.log('grouped_by Time')
         this.svg.select('.x-label').text('Time Point (ZT)')
-        legendPrefix = "ZT "
+        legendPrefix = ""
         groups = time_points
 
         const time_groupings = Array.from(d3.group(gene_groups_map, d=> `${d.time_point}`))
@@ -565,12 +586,6 @@ export default {
         })
 
         subgroups = time_groupings[0][1].map(el => el.gene_group)
-        
-        // for (const key of data.keys()) {
-        //   console.log
-        //   data.set(key, data.get(key).map(el => ({
-        //     key: el.gene_group, value: el.gene_expression})))
-        // }
       }
       if (debug) {
         console.log('groups')
@@ -599,12 +614,6 @@ export default {
         .duration(updateInterval)
         .call(this.xAxis);
 
-      // Another scale for subgroup position?
-      let xSubgroup = d3.scaleBand()
-        .domain(subgroups)
-        .range([0, x.bandwidth()])
-        .padding([0.05])
-
       // Create the Y axis
       var y = this.y
       y.domain([0, y_max])
@@ -613,7 +622,7 @@ export default {
           .duration(updateInterval)
           .call(this.yAxis)
 
-      const stackedData = d3.stack().keys(subgroups)(data)
+      let stackedData = d3.stack().keys(subgroups)(data)
       // Add subgroup key to each rect to track color 
       stackedData.forEach(e => {
         e.forEach(g => {
@@ -638,46 +647,23 @@ export default {
         .data(stackedData)
         .join(
           (enter) => {
-            if (debug) {
-              console.log('enter')
-              console.log(enter)
-            }
             enter.append('g')
-              // .attr("transform", d => `translate(${x(d[0])}, 0)`)
               .attr("class", "group")
-              .attr("fill", d => {
-                // console.log('enter.append(g)..fill')
-                // console.log(d);
-                return color(d.key)})
+              .attr("fill", d => color(d.key))
               .selectAll("rect.group-rect")
               .data(d => d)
               .join(
                 (enter) => {
-                  if (debug) {
-                    console.log('enter > enter')
-                    console.log(enter)
-                  }
                   enter.append('rect')
                     .attr("class", 'group-rect')
                     .attr("x", d => {
-                      console.log('rect.x')
-                      console.log(d);
-                      // console.log('parentNode')
-                      // console.log(d.parentNode)
+                      // console.log('rect.x')
+                      // console.log(d);
                       return x(d.data.group)})
                     .attr("y", d => y(d[1]))
                     .attr("width", x.bandwidth())
                     .attr("height", d => y(d[0]) - y(d[1]))
-                    // .attr("fill", d => color(d.key))
                     .on("mouseover", (e,d) => {
-                      // const subgroupName = d3.select(this.parentNode)
-                      // const subgroupValue = d.data[subgroupName];
-                      if (debug) {
-                        console.log('mouseover')
-                        console.log(e)
-                        console.log(d)
-                        
-                      }
                       let text  
                       let group = d.data.group
                       let subgroup = d.key
@@ -687,16 +673,9 @@ export default {
                       } else if (grouped_by == 'Time') {
                         text = `${subgroup}\nZT${group}\nExpr: ${Math.round(d.data[subgroup])}`
                       }
-                      if (debug) {
-                        console.log('text')
-                        console.log(text)
-                      }
-
                       if (y(d[0]) > 1) {
                         let xCoord = x(group) + x.bandwidth()/2
                         let yCoord = y(d[0]) - y(d[1])
-                        console.log('xCoord: ' + xCoord)
-                        console.log('yCoord: ' + yCoord)
                         this.svg.append('g')
                           .attr('class', 'tooltip')
                           .attr("transform", `translate(${
@@ -708,22 +687,14 @@ export default {
                     .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
                 },
                 (update) => {
-                  if (debug) {
-                    console.log('enter > update')
-                    console.log(update)
-                  }
                   update
-                    .attr("x", d => xSubgroup(d.key))
-                    .attr("y", d => y(d.value))
-                    .attr("width", xSubgroup.bandwidth())
-                    .attr("height", d => this.height - y(d.value))
+                    .attr("x", d => x(d.data.group))
+                    .attr("y", d => y(d[1]))
+                    .attr("width", x.bandwidth())
+                    .attr("height", d => y(d[0]) - y(d[1]))
                     .attr("fill", d => color(d.key));
                 },
                 (exit) => {
-                  if (debug) {
-                    console.log('enter > exit')
-                    console.log(exit)
-                  }
                   exit
                     .style('opacity', 0)
                     .transition()
@@ -734,26 +705,18 @@ export default {
               )
           },
           (update) => {
-            if (debug) {
-              console.log('update')
-              console.log(update)
-            }
             update
               .attr("transform", d => `translate(${x(d[0])}, 0)`)
               .selectAll(".group-rect")
               .data(d => d[1])
               .join(
-                (enter) => {
-                  if (debug) {
-                    console.log('update > enter')
-                    console.log(enter)
-                  }                  
+                (enter) => {               
                   enter.append('rect')
                     .attr("class", "group-rect")
-                    .attr("x", d => xSubgroup(d.key))
-                    .attr("y", d => y(d.value))
-                    .attr("width", xSubgroup.bandwidth())
-                    .attr("height", d => this.height - y(d.value))
+                    .attr("x", d => x(d.data.group))
+                    .attr("y", d => y(d[1]))
+                    .attr("width", x.bandwidth())
+                    .attr("height", d => y(d[0]) - y(d[1]))
                     .attr("fill", d => color(d.key));
                 },
                 (update) => {
@@ -762,18 +725,14 @@ export default {
                     console.log(update)
                   }
                   update
-                    .attr("x", d => xSubgroup(d.key))
-                    .attr("y", d => y(d.value))
-                    .attr("width", xSubgroup.bandwidth())
-                    .attr("height", d => this.height - y(d.value))
+                    .attr("x", d => x(d.data.group))
+                    .attr("y", d => y(d[1]))
+                    .attr("width", x.bandwidth())
+                    .attr("height", d => y(d[0]) - y(d[1]))
                     .attr("fill", d => color(d.key));
                   
                 },
                 (exit) => {
-                  if (debug) {
-                    console.log('update > exit')
-                    console.log(exit)
-                  }
                   exit
                     .style('opacity', 0)
                     .transition()
@@ -784,20 +743,11 @@ export default {
               )
           },
           (exit) => {
-            if (debug) {
-              console.log('exit')
-              console.log(exit)
-            }
-            
             exit
               .selectAll(".group-rect")
               .data(d => d[1])
               .join(
                 (exit) => {
-                  if (debug) {
-                    console.log('exit > exit')
-                    console.log(exit)
-                  }
                   exit
                     .style('opacity', 0)
                     .transition()
@@ -858,7 +808,7 @@ export default {
             (update) => {
               update.attr('y', (d,i) => i*25 )
                 .style('fill', (d) => color(d))
-                .text(d => d)
+                .text(d => `${legendPrefix}${d}`)
             },
             (exit) => {
               exit.transition()
