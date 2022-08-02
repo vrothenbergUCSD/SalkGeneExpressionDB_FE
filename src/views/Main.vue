@@ -67,33 +67,35 @@
   </div>
   <div class="mx-auto w-3/4">
     <div class="font-semibold m-2">Genes</div>
-    <span class="p-fluid">
-      <AutoComplete :multiple="true" v-model="this.genesSelected" :suggestions="this.genesFiltered" @complete="searchGenes($event)" @item-select="updatePlot" @item-unselect="updatePlot" field="name" />
+    <div v-show="this.loadingGenes">
+      <ProgressBar mode="indeterminate" />
+    </div>
+    <span class="p-fluid" v-show="!this.loadingGenes">
+      <AutoComplete :multiple="true" v-model="this.genesSelected" 
+      :suggestions="this.genesFiltered" @complete="searchGenes($event)" 
+      @item-select="updatePlot" @item-unselect="updatePlot" field="name" />
     </span>
+    
+    
 
   </div>
 
 
   <div>
     <div class="card w-3/4 mx-auto mt-2">
-      <!-- <div class="font-semibold text-center mt-3">Chart Types</div> -->
       <TabMenu :model="items"/>
       <router-view :genes="this.genesSelected"/>
     </div>
   </div>
 
-  <!-- <div class="mx-auto w-full">
-    <LinePlot :genes="this.genesSelected"/>
-  </div> -->
 
 </template>
 
 <script>
-// import Dropdown from "primevue/dropdown"
+import ProgressBar from 'primevue/progressbar';
 import AutoComplete from "primevue/autocomplete"
 import TabMenu from 'primevue/tabmenu'
 import Button from 'primevue/button'
-// import MultiSelect from 'primevue/multiselect'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
@@ -101,19 +103,16 @@ import Selection from "@/components/Selection.vue"
 import Prime from "@/components/Prime.vue"
 import LinePlot from "@/components/svg/LinePlot.vue"
 import BarPlot from "@/components/svg/BarPlot.vue"
-// import MarginTranslation from "@/components/svg/MarginTranslation.vue"
 
 import DataService from "@/services/DataService.js"
-// import {FilterService,FilterMatchMode} from 'primevue/api';
 
 export default {
   name: "Main",
   components: {
-    // Dropdown,
+    ProgressBar,
     AutoComplete,
     TabMenu,
     Button,
-    // MultiSelect,
     DataTable,
     Column,
 
@@ -122,7 +121,6 @@ export default {
     
     LinePlot,
     BarPlot,
-    // MarginTranslation,
   },
   DataService: null,
   data() {
@@ -140,6 +138,7 @@ export default {
         }
       ],
       loading: true,
+      loadingGenes: true,
 
       db_metadata: null,
 
@@ -206,6 +205,7 @@ export default {
       const start = Date.now()
       this.genes = await DataService.getGenes()
       this.genes = this.genes.data.map((d) => ({name: d.gene_name}))
+      this.loadingGenes = false
       console.log('loadGenes time elapsed: ')
       console.log(Date.now() - start)
     },
@@ -268,6 +268,9 @@ export default {
         })
       })
     },
+    updatePlot() {
+
+    },
     getCount(cat, value) {
       // cat = 'species' 
       // value = 'Human'
@@ -279,10 +282,6 @@ export default {
       if (Object.keys(this.lookup_table[cat]).includes(value))
         return (this.lookup_table[cat][value].freq * 100).toFixed(2) + '%'
       return null
-    },
-    updatePlot() {
-      console.log('updatePlot')
-      console.log(this.genesSelected)
     },
     buildList(list) {
       return list.map(object => {
@@ -299,19 +298,6 @@ export default {
       if (!this.speciesSelected.length)
         this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
     },
-
-    // speciesChange(e) {
-    //   console.log('speciesChange')
-    //   const result = this.filterResults()
-    //   //
-    //   this.lookup_table = this.updateLookupTable(result)
-    //   //
-    //   this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
-    //   this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
-    //   if (!e.value.length)
-    //     this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
-
-    // },
     experimentsRowChange(update) {
       const result = this.filterResults()
 
@@ -322,21 +308,10 @@ export default {
       this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
 
       if (!this.experimentsSelected.length) {
-        console.log('No experiments selected')
-        // this.experimentsFiltered = this.countMetadata(result, 'experiment')
         this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
       }
 
     },
-    // experimentsChange(e) {
-    //   console.log('experimentsChange')
-    //   const result = this.filterResults()
-    //   this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
-    //   this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
-    //   if (!e.value.length)
-    //     this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
-
-    // },
     tissuesRowChange(update) {
       const result = this.filterResults()
       
@@ -350,17 +325,8 @@ export default {
         this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
       }
         
-
     },
-    // tissuesChange(e) {
-    //   console.log('tissuesChange')
-    //   const result = this.filterResults()
-    //   this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
-    //   this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
-    //   if (!e.value.length)
-    //     this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
 
-    // },
     filterResults() {
       // Inputs are arrays of strings
       // If array is empty then no filter is performed
@@ -387,10 +353,7 @@ export default {
 
       return result
     },
-    searchGenes(event) {
-      //console.log('searchGenes')
-      //console.log(event.query)
-      //console.log(this.genes)
+    async searchGenes(event) {
       setTimeout(() => {
         if (!event.query.trim().length) {
             this.genesFiltered = [...this.genes];
@@ -399,7 +362,6 @@ export default {
             this.genesFiltered = this.genes.filter((gene) => {
                 return gene.name.toLowerCase().startsWith(event.query.toLowerCase());
             });
-            //console.log(this.genesFiltered)
         }
       }, 250);
     },
