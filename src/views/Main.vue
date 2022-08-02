@@ -82,11 +82,11 @@
 </template>
 
 <script>
-import Dropdown from "primevue/dropdown"
+// import Dropdown from "primevue/dropdown"
 import AutoComplete from "primevue/autocomplete"
 import TabMenu from 'primevue/tabmenu'
 import Button from 'primevue/button'
-import MultiSelect from 'primevue/multiselect'
+// import MultiSelect from 'primevue/multiselect'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
@@ -106,7 +106,7 @@ export default {
     AutoComplete,
     TabMenu,
     Button,
-    MultiSelect,
+    // MultiSelect,
     DataTable,
     Column,
 
