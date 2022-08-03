@@ -4,6 +4,9 @@ import Home from "../views/Home.vue"
 import Main from "../views/Main.vue"
 import BarPlot from "@/components/svg/BarPlot.vue"
 import LinePlot from "@/components/svg/LinePlot.vue"
+import LogIn from "@/views/LogIn.vue"
+import Register from "@/views/Register.vue"
+import User from "@/views/User.vue"
 //import firebase from "firebase/app";
 //import "firebase/auth";
 
@@ -63,6 +66,36 @@ const routes = [
 
     ]
   },
+  {
+    path: "/login",
+    name: "Log In",
+    component: LogIn,
+    meta: {
+      title: "Log In",
+      requiresAuth: false,
+      hideNavbar: false,
+    }
+  },
+  {
+    path: "/register",
+    name: "Register",
+    component: Register,
+    meta: {
+      title: "Register",
+      requiresAuth: false,
+      hideNavbar: false,
+    }
+  },
+  {
+    path: "/user",
+    name: "User",
+    component: User,
+    meta: {
+      title: "User",
+      requiresAuth: true,
+      hideNavbar: false,
+    }
+  }
 
   // {
   //   path: "/test",
