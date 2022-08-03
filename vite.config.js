@@ -3,6 +3,9 @@ import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
 const defaultConfig = {
+  // Not necessary?
+  optimizeDeps: { include: ['firebase/app', 'firebase/auth', 'firebase/firestore/lite'] },
+
   build: {
     outDir: "public",
   },
