@@ -14,8 +14,13 @@
         <div class="text-700 text-2xl mb-5">
           Stay up to date with the latest datasets from the Salk Institute's Regulatory Biology Laboratory.
         </div>
+        <div>
+          {{ count }}
+        </div>
         <Button label="Join Now" icon="pi pi-cloud" 
-          class="font-bold px-5 py-3 p-button-raised p-button-rounded white-space-nowrap"/>
+          class="font-bold px-5 py-3 p-button-raised p-button-rounded white-space-nowrap"
+          @click="incrementCount"/>
+
     </div>
 </div>
   </div>
@@ -24,7 +29,7 @@
 <script>
 // import HelloWorld from '@/components/HelloWorld.vue'
 import Button from 'primevue/button'
-import getStuff from '@/main.js'
+// import getStuff from '@/main.js'
 
 export default {
   name: "Home",
@@ -35,6 +40,12 @@ export default {
   },
   data() {
     return {
+      
+    }
+  },
+  computed: {
+    count () {
+      return this.$store.state.count
     }
   },
   async mounted() {
@@ -43,12 +54,11 @@ export default {
     console.log("Mode: " + import.meta.env.MODE)
     console.log("Firebase API key: ")
     console.log(import.meta.env.VITE_FIREBASE_API_KEY)
-    const result = await getStuff()
-    console.log('Result: ') 
-    console.log(result)
   },
   methods: {
-
+    incrementCount() {
+      this.$store.state.count++
+    },
   },
 
 
