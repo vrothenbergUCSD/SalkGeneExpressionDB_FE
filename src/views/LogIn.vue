@@ -73,7 +73,7 @@ export default {
         console.log(auth.currentUser.uid);
         console.log('Dispatching getCurrentUser')
         this.$store.dispatch('getCurrentUser', user)
-        this.$router.push({ name: "Home" });
+        this.$router.push({ name: "Main" });
       })
       .catch((err) => {
         console.log('Sign in error')

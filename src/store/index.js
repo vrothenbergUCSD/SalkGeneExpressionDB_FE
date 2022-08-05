@@ -65,8 +65,8 @@ export default createStore({
     async getCurrentUser({ commit }, user) {
       // const dataBase = await firestore.collection("users").doc(firebase.auth().currentUser.uid);
       // const dbResults = await dataBase.get();
-      console.log('getCurrentUser')
-      console.log(user)
+      // console.log('getCurrentUser')
+      // console.log(user)
 
       const result = await getDoc(doc(firestore, 'users', user.uid))
         .catch((err) => {
@@ -75,25 +75,29 @@ export default createStore({
         })
       console.log('After result')
       if (result.exists()) {
-        console.log('Result exists')
+        // console.log('Result exists')
         commit("setProfileInfo", result);
-        // commit("setProfileInitials");
+        commit("setProfileInitials");
         const token = await user.getIdTokenResult();
-        // console.log('token')
-        // console.log(token)
         const admin = await token.claims.admin;
-        // console.log('admin')
-        // console.log(admin)
         commit("setProfileAdmin", admin);
       }
     },
     async updateUserSettings({ commit, state }) {
-      const docSnap = await getDoc(firestore, 'users', user.profileId)
+      // const user = state.user
+      console.log('updateUserSettings')
+      console.log(state.profileId)
+      console.log(state.user)
+      const docRef = doc(firestore, "users", state.profileId);
+      console.log(docRef)
+
+      const docSnap = await getDoc(docRef)
+      console.log(docSnap)
       if (docSnap.exists()) {
-        await updateDoc(doc(firestore, 'users', user.profileId), {
+        console.log('docSnap exists')
+        await updateDoc(docRef, {
           firstName: state.profileFirstName,
           lastName: state.profileLastName,
-          username: state.profileUsername,
           institution: state.profileInstitution,
         }).catch((err) => {
           console.log('Failed after updateDoc')
@@ -101,7 +105,7 @@ export default createStore({
         console.log('Successfully updated user settings')
         commit("setProfileInitials");
       } else {
-        console.log(`User id does not exist: ${user.profileId}`)
+        console.log(`User id does not exist: ${state.profileId}`)
       }
     },
     async getCountAct(state) {

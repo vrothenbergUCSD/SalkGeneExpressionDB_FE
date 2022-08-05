@@ -2,26 +2,58 @@
   <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
   <div class="bg-white shadow overflow-hidden sm:rounded-lg">
     <div class="px-4 py-5 sm:px-6">
-      <h3 class="text-lg leading-6 font-medium text-gray-900">Profile Information</h3>
-      <!-- <p class="mt-1 max-w-2xl text-sm text-gray-500">Personal details and application.</p> -->
+      <div class="flex">
+        <div class="flex-1 min-w0 align-middle my-auto">
+          <h3 class="text-lg leading-6 font-medium text-gray-900">Profile Information</h3>
+        </div>
+        
+        <!-- <p class="mt-1 max-w-2xl text-sm text-gray-500">Personal details and application.</p> -->
+        <div class="mt-5 flex lg:mt-0 lg:ml-4 sm:block">
+          <Button class="p-button-sm mx-2 p-button-success z-0" @click="update" v-show="editMode" label="Confirm"/>
+          <Button class="p-button-sm mx-2 z-0" @click="toggleEdit" label="Edit"/>
+        </div>
+
+      </div>
+
     </div>
     <div class="border-t border-gray-200">
       <dl>
         <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-          <dt class="text-sm font-medium text-gray-500">First name</dt>
-          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ firstName }}</dd>
+          <div>
+            <dt class="text-sm font-medium text-gray-500 my-auto">First name</dt>
+            <small id="firstName-help" class="p-error" v-show="firstNameInvalid">
+              First name required
+            </small>
+          </div>
+          <InputText v-model="firstName" class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2" 
+            :disabled="!editMode" :class="{ 'p-invalid': firstNameInvalid }"/>
         </div>
         <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-          <dt class="text-sm font-medium text-gray-500">Last name</dt>
-          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ lastName }}</dd>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Last name</dt>
+            <small id="lastName-help" class="p-error" v-show="lastNameInvalid">
+              Last name required
+            </small>
+          </div>
+          <InputText v-model="lastName" class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2" 
+            :disabled="!editMode" :class="{ 'p-invalid': lastNameInvalid }"/>
         </div>
         <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-          <dt class="text-sm font-medium text-gray-500">Email address</dt>
-          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ email }}</dd>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Institution</dt>
+            <small id="institution-help" class="p-error" v-show="institutionInvalid">Institution name too long</small>
+          </div>
+          <InputText v-model="institution" class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2" 
+            :disabled="!editMode" :class="{ 'p-invalid': institutionInvalid }"/>
         </div>
         <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-          <dt class="text-sm font-medium text-gray-500">Institution</dt>
-          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ institution }}</dd>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Email address</dt>
+          </div>
+          <!-- <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ email }}</dd> -->
+          <InputText v-model="email" class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2" 
+            disabled/>
+
         </div>
         <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
           <dt class="text-sm font-medium text-gray-500">Admin</dt>
@@ -65,16 +97,36 @@
 
 <script>
 import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext'
+import { PaperClipIcon } from '@heroicons/vue/solid'
+
+PaperClipIcon
 
 export default {
   name: "Profile",
   components : {
-    Dialog
+    Dialog,
+    Button,
+    InputText,
+    PaperClipIcon,
   },
   data() {
     return {
       modalMessage: "Changes were saved!",
       display: false,
+
+      editMode: false,
+
+      // firstName: null, 
+      firstNameInvalid: null, 
+      // lastName: null, 
+      lastNameInvalid: null, 
+      // email: null,
+      emailInvalid: null,
+      // institution: null,
+      institutionInvalid: null,
+
     }
   },
   computed: {
@@ -108,11 +160,47 @@ export default {
     admin() {
       return this.$store.state.profileAdmin ? 'Yes' : 'No'
     }
+  },
+  methods: {
+    toggleEdit() {
+      this.editMode = !this.editMode
+    },
+    async update() {
+      // Validate firstName
+      if (!this.firstName) {
+        console.log('ERROR: Invalid first name')
+        this.firstNameInvalid = true
+        return 
+      }
+      this.firstNameInvalid = false
+
+      // Validate lastName
+      if (!this.lastName) {
+        console.log('ERROR: Invalid last name')
+        this.lastNameInvalid = true 
+        return
+      }
+      this.lastNameInvalid = false
+
+      // Validate institution
+      if (this.institution.length > 100) {
+        console.log('ERROR: Institution name too long')
+        this.institutionInvalid = true 
+        return 
+      }
+      this.institutionInvalid = false
+
+      console.log('Validation passed')
+      await this.$store.dispatch('updateUserSettings')
+    }
   }
 
 }
 </script>
 
-<style>
+<style  scoped>
+:deep(.p-disabled) { 
+  fill:black;
 
+}
 </style>
