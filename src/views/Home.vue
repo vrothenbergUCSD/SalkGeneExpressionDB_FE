@@ -14,15 +14,9 @@
         <div class="text-700 text-2xl mb-5">
           Stay up to date with the latest datasets from the Salk Institute's Regulatory Biology Laboratory.
         </div>
-        <div class="my-3"> 
-          User ID: {{ userId }}
-        </div>
-        <div>
-          {{ count }}
-        </div>
         <Button label="Join Now" icon="pi pi-cloud" 
           class="font-bold px-5 py-3 p-button-raised p-button-rounded white-space-nowrap"
-          @click="incrementCount"/>
+          @click="join"/>
 
     </div>
 </div>
@@ -71,6 +65,10 @@ export default {
     incrementCount() {
       this.$store.state.count++
     },
+    join() {
+      // this.$router.push()
+      this.$router.push({ name: "Register" });
+    }
   },
 
 }

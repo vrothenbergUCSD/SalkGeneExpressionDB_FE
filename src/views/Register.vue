@@ -21,6 +21,13 @@
           <InputText v-model="email" type="text" class="w-full mb-2" :class="{ 'p-invalid': emailInvalid }" />
           <small id="email-help" class="p-error" v-show="emailInvalid">Invalid email address</small>
         </div>
+        <div class="mb-3">
+          <label for="institution" class="block text-900 font-medium mb-2">Institution</label>
+          <small id="institution-help">Optional</small>
+          <InputText v-model="institution" type="text" class="w-full mb-2" :class="{ 'p-invalid': institutionInvalid }" />
+          
+          <small id="institution-help-error" class="p-error" v-show="institutionInvalid">Invalid institution</small>
+        </div>
         
         <div class="mb-2">
           <label for="password" class="block text-900 w-full font-medium mb-2">Password</label>
@@ -80,6 +87,8 @@ export default {
       emailInvalid: null,
       password: null, 
       passwordInvalid: null,
+      institution: null,
+      institutionInvalid: null,
 
       user: null,
     }
@@ -112,6 +121,14 @@ export default {
       }
       this.emailInvalid = false
 
+      // Validate institution
+      if (this.institution.length > 100) {
+        console.log('ERROR: Institution name too long')
+        this.institutionInvalid = true 
+        return 
+      }
+      this.institutionInvalid = false
+
       // Validate password
       const passwordformat = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/;
       if (!this.password || !this.password.match(passwordformat)) {
@@ -137,6 +154,7 @@ export default {
         firstName: this.firstName,
         lastName: this.lastName,
         email: this.email, 
+        institution: this.institution,
       }).catch((err) => {
         console.log('Fail after await setDoc')
         console.log(err)
@@ -146,7 +164,7 @@ export default {
       // this.$store.dispatch('getCurren')
 
       // console.log(result)
-      this.$router.push({ name: "Home" });
+      this.$router.push({ name: "Main" });
       return
 
           // const database = await db.collection('test_collection');

@@ -17,7 +17,7 @@ export default createStore({
       profileEmail: null,
       profileFirstName: null,
       profileLastName: null,
-      profileUsername: null,
+      profileInstitution: null,
       profileId: null,
       profileInitials: null,
     }
@@ -40,7 +40,7 @@ export default createStore({
       state.profileEmail = doc.data().email;
       state.profileFirstName = doc.data().firstName;
       state.profileLastName = doc.data().lastName;
-      state.profileUsername = doc.data().username;
+      state.profileInstitution = doc.data().institution
       console.log(state.profileId);
     },
     setProfileAdmin(state, payload) {
@@ -57,6 +57,9 @@ export default createStore({
     changeLastName(state, payload) {
       state.profileLastName = payload;
     },
+    changeInstitution(state, payload) {
+      state.profileInstitution = payload
+    }
   },
   actions: {
     async getCurrentUser({ commit }, user) {
@@ -76,11 +79,11 @@ export default createStore({
         commit("setProfileInfo", result);
         // commit("setProfileInitials");
         const token = await user.getIdTokenResult();
-        console.log('token')
-        console.log(token)
+        // console.log('token')
+        // console.log(token)
         const admin = await token.claims.admin;
-        console.log('admin')
-        console.log(admin)
+        // console.log('admin')
+        // console.log(admin)
         commit("setProfileAdmin", admin);
       }
     },
@@ -91,6 +94,7 @@ export default createStore({
           firstName: state.profileFirstName,
           lastName: state.profileLastName,
           username: state.profileUsername,
+          institution: state.profileInstitution,
         }).catch((err) => {
           console.log('Failed after updateDoc')
         })
