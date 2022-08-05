@@ -46,14 +46,12 @@ import Checkbox from "primevue/checkbox"
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { firestore } from "@/firebase/firebaseInit";
 
-
 export default {
   name: 'Login',
   components: {
     InputText,
     Button,
     Checkbox,
-
   },
   data() {
     return {
@@ -69,24 +67,23 @@ export default {
       const auth = getAuth()
       signInWithEmailAndPassword(auth, this.email, this.password)
       .then(() => {
-        
         this.error = false;
         this.errorMsg = "";
+        const user = auth.currentUser
         console.log(auth.currentUser.uid);
-
+        console.log('Dispatching getCurrentUser')
+        this.$store.dispatch('getCurrentUser', user)
         this.$router.push({ name: "Home" });
       })
       .catch((err) => {
+        console.log('Sign in error')
         this.error = true;
+        // Change to more user friendly message
         this.errorMsg = err.message;
+        console.log(err.message)
       });
     }
-
   }
-
-
-
-
 }
 </script>
 

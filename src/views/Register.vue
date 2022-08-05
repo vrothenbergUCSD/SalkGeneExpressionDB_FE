@@ -121,49 +121,30 @@ export default {
       }
       this.passwordInvalid = false
       console.log('Passed validation')
-
       const auth = getAuth()
-      console.log('After auth')
-      // .catch((err) => { 
-      //   console.log('Fail after await auth')
-      //   console.log(err)
-      //   })
       const createUser = await createUserWithEmailAndPassword(auth, this.email, this.password)
         .catch((err) => {
-          console.log('Fail after await createUserWithEmail..')
+          console.log('Fail after await createUserWithEmailAndPassword')
           console.log(err)
         })
 
-      console.log('After createUser')
-      console.log(createUser)
-
       const userId = createUser.user.uid
-      console.log(userId)
 
-      // .user.uid.catch((err) => {
-      //   console.log('Fail after await createUser.user.uid')
-      //   console.log(err)
-      // })
-      // console.log('After userId')
+      const newDoc = doc(firestore, 'users', userId)
 
-      console.log(firestore)
 
       await setDoc(doc(firestore, 'users', userId), {
         firstName: this.firstName,
         lastName: this.lastName,
         email: this.email, 
       }).catch((err) => {
-        console.log('Fail after setDoc')
+        console.log('Fail after await setDoc')
         console.log(err)
       })
-      // const result = await createUser
-      // const userDatabase = await db.collection('users').doc(result.user.uid)
-      // userDatabase.set({
-      //   firstName: this.firstName,
-      //   lastName: this.lastName,
-      //   email: this.email, 
-      // })
       console.log('Successfully created new account.')
+      // this.$store.commit('updateUser', createUser.user)
+      // this.$store.dispatch('getCurren')
+
       // console.log(result)
       this.$router.push({ name: "Home" });
       return

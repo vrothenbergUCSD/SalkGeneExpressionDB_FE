@@ -28,10 +28,10 @@ export default {
     auth.onAuthStateChanged((user) => {
       console.log('Auth changed, user: ')
       console.log(user)
-      // this.$store.commit("updateUser", user)
+      this.$store.commit("updateUser", user)
       if (user) {
         console.log('Dispatching..')
-        // this.$store.dispatch("getCurrentUser", user)
+        this.$store.dispatch("getCurrentUser", user)
       }
     })
 
