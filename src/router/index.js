@@ -4,9 +4,13 @@ import Home from "../views/Home.vue"
 import Main from "../views/Main.vue"
 import BarPlot from "@/components/svg/BarPlot.vue"
 import LinePlot from "@/components/svg/LinePlot.vue"
-import LogIn from "@/views/LogIn.vue"
+import Login from "@/views/Login.vue"
 import Register from "@/views/Register.vue"
 import User from "@/views/User.vue"
+import Admin from "@/views/Admin.vue"
+import Profile from "@/views/Profile.vue"
+import Settings from "@/views/Settings.vue"
+// import { addAdminRole } from 'functions/index.js'
 //import firebase from "firebase/app";
 //import "firebase/auth";
 
@@ -19,7 +23,7 @@ const routes = [
     meta: {
       title: "Home",
       requiresAuth: false,
-      hideNavbar: true,
+      onNavbar: true,
     }
   },
   {
@@ -29,7 +33,7 @@ const routes = [
     meta: {
       title: "Home",
       requiresAuth: false,
-      hideNavbar: false,
+      onNavbar: true,
 
     }
   },
@@ -40,7 +44,7 @@ const routes = [
     meta: {
       title: "Main",
       requiresAuth: false,
-      hideNavbar: false,
+      onNavbar: true,
     },
     children: [
       {
@@ -50,7 +54,7 @@ const routes = [
         meta: {
           title: "Bar",
           requiresAuth: false,
-          hideNavbar: true,
+          onNavbar: false,
         }
       },
       {
@@ -60,7 +64,7 @@ const routes = [
         meta: {
           title: "Line",
           requiresAuth: false,
-          hideNavbar: true,
+          onNavbar: false,
         }
       }
 
@@ -68,12 +72,12 @@ const routes = [
   },
   {
     path: "/login",
-    name: "Log In",
-    component: LogIn,
+    name: "Login",
+    component: Login,
     meta: {
       title: "Log In",
       requiresAuth: false,
-      hideNavbar: false,
+      onNavbar: false,
     }
   },
   {
@@ -83,7 +87,7 @@ const routes = [
     meta: {
       title: "Register",
       requiresAuth: false,
-      hideNavbar: false,
+      onNavbar: false,
     }
   },
   {
@@ -93,19 +97,40 @@ const routes = [
     meta: {
       title: "User",
       requiresAuth: true,
-      hideNavbar: false,
+      onNavbar: false,
+    }
+  },
+  {
+    path: "/admin",
+    name: "Admin",
+    component: Admin,
+    meta: {
+      title: "Administration",
+      requiresAuth: true,
+      onNavbar: false,
     }
   }
-
-  // {
-  //   path: "/test",
-  //   name: "Test",
-  //   component: Test,
-  //   meta: {
-  //     title: "Test",
-  //     requiresAuth: false,
-  //   },
-  // },
+  ,
+  {
+    path: "/profile",
+    name: "Profile",
+    component: Profile,
+    meta: {
+      title: "Profile",
+      requiresAuth: true,
+      onNavbar: false,
+    }
+  },
+  {
+    path: "/settings",
+    name: "Settings",
+    component: Settings,
+    meta: {
+      title: "Settings",
+      requiresAuth: true,
+      onNavbar: false,
+    }
+  }
 ];
 
 const router = createRouter({

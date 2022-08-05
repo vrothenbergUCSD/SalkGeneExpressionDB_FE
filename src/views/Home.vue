@@ -14,6 +14,9 @@
         <div class="text-700 text-2xl mb-5">
           Stay up to date with the latest datasets from the Salk Institute's Regulatory Biology Laboratory.
         </div>
+        <div class="my-3"> 
+          User ID: {{ userId }}
+        </div>
         <div>
           {{ count }}
         </div>
@@ -46,21 +49,29 @@ export default {
   computed: {
     count () {
       return this.$store.state.count
+    },
+    userId() {
+      console.log('userId')
+      if (this.$store.state.user) {
+        return this.$store.state.user.uid
+      }
+      return null
     }
   },
   async mounted() {
     console.log('Home mounted')
-    console.log("Cloud Run URL: " + import.meta.env.VITE_API_URL)
-    console.log("Mode: " + import.meta.env.MODE)
-    console.log("Firebase API key: ")
-    console.log(import.meta.env.VITE_FIREBASE_API_KEY)
+    // console.log("Cloud Run URL: " + import.meta.env.VITE_API_URL)
+    // console.log("Mode: " + import.meta.env.MODE)
+    // console.log("Firebase API key: ")
+    // console.log(import.meta.env.VITE_FIREBASE_API_KEY)
+    // const result = await this.$store.dispatch("getStuff")
+    // console.log(result)
   },
   methods: {
     incrementCount() {
       this.$store.state.count++
     },
   },
-
 
 }
 </script>
