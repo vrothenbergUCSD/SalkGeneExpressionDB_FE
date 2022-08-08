@@ -45,7 +45,7 @@ export default {
       return this.$store.state.count
     },
     userId() {
-      console.log('userId')
+      // console.log('userId')
       if (this.$store.state.user) {
         return this.$store.state.user.uid
       }

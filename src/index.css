@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .routerlink-active {
+    @apply bg-gray-900 text-white
+  }
+
+  .routerlink-inactive {
+    @apply text-gray-300 hover:bg-gray-700 hover:text-white
+  }
+
+  .routerlink-default {
+    @apply px-3 py-2 rounded-md text-sm font-medium
+  }
+
+
+}

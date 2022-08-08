@@ -30,8 +30,10 @@ export default {
       console.log(user)
       this.$store.commit("updateUser", user)
       if (user) {
-        console.log('Dispatching..')
+        console.log('Dispatching getCurrentUser(user)')
         this.$store.dispatch("getCurrentUser", user)
+      } else {
+        console.log('User null')
       }
     })
 
