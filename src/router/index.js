@@ -10,9 +10,9 @@ import User from "@/views/User.vue"
 import Admin from "@/views/Admin.vue"
 import Profile from "@/views/Profile.vue"
 import Settings from "@/views/Settings.vue"
-// import { addAdminRole } from 'functions/index.js'
-//import firebase from "firebase/app";
-//import "firebase/auth";
+import Data from "@/views/Data.vue"
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { firestore } from "@/firebase/firebaseInit";
 
 const routes = [
   // will match everything and put it under `$route.params.pathMatch`
@@ -130,6 +130,16 @@ const routes = [
       requiresAuth: true,
       onNavbar: false,
     }
+  },
+  {
+    path: "/data",
+    name: "Data",
+    component: Data,
+    meta: {
+      title: "Data",
+      requiresAuth: true,
+      onNavbar: false,
+    }
   }
 ];
 
@@ -142,6 +152,31 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   document.title = `${to.meta.title} | RBIO-P Data Sharing`;
   next();
+});
+
+router.beforeEach(async (to, from, next) => {
+
+  const auth = getAuth()
+  const user = auth.currentUser;
+  // let user = this.$store.state.user
+  let admin = null
+  if (user) {
+    let token = await user.getIdTokenResult();
+    admin = token.claims.admin;
+  }
+  if (to.matched.some((res) => res.meta.requiresAuth)) {
+    if (user) {
+      if (to.matched.some((res) => res.meta.requiresAdmin)) {
+        if (admin) {
+          return next();
+        }
+        return next({ name: "Home" });
+      }
+      return next();
+    }
+    return next({ name: "Home" });
+  }
+  return next();
 });
 
 export {
