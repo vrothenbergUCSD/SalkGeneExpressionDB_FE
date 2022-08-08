@@ -11,6 +11,8 @@ import Admin from "@/views/Admin.vue"
 import Profile from "@/views/Profile.vue"
 import Settings from "@/views/Settings.vue"
 import Data from "@/views/Data.vue"
+import ForgotPassword from "@/views/ForgotPassword.vue"
+
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { firestore } from "@/firebase/firebaseInit";
 
@@ -140,7 +142,18 @@ const routes = [
       requiresAuth: true,
       onNavbar: false,
     }
-  }
+  },
+  {
+    path: "/forgot-password",
+    name: "Forgot Password",
+    component: ForgotPassword,
+    meta: {
+      title: "Forgot Password",
+      requiresAuth: false,
+      onNavbar: false,
+    }
+  },
+
 ];
 
 const router = createRouter({
