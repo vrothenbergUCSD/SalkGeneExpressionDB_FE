@@ -6,31 +6,10 @@
         <div class="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start">
           <div class="hidden sm:block sm:ml-6">
             <div class="flex space-x-4">
-              <!-- <a v-for="item in navigation" :key="item.name" :href="item.href" :class="[item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'px-3 py-2 rounded-md text-sm font-medium']" :aria-current="item.current ? 'page' : undefined">{{ item.name }}</a> -->
-              <AppLink :to="{ name: 'Home'}" activeClass="bg-gray-900 text-white"
-                inactiveClass="text-gray-300 hover:bg-gray-700 hover:text-white"
-                class="px-3 py-2 rounded-md text-sm font-medium">
-                Home
-              </AppLink>
-              <AppLink :to="{ name: 'Main'}" activeClass="bg-gray-900 text-white"
-                inactiveClass="text-gray-300 hover:bg-gray-700 hover:text-white"
-                class="px-3 py-2 rounded-md text-sm font-medium">
-                Main
-              </AppLink>
-              <AppLink v-if="!user" :to="{ name: 'Login'}" activeClass="bg-gray-900 text-white"
-                inactiveClass="text-gray-300 hover:bg-gray-700 hover:text-white"
-                class="px-3 py-2 rounded-md text-sm font-medium">
-                Login
-              </AppLink>
-              <AppLink v-if="user" :to="{ name: 'Data'}" activeClass="bg-gray-900 text-white"
-                inactiveClass="text-gray-300 hover:bg-gray-700 hover:text-white"
-                class="px-3 py-2 rounded-md text-sm font-medium">
-                Data
-              </AppLink>
-
-              <!-- <router-link :to="{ name: 'Main'}" :class="[ this.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'px-3 py-2 rounded-md text-sm font-medium']">Main</router-link> -->
-              <!-- <router-link v-if="!user" :to="{ name: 'Login'}" :class="[ this.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'px-3 py-2 rounded-md text-sm font-medium']">Log In</router-link> -->
-              <!-- <router-link v-if="user" :to="{ name: 'Data'}" :class="[ this.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'px-3 py-2 rounded-md text-sm font-medium']">Data</router-link> -->
+              <NavLink :to="{name: 'Home'}">Home</NavLink>
+              <NavLink :to="{name: 'Main'}">Main</NavLink>
+              <NavLink v-if="!user" :to="{ name: 'Login'}">Login</NavLink>
+              <NavLink v-if="user" :to="{ name: 'Data'}">Data</NavLink>
             </div>
           </div>
         </div>
@@ -54,7 +33,7 @@
                   <a href="/profile" :class="[active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700']">Your Profile</a>
                 </MenuItem>
                 <MenuItem v-slot="{ active }">
-                  <a href="#" :class="[active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700']">Settings</a>
+                  <a href="/settings" :class="[active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700']">Settings</a>
                 </MenuItem>
                 <MenuItem v-slot="{ active }" @click="signOut">
                   <a href="#" :class="[active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700']">Sign out</a>
@@ -76,6 +55,8 @@
 
 <script>
 import AppLink from '@/components/AppLink.vue'
+import NavLink from '@/components/NavLink.vue';
+import ProfileLink from '@/components/ProfileLink.vue'
 
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 import { BellIcon, MenuIcon, XIcon } from '@heroicons/vue/outline'
@@ -83,24 +64,26 @@ import { UserCircleIcon} from '@heroicons/vue/solid'
 
 import { getAuth } from "firebase/auth";
 
+
 export default {
   name: "NavBar",
   components: {
     AppLink,
-
+    NavLink,
+    ProfileLink,
+    
     Disclosure,
     DisclosureButton,
     DisclosurePanel,
     Menu,
     MenuButton,
     MenuItem,
-    MenuItems, 
+    MenuItems,
     BellIcon,
-    MenuIcon, 
+    MenuIcon,
     XIcon,
     UserCircleIcon,
-
-  },
+},
   data() {
     return {
       test: null, 
@@ -110,13 +93,13 @@ export default {
   },
   computed: {
     user() {
-      console.log('user')
+      // console.log('user')
       if (this.$store.state.user) {
-        console.log('yes')
+        console.log('Navbar > User exists:')
         console.log(this.$store.state.user)
         return true
       } 
-      console.log('no')
+      console.log('Navbar > User does not exist')
       return false
     },
     firstName() {

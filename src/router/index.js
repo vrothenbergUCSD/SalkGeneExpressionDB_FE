@@ -12,21 +12,17 @@ import Profile from "@/views/Profile.vue"
 import Settings from "@/views/Settings.vue"
 import Data from "@/views/Data.vue"
 import ForgotPassword from "@/views/ForgotPassword.vue"
+// import NotFound from "@/views/NotFound.vue"
 
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { firestore } from "@/firebase/firebaseInit";
+import { onAuthStateChanged } from "firebase/auth";
+import { firebaseApp, auth, firestore } from "@/firebase/firebaseInit";
+import store from "@/store"
 
 const routes = [
   // will match everything and put it under `$route.params.pathMatch`
   {
-    path: "/:pathMatch(.*)*",
-    name: 'Home',
-    component: Home,
-    meta: {
-      title: "Home",
-      requiresAuth: false,
-      onNavbar: true,
-    }
+    path: "/:catchAll(.*)*",
+    redirect: '/',
   },
   {
     path: "/",
@@ -109,6 +105,7 @@ const routes = [
     meta: {
       title: "Administration",
       requiresAuth: true,
+      requiresAdmin: true,
       onNavbar: false,
     }
   }
@@ -159,7 +156,7 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes, // short for `routes: routes`
-  linkActiveClass: 'text-white bg-gray-900'
+  // linkActiveClass: 'text-white bg-gray-900'
 })
 
 router.beforeEach((to, from, next) => {
@@ -168,27 +165,40 @@ router.beforeEach((to, from, next) => {
 });
 
 router.beforeEach(async (to, from, next) => {
+  // console.log('From:')
+  // console.log(from)
 
-  const auth = getAuth()
-  const user = auth.currentUser;
+  let user = store.state.user
+  // console.log('User')
+  // console.log(user)
+
+  // console.log('firebaseApp')
+  // console.log(firebaseApp)
+
   // let user = this.$store.state.user
-  let admin = null
-  if (user) {
-    let token = await user.getIdTokenResult();
-    admin = token.claims.admin;
-  }
-  if (to.matched.some((res) => res.meta.requiresAuth)) {
+  let admin = store.state.profileAdmin
+
+  if (to.matched.some((res) => { console.log('res:'); console.log(res); return res.meta.requiresAuth })) {
+    // console.log('requiresAuth')
+    // console.log(res)
     if (user) {
+      // console.log('user exists')
+      // console.log(user)
       if (to.matched.some((res) => res.meta.requiresAdmin)) {
+        // console.log('requiresAdmin')
         if (admin) {
+          // console.log('Admin permissions satisifed')
           return next();
         }
+        // console.log('No admin')
         return next({ name: "Home" });
       }
       return next();
     }
+    // console.log('No user')
     return next({ name: "Home" });
   }
+  console.log('Auth not needed')
   return next();
 });
 

@@ -29,6 +29,7 @@ const storage = getStorage(firebaseApp)
 const functions = getFunctions(firebaseApp)
 
 export {
+  firebaseApp,
   auth,
   firestore,
   // performance, 

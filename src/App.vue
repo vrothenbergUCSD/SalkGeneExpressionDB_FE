@@ -24,6 +24,25 @@ export default {
     }
   },
   created() {
+    console.log('App created')
+
+    // Read the status data locally and write it to vuex when loading the page
+    if (sessionStorage.getItem("store")) {
+      this.$store.replaceState(
+        Object.assign(
+          {},
+          this.$store.state,
+          JSON.parse(sessionStorage.getItem("store"))
+        )
+      );
+    }
+
+    //Save the status data in vuex to sessionStorage before page refresh
+    window.addEventListener(
+    	"beforeunload",()=>{
+    	sessionStorage.setItem("store",JSON.stringify(this.$store.state));
+    });
+    
     const auth = getAuth()
     auth.onAuthStateChanged((user) => {
       console.log('Auth changed, user: ')
