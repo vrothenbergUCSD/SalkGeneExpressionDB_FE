@@ -178,7 +178,7 @@ router.beforeEach(async (to, from, next) => {
   // let user = this.$store.state.user
   let admin = store.state.profileAdmin
 
-  if (to.matched.some((res) => { console.log('res:'); console.log(res); return res.meta.requiresAuth })) {
+  if (to.matched.some((res) => { return res.meta.requiresAuth })) {
     // console.log('requiresAuth')
     // console.log(res)
     if (user) {
@@ -198,7 +198,7 @@ router.beforeEach(async (to, from, next) => {
     // console.log('No user')
     return next({ name: "Home" });
   }
-  console.log('Auth not needed')
+  // console.log('Auth not needed')
   return next();
 });
 

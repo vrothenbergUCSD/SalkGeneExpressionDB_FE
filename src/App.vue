@@ -42,17 +42,17 @@ export default {
     	"beforeunload",()=>{
     	sessionStorage.setItem("store",JSON.stringify(this.$store.state));
     });
-    
+
     const auth = getAuth()
     auth.onAuthStateChanged((user) => {
-      console.log('Auth changed, user: ')
-      console.log(user)
+      // console.log('Auth changed, user: ')
+      // console.log(user)
       this.$store.commit("updateUser", user)
       if (user) {
-        console.log('Dispatching getCurrentUser(user)')
+        // console.log('Dispatching getCurrentUser(user)')
         this.$store.dispatch("getCurrentUser", user)
       } else {
-        console.log('User null')
+        // console.log('User null')
       }
     })
 

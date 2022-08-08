@@ -191,7 +191,10 @@ export default {
       this.institutionInvalid = false
 
       console.log('Validation passed')
+      this.editMode = false
+
       await this.$store.dispatch('updateUserSettings')
+
     }
   }
 

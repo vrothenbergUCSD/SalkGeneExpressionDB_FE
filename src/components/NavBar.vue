@@ -71,7 +71,7 @@ export default {
     AppLink,
     NavLink,
     ProfileLink,
-    
+
     Disclosure,
     DisclosureButton,
     DisclosurePanel,
