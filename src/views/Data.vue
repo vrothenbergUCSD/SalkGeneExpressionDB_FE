@@ -74,7 +74,7 @@
       </div>
       
       <div>
-          <DataTable :value="gene_metadata" class="p-datatable-sm" responsiveLayout="scroll">
+          <DataTable :value="gene_metadata" class="p-datatable-sm p-datatable-scrollable" responsiveLayout="scroll">
               <Column field="gene_id" header="gene_id <UNIQUE>"></Column>
               <Column field="gene_name" header="gene_name"></Column>
               <Column field="refseq" header="refseq"></Column>
@@ -100,7 +100,7 @@
         </div>
         
         <div>
-          <Button label="Template" class="p-button-link" />
+          <Button label="Template" class="p-button-link" @click="download('gene_metadata_template.csv')"/>
         </div>
         
       </div>
@@ -141,7 +141,7 @@
         </div>
         
         <div>
-          <Button label="Template" class="p-button-link" />
+          <Button label="Template" class="p-button-link" @click="download('sample_metadata_template.csv')"/>
         </div>
         
       </div>
@@ -162,7 +162,7 @@
       </div>
       
       <div>
-          <DataTable :value="expression_data" class="p-datatable-sm" responsiveLayout="scroll">
+          <DataTable :value="expression_data" class="p-datatable-sm p-datatable-scrollable" responsiveLayout="scroll">
               <Column field="gene_id" header="gene_id <UNIQUE>"></Column>
               <Column field="sample_name" header="sample_name <UNIQUE>"></Column>
               <Column field="gene_expression" header="gene_expression"></Column>
@@ -172,11 +172,11 @@
 
       <div class="my-3 flex items-center align"> 
         <div>
-          Download sample metadata template CSV: 
+          Download gene expression data template CSV: 
         </div>
         
         <div>
-          <Button label="Template" class="p-button-link" />
+          <Button label="Template" class="p-button-link" @click="download('geneexpression_data_template.csv')"/>
         </div>
         
       </div>
@@ -239,7 +239,12 @@ export default {
       institutionErrorMsg: null, 
 
       other: null, 
+      otherInvalid: null,
+      otherErrorMsg: null,
+
       doi: null, 
+      doiInvalid: null,
+      doiErrorMsg: null,
 
       gene_metadata: [
         {'gene_id': '<REQUIRED>', 
@@ -316,6 +321,10 @@ export default {
   methods: {
     onUpload() {
       this.$toast.add({severity: 'info', summary: 'Success', detail: 'File Uploaded', life: 3000});
+    },
+    download(file) {
+      const url = `/files/${file}`;
+      window.location.href = url;
     }
   }
 
