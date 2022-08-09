@@ -1,9 +1,21 @@
 <template>
 
 <div class="surface-card p-4 shadow-2 border-round w-1/2 mx-auto mt-6 lg:w-6">
-    <div class="text-center my-5">
+    <!-- <div class="text-center my-5">
         <div class="text-900 text-3xl font-medium mb-3">Register an account</div>
+    </div> -->
+
+    <div class="text-center my-5">
+        <!-- <img src="images/blocks/logos/hyper.svg" alt="Image" height="50" class="mb-3"> -->
+        <div class="text-900 text-3xl font-medium mb-3">Register an account</div>
+        <span class="text-600 font-medium line-height-3">Already have an account?</span>
+        <!-- <a class="font-medium no-underline ml-2 text-blue-500 cursor-pointer" href="">Create today!</a> -->
+        <router-link to="/login" 
+          class="font-medium no-underline ml-2 text-blue-500 cursor-pointer">
+          Login
+        </router-link>
     </div>
+    
 
     <div class="w-11/12 mx-auto">
         <div class="mb-3">

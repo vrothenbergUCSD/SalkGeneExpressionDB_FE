@@ -6,10 +6,30 @@
         <div class="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start">
           <div class="hidden sm:block sm:ml-6">
             <div class="flex space-x-4">
-              <NavLink :to="{name: 'Home'}">Home</NavLink>
-              <NavLink :to="{name: 'Main'}">Main</NavLink>
-              <NavLink v-if="!user" :to="{ name: 'Login'}">Login</NavLink>
-              <NavLink v-if="user" :to="{ name: 'Data'}">Data</NavLink>
+              <NavLink :to="{name: 'Home'}">
+                <div class="">
+                  <i class="pi pi-home mr-3"></i> 
+                  <span>Home</span>
+                </div> 
+              </NavLink>
+              <NavLink :to="{name: 'Main'}">
+                <div class="">
+                  <i class="pi pi-chart-bar mr-3"></i> 
+                  <span>Main</span>
+                </div>  
+              </NavLink>
+              <NavLink v-if="!user" :to="{ name: 'Login'}">
+                <div class="">
+                  <i class="pi pi-user mr-3"></i> 
+                  <span>Login</span>
+                </div>  
+              </NavLink>
+              <NavLink v-if="user" :to="{ name: 'Data'}">
+                <div class="">
+                  <i class="pi pi-database mr-3"></i> 
+                  <span>Data</span>
+                </div> 
+              </NavLink>
             </div>
           </div>
         </div>
