@@ -62,6 +62,10 @@
           <small id="password-help" class="p-error" v-show="passwordInvalid">Invalid password</small>
 
         </div>
+
+        <div class="error" v-show="registerErrorMsg">
+          {{ registerErrorMsg }}
+        </div>
         
 
         <Button label="Register" icon="pi pi-user" class="w-full" @click="register"></Button>
@@ -102,11 +106,15 @@ export default {
       institution: null,
       institutionInvalid: null,
 
+      registerErrorMsg: null,
+
       user: null,
     }
   },
   methods: {
     async register() {
+
+      this.registerErrorMsg = null;
 
       // Validate firstName
       if (!this.firstName) {
@@ -153,8 +161,13 @@ export default {
       const auth = getAuth()
       const createUser = await createUserWithEmailAndPassword(auth, this.email, this.password)
         .catch((err) => {
-          console.log('Fail after await createUserWithEmailAndPassword')
-          console.log(err)
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          console.log('Error creating user: ', errorMessage)
+          if (errorCode =='auth/email-already-in-use') {
+            this.registerErrorMsg = "Account already in use."
+            return
+          }
         })
 
       const userId = createUser.user.uid
@@ -172,37 +185,9 @@ export default {
         console.log(err)
       })
       console.log('Successfully created new account.')
-      // this.$store.commit('updateUser', createUser.user)
-      // this.$store.dispatch('getCurren')
-
-      // console.log(result)
+      
       this.$router.push({ name: "Main" });
       return
-
-          // const database = await db.collection('test_collection');
-          // console.log(database)
-          // const results = await database.get()
-          // console.log(results)
-          // return results
-
-
-
-
-          // this.user = user
-          
-
-
-          
-        //   // ...
-        // })
-        // .catch((error) => {
-        //   const errorCode = error.code;
-        //   const errorMessage = error.message;
-        //   console.log('Error')
-        //   console.log(errorCode)
-        //   console.log(errorMessage)
-        //   // ..
-        // });
 
     },
   }
