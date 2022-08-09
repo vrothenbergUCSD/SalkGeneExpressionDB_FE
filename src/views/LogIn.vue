@@ -19,7 +19,7 @@
         <InputText id="password" type="password" v-model="password" class="w-full mb-3" />
         <div v-show="error" class="error">{{ this.errorMsg }}</div>
 
-        <div class="flex align-items-center justify-content-between mb-6">
+        <div class="flex align-items-center justify-content-between my-6">
             <div class="flex align-items-center">
                 <Checkbox id="rememberme" :binary="true" v-model="checked" class="mr-2"></Checkbox>
                 <label for="rememberme">Remember me</label>
