@@ -7,15 +7,25 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions"
 
+
+// const firebaseConfig = {
+//   apiKey: import.meta.env.FIREBASE_API_KEY,
+//   authDomain: "rbio-p-datasharing.firebaseapp.com",
+//   projectId: "rbio-p-datasharing",
+//   storageBucket: "rbio-p-datasharing.appspot.com",
+//   messagingSenderId: "1099500985223",
+//   appId: "1:1099500985223:web:7e039191b77421a17bd122",
+//   measurementId: "G-H3P87PHKBV"
+// };
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: "rbio-p-datasharing.firebaseapp.com",
-  projectId: "rbio-p-datasharing",
-  storageBucket: "rbio-p-datasharing.appspot.com",
-  messagingSenderId: "1099500985223",
-  appId: "1:1099500985223:web:7e039191b77421a17bd122",
-  measurementId: "G-H3P87PHKBV"
-};
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'api-key-not-set',
+  authDomain: import.meta.env.VITE_AUTH_DOMAIN || 'auth-domain-not-set',
+  projectId: import.meta.env.VITE_PROJECT_ID || 'project-id-not-set',
+  storageBucket: import.meta.env.VITE_STORAGE_BUCKET || 'storage-bucket-not-set',
+  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID || 'messaging-sender-id-not-set',
+  appId: import.meta.env.VITE_APP_ID || 'app-id-not-set',
+}
 
 const firebaseApp = initializeApp(firebaseConfig);
 // console.log('firebaseApp')
