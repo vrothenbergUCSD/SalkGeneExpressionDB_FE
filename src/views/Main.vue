@@ -192,7 +192,7 @@ export default {
 
     this.genesSelected = this.buildList(this.genesSelected)
 
-    this.$router.push('/main/bar')
+    // this.$router.push('/main/bar')
   },
   async mounted() {
     // Populate array with all genes

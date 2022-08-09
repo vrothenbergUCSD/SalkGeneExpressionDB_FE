@@ -1,162 +1,127 @@
+// import Vue from "vue";
+// import Vuex from "vuex";
 import { createStore } from 'vuex'
-
-// Create a new store instance.
-export const store = createStore({
-  state () {
-    return {
-      count: 0,
-      postLoaded: true,
-      admin: true,
-      user: true,
-    }
-  },
-  mutations: {
-    increment (state) {
-      state.count++
-    }
-  }
-})
-
+// import firebase from "firebase/app";
+// import "firebase/auth";
+import { doc, getDoc, updateDoc } from "firebase/firestore"
+import { firestore } from "@/firebase/firebaseInit";
 
 // Vue.use(Vuex);
 
-// export default new Vuex.Store({
-//   state: {
-//     postLoaded: null,
-//     /*
-//     blogHTML: "Write your blog title here...",
-//     blogTitle: "",
-//     blogPhotoName: "",
-//     blogPhotoFileURL: null,
-//     blogPhotoPreview: null,
-//     editPost: null,
-//     */
-//     user: null,
-//     profileAdmin: null,
-//     profileEmail: null,
-//     profileFirstName: null,
-//     profileLastName: null,
-//     profileUsername: null,
-//     profileId: null,
-//     profileInitials: null,
-//   },
-//   getters: {
-//     /*
-//     blogPostsFeed(state) {
-//       return state.blogPosts.slice(0, 2);
-//     },
-//     blogPostsCards(state) {
-//       return state.blogPosts.slice(2, 6);
-//     },
-//     */
-//   },
-//   mutations: {
-//     /*
-//     newBlogPost(state, payload) {
-//       state.blogHTML = payload;
-//     },
-//     updateBlogTitle(state, payload) {
-//       state.blogTitle = payload;
-//     },
-//     fileNameChange(state, payload) {
-//       state.blogPhotoName = payload;
-//     },
-//     createFileURL(state, payload) {
-//       state.blogPhotoFileURL = payload;
-//     },
-//     openPhotoPreview(state) {
-//       state.blogPhotoPreview = !state.blogPhotoPreview;
-//     },
-//     toggleEditPost(state, payload) {
-//       state.editPost = payload;
-//     },
-//     setBlogState(state, payload) {
-//       state.blogTitle = payload.blogTitle;
-//       state.blogHTML = payload.blogHTML;
-//       state.blogPhotoFileURL = payload.blogCoverPhoto;
-//       state.blogPhotoName = payload.blogCoverPhotoName;
-//     },
-//     filterBlogPost(state, payload) {
-//       state.blogPosts = state.blogPosts.filter((post) => post.blogID !== payload);
-//     },
-//     updateUser(state, payload) {
-//       state.user = payload;
-//     },
-//     setProfileAdmin(state, payload) {
-//       state.profileAdmin = payload;
-//       console.log(state.profileAdmin);
-//     },
-//     setProfileInfo(state, doc) {
-//       state.profileId = doc.id;
-//       state.profileEmail = doc.data().email;
-//       state.profileFirstName = doc.data().firstName;
-//       state.profileLastName = doc.data().lastName;
-//       state.profileUsername = doc.data().username;
-//       console.log(state.profileId);
-//     },
-//     setProfileInitials(state) {
-//       state.profileInitials =
-//         state.profileFirstName.match(/(\b\S)?/g).join("") + state.profileLastName.match(/(\b\S)?/g).join("");
-//     },
-//     changeFirstName(state, payload) {
-//       state.profileFirstName = payload;
-//     },
-//     changeLastName(state, payload) {
-//       state.profileLastName = payload;
-//     },
-//     changeUsername(state, payload) {
-//       state.profileUsername = payload;
-//     },
-//     */
-//   },
-//   actions: {
-//     /*
-//     async getCurrentUser({ commit }, user) {
-//       const dataBase = await db.collection("users").doc(firebase.auth().currentUser.uid);
-//       const dbResults = await dataBase.get();
-//       commit("setProfileInfo", dbResults);
-//       commit("setProfileInitials");
-//       const token = await user.getIdTokenResult();
-//       const admin = await token.claims.admin;
-//       commit("setProfileAdmin", admin);
-//     },
-//     async getPost({ state }) {
-//       const dataBase = await db.collection("blogPosts").orderBy("date", "desc");
-//       const dbResults = await dataBase.get();
-//       dbResults.forEach((doc) => {
-//         if (!state.blogPosts.some((post) => post.blogID === doc.id)) {
-//           const data = {
-//             blogID: doc.data().blogID,
-//             blogHTML: doc.data().blogHTML,
-//             blogCoverPhoto: doc.data().blogCoverPhoto,
-//             blogTitle: doc.data().blogTitle,
-//             blogDate: doc.data().date,
-//             blogCoverPhotoName: doc.data().blogCoverPhotoName,
-//           };
-//           state.blogPosts.push(data);
-//         }
-//       });
-//       state.postLoaded = true;
-//     },
-//     async updatePost({ commit, dispatch }, payload) {
-//       commit("filterBlogPost", payload);
-//       await dispatch("getPost");
-//     },
-//     async deletePost({ commit }, payload) {
-//       const getPost = await db.collection("blogPosts").doc(payload);
-//       await getPost.delete();
-//       commit("filterBlogPost", payload);
-//     },
-//     async updateUserSettings({ commit, state }) {
-//       const dataBase = await db.collection("users").doc(state.profileId);
-//       await dataBase.update({
-//         firstName: state.profileFirstName,
-//         lastName: state.profileLastName,
-//         username: state.profileUsername,
-//       });
-//       commit("setProfileInitials");
-//     },
-//     */
-//   },
-//   modules: {},
-// });
+export default createStore({
+  state() {
+    return {
+      count: 0,
+      user: null,
+      profileAdmin: null,
+      profileEmail: null,
+      profileFirstName: null,
+      profileLastName: null,
+      profileInstitution: null,
+      profileId: null,
+      profileInitials: null,
+    }
+  },
+  getters: {
+    getCount(state) {
+      return state.count
+    }
+  },
+  mutations: {
+    increment(state) {
+      state.count++
+    },
+    updateUser(state, payload) {
+      state.user = payload
+    },
+    setProfileInfo(state, doc) {
+      // console.log('setProfileInfo')
+      state.profileId = doc.id;
+      state.profileEmail = doc.data().email;
+      state.profileFirstName = doc.data().firstName;
+      state.profileLastName = doc.data().lastName;
+      state.profileInstitution = doc.data().institution
+      // console.log(state.profileId);
+    },
+    setProfileAdmin(state, payload) {
+      state.profileAdmin = payload;
+      console.log(state.profileAdmin);
+    },
+    setProfileInitials(state) {
+      state.profileInitials =
+        state.profileFirstName.match(/(\b\S)?/g).join("") + state.profileLastName.match(/(\b\S)?/g).join("");
+    },
+    changeFirstName(state, payload) {
+      state.profileFirstName = payload;
+    },
+    changeLastName(state, payload) {
+      state.profileLastName = payload;
+    },
+    changeInstitution(state, payload) {
+      state.profileInstitution = payload
+    }
+  },
+  actions: {
+    async getCurrentUser({ commit }, user) {
+      // const dataBase = await firestore.collection("users").doc(firebase.auth().currentUser.uid);
+      // const dbResults = await dataBase.get();
+      // console.log('getCurrentUser')
+      // console.log(user)
+
+      const result = await getDoc(doc(firestore, 'users', user.uid))
+        .catch((err) => {
+          console.log('Fail after getDoc')
+          console.log(err)
+        })
+      // console.log('After result')
+      if (result.exists()) {
+        // console.log('Result exists')
+        commit("setProfileInfo", result);
+        commit("setProfileInitials");
+        const token = await user.getIdTokenResult();
+        const admin = await token.claims.admin;
+        commit("setProfileAdmin", admin);
+      }
+    },
+    async updateUserSettings({ commit, state }) {
+      // const user = state.user
+      // console.log('updateUserSettings')
+      // console.log(state.profileId)
+      // console.log(state.user)
+      const docRef = doc(firestore, "users", state.profileId);
+      // console.log(docRef)
+
+      const docSnap = await getDoc(docRef)
+      // console.log(docSnap)
+      if (docSnap.exists()) {
+        // console.log('docSnap exists')
+        await updateDoc(docRef, {
+          firstName: state.profileFirstName,
+          lastName: state.profileLastName,
+          institution: state.profileInstitution,
+        }).catch((err) => {
+          console.log('Failed after updateDoc')
+        })
+        // console.log('Successfully updated user settings')
+        commit("setProfileInitials");
+      } else {
+        console.log(`User id does not exist: ${state.profileId}`)
+      }
+    },
+    async getStuff({ commit }) {
+      // console.log('In getStuff')
+      // console.log(firestore)
+      const docSnap = await getDoc(doc(firestore, 'users', 'test12'))
+      if (docSnap.exists()) {
+        // console.log('docSnap: ')
+        // console.log(docSnap)
+        // console.log(docSnap.id)
+        // console.log(docSnap.data())
+        return docSnap
+      } else {
+        console.log('ERROR: Document does not exist.')
+        return null
+      }
+    }
+  }
+})
