@@ -134,7 +134,7 @@ export default {
       this.emailInvalid = false
 
       // Validate institution
-      if (this.institution.length > 100) {
+      if (this.institution && this.institution.length > 100) {
         console.log('ERROR: Institution name too long')
         this.institutionInvalid = true 
         return 
