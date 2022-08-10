@@ -115,11 +115,11 @@ export default {
     user() {
       // console.log('user')
       if (this.$store.state.user) {
-        console.log('Navbar > User exists:')
-        console.log(this.$store.state.user)
+        // console.log('Navbar > User exists:')
+        // console.log(this.$store.state.user)
         return true
       } 
-      console.log('Navbar > User does not exist')
+      // console.log('Navbar > User does not exist')
       return false
     },
     firstName() {
@@ -131,7 +131,7 @@ export default {
   },
   methods: {
     signOut() {
-      console.log('signOut')
+      // console.log('signOut')
       const auth = getAuth()
       auth.signOut();
       // May need to re-direct to Home if on page requiring auth 

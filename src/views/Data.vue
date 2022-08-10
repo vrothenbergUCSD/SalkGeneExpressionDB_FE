@@ -50,7 +50,7 @@
             </div>
           </div>
         </div>
-        </div>
+      </div>
 
         <div class="p-fluid grid">
           <div class="col-10">
@@ -107,12 +107,21 @@
           <div>
             <Button label="Template" class="p-button-link" @click="download('gene_metadata_template.csv')"/>
           </div>
-          
+        </div>
+
+        <div id="upload_gene_metadata_error_panel" v-show="this.upload_gene_metadata_error" class="my-3">
+          <Panel header="Gene Metadata Error Log" class="p-error">
+            <ScrollPanel style="width: 100%; height: 200px" class="custom">
+              <li v-for="error in this.upload_gene_metadata_error_log">
+                {{ error }}
+              </li>
+            </ScrollPanel>
+          </Panel>
         </div>
 
         <div>
           <div class="text-lg font-medium mb-3">Upload gene metadata CSV </div>
-          <FileUpload mode="basic" name="demo[]" url="./upload.php" accept=".csv" :maxFileSize="1000000" @upload="onUpload" />
+          <FileUpload mode="basic" name="upload_gene_metadata" :chooseLabel="upload_gene_metadata_filename" :auto="true" :customUpload="true" accept=".csv" :maxFileSize="100000000" @uploader="upload_gene_metadata" />
         </div>
 
       </div>
@@ -131,7 +140,7 @@
                 <Column field="species" header="species"></Column>
                 <Column field="time_point" header="time_point"></Column>
                 <Column field="group_name" header="group_name"></Column>
-                <Column field="age" header="age"></Column>
+                <Column field="age_years" header="age"></Column>
                 <Column field="gender" header="gender"></Column>
                 <Column field="tissue" header="tissue"></Column>
                 <Column field="number_of_replicates" header="number_of_replicates"></Column>
@@ -151,14 +160,24 @@
           
         </div>
 
+        <div id="upload_sample_metadata_error_panel" v-show="this.upload_sample_metadata_error" class="my-3">
+          <Panel header="Sample Metadata Error Log" class="p-error">
+            <ScrollPanel style="width: 100%; height: 200px" class="custom">
+              <li v-for="error in this.upload_sample_metadata_error_log">
+                {{ error }}
+              </li>
+            </ScrollPanel>
+          </Panel>
+        </div>
+
         <div>
           <div class="text-lg font-medium mb-3">Upload sample metadata CSV </div>
-          <FileUpload mode="basic" name="demo[]" url="./upload.php" accept=".csv" :maxFileSize="1000000" @upload="onUpload" />
+          <FileUpload mode="basic" name="upload_sample_metadata" :chooseLabel="upload_sample_metadata_filename" :auto="true" :customUpload="true" accept=".csv" :maxFileSize="100000000" @uploader="upload_sample_metadata" />
         </div>
 
       </div>
 
-      <div id="expression_data">
+      <div id="gene_expression_data">
         <div class="text-xl font-medium mb-3 mt-5">
           Gene Expression Data
         </div>
@@ -167,7 +186,7 @@
         </div>
         
         <div>
-            <DataTable :value="expression_data" autoLayout class="p-datatable-sm" responsiveLayout="scroll">
+            <DataTable :value="gene_expression_data" autoLayout class="p-datatable-sm" responsiveLayout="scroll">
                 <Column field="gene_id" header="gene_id <UNIQUE>"></Column>
                 <Column field="sample_name" header="sample_name <UNIQUE>"></Column>
                 <Column field="gene_expression" header="gene_expression"></Column>
@@ -186,9 +205,20 @@
           
         </div>
 
+        <div id="upload_gene_expression_data_error_panel" v-show="this.upload_gene_expression_data_error" class="my-3">
+          <Panel header="Gene Metadata Error Log" class="p-error">
+            <ScrollPanel style="width: 100%; height: 200px" class="custom">
+              <li v-for="error in this.upload_gene_expression_data_error_log">
+                {{ error }}
+              </li>
+            </ScrollPanel>
+          </Panel>
+        </div>
+
         <div>
-          <div class="text-lg font-medium mb-3">Upload sample metadata CSV </div>
-          <FileUpload mode="basic" name="demo[]" url="./upload.php" accept=".csv" :maxFileSize="1000000" @upload="onUpload" />
+          <div class="text-lg font-medium mb-3">Upload gene expression CSV </div>
+          <FileUpload mode="basic" name="upload_gene_expression_data" :chooseLabel="upload_gene_expression_data_filename" :auto="true" :customUpload="true" accept=".csv" :maxFileSize="100000000" @uploader="upload_gene_expression_data" />
+          <!-- <FileUpload mode="basic" name="demo[]" url="./upload.php" accept=".csv" :maxFileSize="1000000" @upload="upload_gene_expression_data" /> -->
         </div>
 
       </div>
@@ -201,9 +231,6 @@
       </div>
 
     </div>
-		
-    
-    
 
   </div>
 </template>
@@ -217,7 +244,13 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
 import Textarea from 'primevue/textarea';
+import Panel from 'primevue/panel';
+import ScrollPanel from 'primevue/scrollpanel';
 
+import { storage, firestore } from "@/firebase/firebaseInit.js"
+import { ref, getDownloadURL } from "firebase/storage";
+import { getAuth } from "firebase/auth";
+import { doc, addDoc, setDoc } from "firebase/firestore"
 
 export default {
   components: {
@@ -228,7 +261,9 @@ export default {
     DataTable,
     Column, 
     Button,
-    Textarea
+    Textarea,
+    Panel,
+    ScrollPanel,
 
   },
   data() {
@@ -289,7 +324,7 @@ export default {
         'start' : '<Integer>',
         'end' : '<Integer>',
         'strand' : '<Char(+/-)>',
-        'length' : '<Integer>',
+        'length' : '<Float>',
         'description' : '<String>',
         'ensembl_gene_id' : '<String>',
         'gene_biotype' : '<String>',
@@ -313,14 +348,14 @@ export default {
         'species': '<String>', 
         'time_point' : '<String>', 
         'group_name' : '<String>',
-        'age' : '<Integer>',
+        'age' : '<Float>',
         'gender' : '<String>',
         'tissue' : '<String>',
         'number_of_replicates' : '<Integer>',
         'data_type' : '<String>',
         },
       ],
-      expression_data: [
+      gene_expression_data: [
         {
           'gene_id' : '<REQUIRED>',
           'sample_name' : '<REQUIRED>',
@@ -336,19 +371,301 @@ export default {
 
       uploadMsg: null,
 
+      upload_gene_metadata_error: null,
+      upload_gene_metadata_error_log: null,
+      upload_gene_metadata_filename: 'Select', 
+      upload_gene_metadata_file: null,
 
+      upload_sample_metadata_error: null,
+      upload_sample_metadata_error_log: null,
+      upload_sample_metadata_filename: 'Select', 
+      upload_sample_metadata_file: null,
+
+      upload_gene_expression_data_error: null,
+      upload_gene_expression_data_error_log: null,
+      upload_gene_expression_data_filename: 'Select', 
+      upload_gene_expression_data_file: null,
 
     }
   },
   methods: {
-    onUpload() {
-      this.$toast.add({severity: 'info', summary: 'Success', detail: 'File Uploaded', life: 3000});
+    isItInteger(str) {
+      return /^\-?[0-9]+$/.test(str);
+    },
+    isItFloat(str) {
+      return /^\-?[0-9]+(\.[0-9]+)?$/.test(str);
+    },
+    upload_gene_metadata(e) {
+      console.log('upload_gene_metadata')
+      console.log(e)
+      const files = e.files
+      const file = files[0]
+      console.log(file)
+      console.log(typeof(file))
+      const col_names = ['gene_id',	'gene_name',	'refseq',	'chr',	'start',	'end',
+      	'strand',	'length',	'copies',	'annotation_divergence',	'ensembl_gene_id',
+        'description',	'external_gene_name',	'gene_biotype',	'ensembl_peptide_id']
+      const col_types = ['string', 'string', 'string', 'string', 'integer', 
+        'integer', 'char(+/-)', 'integer', 'string', 'string', 'string', 'optional',
+        'optional', 'optional', 'optional']
+
+      const strand_chars = ['+', '-']
+
+      let error_log = []
+      const gene_ids = {}
+
+      // Loads entire file into memory? 
+      let reader = new FileReader() 
+      reader.readAsText(file)
+      reader.onload = (evt) => {
+        console.log('reader.onload')
+        let csv = evt.target.result
+        let rows = csv.split('\n')
+        let error_msg = null
+
+        // Iterate line by line
+        for (var i = 1; i < rows.length; i++) {
+          let cols = rows[i].split(',')
+          // if (i % 100 == 0) console.log(i)
+          
+          // Column by column
+          for (var j = 0; j < cols.length; j++) {
+            let value = cols[j]
+            if (col_types[j] != 'optional' && !value.length) {
+              // Fail
+              error_msg = `Null Error on line ${i} column ${col_names[j]}, value: ${value}`
+              error_log.push(error_msg)
+              console.log(error_msg)            
+              continue
+            }
+            if (col_types[j] == 'integer') {
+              if (!this.isItInteger(value.trim())) {
+                // Fail
+                error_msg = `Integer Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+                error_log.push(error_msg)
+                console.log(error_msg)
+                continue 
+              }
+            } else if (col_types[j] == 'float') {
+              if (!this.isItFloat(value.trim())) {
+                // Fail
+                error_msg = `Float Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+                error_log.push(error_msg)
+                console.log(error_msg)
+                continue 
+              }
+          
+            } else if (col_types[j] == 'char(+/-)') {
+              if (!strand_chars.some((arrVal) => value === arrVal)) {
+                // Fail
+                error_msg = `Char(+/-) Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+                error_log.push(error_msg)
+                console.log(error_msg)
+                continue
+              }              
+            }
+          }
+        }
+
+        this.upload_gene_metadata_error_log = error_log
+        this.upload_gene_metadata_error = error_log.length
+        
+        console.log('reader.onload finished')
+        if (!this.upload_gene_metadata_error) {
+          this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 5000});
+          this.upload_gene_metadata_filename = file.name
+          this.upload_gene_metadata_file = file
+        } else {
+          this.$toast.add({severity: 'error', summary: 'Error', detail: 'Failed Type Validation', life: 5000});
+          this.upload_gene_metadata_filename = 'Select'
+          this.upload_gene_metadata_file = null
+        }
+      }
+    },
+    upload_sample_metadata(e) {
+      console.log('upload_sample_metadata')
+      console.log(e)
+      const files = e.files
+      const file = files[0]
+      console.log(file)
+      console.log(typeof(file))
+      const col_names = ['sample_name',	'species',	'time_point',	'group_name',
+      	'age',	'gender',	'tissue',	'number_of_replicates',	'data_type']
+      const col_types = ['string', 'string', 'string', 'string', 'float', 
+        'string', 'string', 'integer', 'string']
+
+      let error_log = []
+      const sample_names = {}
+
+      // Loads entire file into memory? 
+      let reader = new FileReader() 
+      reader.readAsText(file)
+      reader.onload = (evt) => {
+        console.log('reader.onload')
+        let csv = evt.target.result
+        let rows = csv.split('\n')
+        let error_msg = null
+
+        // Iterate line by line
+        for (var i = 1; i < rows.length; i++) {
+          let cols = rows[i].split(',')
+          // if (i % 100 == 0) console.log(i)
+          
+          // Column by column
+          for (var j = 0; j < cols.length; j++) {
+            let value = cols[j]
+            if (col_types[j] != 'optional' && !value.length) {
+              // Fail
+              error_msg = `Null Error on line ${i} column ${col_names[j]}, value: ${value}`
+              error_log.push(error_msg)
+              console.log(error_msg)            
+              continue
+            }
+            if (col_types[j] == 'integer') {
+              if (!this.isItInteger(value.trim())) {
+                // Fail
+                error_msg = `Integer Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+                error_log.push(error_msg)
+                console.log(error_msg)
+                continue 
+              }
+            } else if (col_types[j] == 'float') {
+              if (!this.isItFloat(value.trim())) {
+                // Fail
+                error_msg = `Float Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+                error_log.push(error_msg)
+                console.log(error_msg)
+                continue 
+              }
+          
+            } else if (col_types[j] == 'char(+/-)') {
+              if (!strand_chars.some((arrVal) => value === arrVal)) {
+                // Fail
+                error_msg = `Char(+/-) Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+                error_log.push(error_msg)
+                console.log(error_msg)
+                continue
+              }              
+            }
+          }
+        }
+
+        this.upload_sample_metadata_error_log = error_log
+        this.upload_sample_metadata_error = error_log.length
+        
+        
+        if (!this.upload_sample_metadata_error) {
+          this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 5000});
+          this.upload_sample_metadata_filename = file.name
+          this.upload_sample_metadata_file = file
+        } else {
+          this.$toast.add({severity: 'error', summary: 'Error', detail: 'Failed Type Validation', life: 5000});
+          this.upload_sample_metadata_filename = 'Select'
+          this.upload_sample_metadata_file = null
+        }
+        console.log('reader.onload finished')
+      }
+
+    },
+    upload_gene_expression_data(e) {
+      console.log('upload_gene_expression_data')
+      console.log(e)
+      const files = e.files
+      const file = files[0]
+      console.log(file)
+      console.log(typeof(file))
+      const col_names = ['gene_id', 'sample_name', 'gene_expression']
+      const col_types = ['string', 'string', 'float']
+
+      let error_log = []
+      const sample_names = {}
+
+      // Loads entire file into memory? 
+      let reader = new FileReader() 
+      reader.readAsText(file)
+      reader.onload = (evt) => {
+        console.log('reader.onload')
+        let csv = evt.target.result
+        let rows = csv.split('\n')
+        let error_msg = null
+
+        // Iterate line by line
+        for (var i = 1; i < rows.length; i++) {
+          let cols = rows[i].split(',')
+          // if (i % 100 == 0) console.log(i)
+
+          if (error_log.length > 2) break
+          
+          // Column by column
+          for (var j = 0; j < cols.length; j++) {
+            let value = cols[j]
+            if (col_types[j] != 'optional' && !value.length) {
+              // Fail
+              error_msg = `Null Error on line ${i} column ${col_names[j]}, value: ${value}`
+              error_log.push(error_msg)
+              console.log(error_msg)            
+              continue
+            }
+            if (col_types[j] == 'integer') {
+              if (!this.isItInteger(value.trim())) {
+                // Fail
+                error_msg = `Integer Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+                error_log.push(error_msg)
+                console.log(error_msg)
+                continue 
+              }
+            } else if (col_types[j] == 'float') {
+              if (!this.isItFloat(value.trim())) {
+                // Fail
+                error_msg = `Float Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+                error_log.push(error_msg)
+                console.log(error_msg)
+                continue 
+              }
+          
+            } else if (col_types[j] == 'char(+/-)') {
+              if (!strand_chars.some((arrVal) => value === arrVal)) {
+                // Fail
+                error_msg = `Char(+/-) Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+                error_log.push(error_msg)
+                console.log(error_msg)
+                continue
+              }              
+            }
+          }
+        }
+
+        this.upload_gene_expression_data_error_log = error_log
+        this.upload_gene_expression_data_error = error_log.length
+        
+        
+        if (!this.upload_gene_expression_data_error) {
+          this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 5000});
+          this.upload_gene_expression_data_filename = file.name
+          this.upload_gene_expression_data_file = file
+        } else {
+          this.$toast.add({severity: 'error', summary: 'Error', detail: 'Failed Type Validation', life: 5000});
+          this.upload_gene_expression_data_filename = 'Select'
+          this.upload_gene_expression_data_file = null
+        }
+        console.log('reader.onload finished')
+      }
+
     },
     download(file) {
-      const url = `/files/${file}`;
-      window.location.href = url;
+      // console.log('download', file)
+      const fileRef = ref(storage, file)
+      // console.log(fileRef)
+      // const url = `gs://rbio-p-datasharing.appspot.com/${file}`;
+      getDownloadURL(fileRef).then((url) => {
+        window.location.href = url;
+      }).catch((error) => {
+        console.log('Error on download: ', error.code)
+      })
+      
     },
     save() {
+      this.saveMsg = null
       this.databaseTablePrefix = null
 
       // Validate experiment 
@@ -434,7 +751,7 @@ export default {
       }
       this.otherInvalid = false
 
-      this.saveMsg = "Dataset details successfully saved."
+      this.saveMsg = "Dataset details saved."
       this.databaseTablePrefix = `${this.experiment}_${this.species}_${this.tissue}_${this.year}`
     
 
@@ -443,11 +760,70 @@ export default {
 
 
     },
+    uploadFiles() {
+      this.save()
+      if (!this.saveMsg) {
+        // Failed validation
+        return 
+      }
+
+      const gene_metadata_table_name = `${this.databaseTablePrefix}_gene_metadata`
+      const sample_metadata_table_name = `${this.databaseTablePrefix}_sample_metadata`
+      const gene_expression_data_table_name = `${this.databaseTablePrefix}_gene_expression_data`
+
+      const auth = getAuth()
+      const createUser = await createUserWithEmailAndPassword(auth, this.email, this.password)
+        .catch((err) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          console.log('Error creating user: ', errorMessage)
+          if (errorCode =='auth/email-already-in-use') {
+            this.registerErrorMsg = "Account already in use."
+            return
+          }
+        })
+
+      const userId = createUser.user.uid
+
+      const newDoc = doc(firestore, 'users', userId)
+
+
+      await setDoc(doc(firestore, 'users', userId), {
+        firstName: this.firstName,
+        lastName: this.lastName,
+        email: this.email, 
+        institution: this.institution,
+      }).catch((err) => {
+        console.log('Fail after await setDoc')
+        console.log(err)
+      })
+      console.log('Successfully created new account.')
+
+      
+
+    }
   }
 
 }
 </script>
 
 <style>
+.p-panel-header {
+  background-color:#EF4444 !important;
+  color: white !important;
+}
+.custom .p-scrollpanel-wrapper {
+    border-right: 9px solid #f4f4f4;
+}
+
+.custom .p-scrollpanel-bar {
+    background-color: #1976d2;
+    opacity: 1;
+    transition: background-color .3s;
+}
+
+.custom .p-scrollpanel-bar:hover {
+    background-color: #135ba1;
+}
 
 </style>

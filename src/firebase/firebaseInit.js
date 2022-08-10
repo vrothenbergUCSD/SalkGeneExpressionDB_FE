@@ -3,11 +3,11 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-// import { getPerformance } from "firebase/performance";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions"
 
 const firebaseConfig = {
+  // apiKey: import.meta.env.FIREBASE_API_KEY,
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_PROJECT_ID,
@@ -16,7 +16,7 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_APP_ID,
 }
 
-console.log(import.meta.env.VITE_FIREBASE_API_KEY)
+// console.log(import.meta.env.VITE_FIREBASE_API_KEY)
 
 const firebaseApp = initializeApp(firebaseConfig);
 // console.log('firebaseApp')
@@ -28,6 +28,8 @@ const firestore = getFirestore(firebaseApp)
 // const performance = getPerformance(firebaseApp)
 const storage = getStorage(firebaseApp)
 const functions = getFunctions(firebaseApp)
+
+
 
 export {
   firebaseApp,

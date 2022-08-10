@@ -53,14 +53,7 @@ export default {
     }
   },
   async mounted() {
-    // console.log('Home mounted')
-    // console.log("Cloud Run URL: " + import.meta.env.VITE_API_URL)
-    // console.log("Mode: " + import.meta.env.MODE)
-    // console.log("Firebase API key: ")
-    // console.log(import.meta.env.VITE_FIREBASE_API_KEY)
-    
-    // const result = await this.$store.dispatch("getStuff")
-    // console.log(result)
+    // console.log(import.meta.env.VITE_VAR)
   },
   methods: {
     incrementCount() {

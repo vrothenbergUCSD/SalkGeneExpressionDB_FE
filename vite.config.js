@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
@@ -17,8 +17,22 @@ const defaultConfig = {
   },
 }
 
+// export default ({ mode }) => {
+//   // Load app-level env vars to node-level env vars.
+//   process.env = {...process.env, ...loadEnv(mode, process.cwd())};
+
+//   return defineConfig({
+//     // To access env vars here use process.env.TEST_VAR
+//   });
+// }
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
+
+  // process.env = { ...process.env, ...loadEnv(mode, process.cwd(), '') };
+
+
+
   return {
     ...defaultConfig
   }

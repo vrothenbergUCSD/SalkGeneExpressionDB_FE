@@ -1,3 +1,0 @@
-sample_name <UNIQUE>,species,time_point,group_name,age,gender,tissue,number_of_replicates,data_type
-<MANDATORY>,<MANDATORY>,<MANDATORY>,<MANDATORY>,<MANDATORY>,<MANDATORY>,<MANDATORY>,<MANDATORY>,<MANDATORY>
-<String>,<String>,<String>,<String>,<Integer>,<String>,<String>,<Integer>,<String>
