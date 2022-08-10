@@ -119,10 +119,22 @@
           </Panel>
         </div>
 
-        <div>
+        <!-- <div>
           <div class="text-lg font-medium mb-3">Upload gene metadata CSV </div>
           <FileUpload mode="basic" name="upload_gene_metadata" :chooseLabel="upload_gene_metadata_filename" :auto="true" :customUpload="true" accept=".csv" :maxFileSize="100000000" @uploader="upload_gene_metadata" />
+        </div> -->
+
+        <div class="flex items-center content-center my-1">
+          <div class="text-lg align-middle font-medium">Select gene metadata CSV</div>
+          <div class="ml-5">
+            <FileUpload mode="basic" name="upload_gene_metadata" 
+            :chooseLabel="upload_gene_metadata_filename" :auto="true" 
+            :customUpload="true" accept=".csv" :maxFileSize="100000000" 
+            @uploader="upload_gene_metadata" />
+          </div>
         </div>
+
+        
 
       </div>
 
@@ -161,7 +173,7 @@
         </div>
 
         <div id="upload_sample_metadata_error_panel" v-show="this.upload_sample_metadata_error" class="my-3">
-          <Panel header="Sample Metadata Error Log" class="p-error">
+          <Panel header="Sample Metadata Error Log" class="custom">
             <ScrollPanel style="width: 100%; height: 200px" class="custom">
               <li v-for="error in this.upload_sample_metadata_error_log">
                 {{ error }}
@@ -170,12 +182,25 @@
           </Panel>
         </div>
 
-        <div>
+        <!-- <div>
           <div class="text-lg font-medium mb-3">Upload sample metadata CSV </div>
           <FileUpload mode="basic" name="upload_sample_metadata" :chooseLabel="upload_sample_metadata_filename" :auto="true" :customUpload="true" accept=".csv" :maxFileSize="100000000" @uploader="upload_sample_metadata" />
+        </div> -->
+
+        <div class="flex items-center content-center my-1">
+          <div class="text-lg align-middle font-medium">Select sample metadata CSV</div>
+          <div class="ml-5">
+            <FileUpload mode="basic" name="upload_sample_metadata" 
+            :chooseLabel="upload_sample_metadata_filename" :auto="true" 
+            :customUpload="true" accept=".csv" :maxFileSize="100000000" 
+            @uploader="upload_sample_metadata" />
+
+          </div>
         </div>
 
       </div>
+
+    
 
       <div id="gene_expression_data">
         <div class="text-xl font-medium mb-3 mt-5">
@@ -215,19 +240,30 @@
           </Panel>
         </div>
 
-        <div>
-          <div class="text-lg font-medium mb-3">Upload gene expression CSV </div>
-          <FileUpload mode="basic" name="upload_gene_expression_data" :chooseLabel="upload_gene_expression_data_filename" :auto="true" :customUpload="true" accept=".csv" :maxFileSize="100000000" @uploader="upload_gene_expression_data" />
-          <!-- <FileUpload mode="basic" name="demo[]" url="./upload.php" accept=".csv" :maxFileSize="1000000" @upload="upload_gene_expression_data" /> -->
+        <div class="flex items-center content-center my-1">
+          <div class="text-lg align-middle font-medium">Select gene expression CSV</div>
+          <div class="ml-5">
+            <FileUpload mode="basic" name="upload_gene_expression_data" 
+              :chooseLabel="upload_gene_expression_data_filename" :auto="true" 
+              :customUpload="true" accept=".csv" :maxFileSize="100000000" 
+              @uploader="upload_gene_expression_data" />
+          </div>
         </div>
 
       </div>
 
       <div class="mx-auto my-5">
-        <div>
-          
+        <div class="text-center my-5">
+          <div class="text-900 text-2xl font-medium mb-3">Finalize and upload dataset</div>
         </div>
-        <span v-show="uploadMsg">{{ uploadMsg }} </span>
+        <div class="my-3 p-error">
+          {{ uploadMsg }}
+        </div>
+        
+        <div class="mx-auto flex items-center justify-center">
+          <Button label="Upload Files" icon="pi pi-cloud" class="p-button-lg mx-auto"  @click="uploadFiles"/>
+        </div>
+        <!-- <span v-show="uploadMsg">{{ uploadMsg }} </span> -->
       </div>
 
     </div>
@@ -246,11 +282,12 @@ import Button from 'primevue/button'
 import Textarea from 'primevue/textarea';
 import Panel from 'primevue/panel';
 import ScrollPanel from 'primevue/scrollpanel';
+import Divider from 'primevue/divider'
 
 import { storage, firestore } from "@/firebase/firebaseInit.js"
 import { ref, getDownloadURL } from "firebase/storage";
 import { getAuth } from "firebase/auth";
-import { doc, addDoc, setDoc } from "firebase/firestore"
+import { doc, collection, getDoc, addDoc, setDoc } from "firebase/firestore"
 
 export default {
   components: {
@@ -264,6 +301,7 @@ export default {
     Textarea,
     Panel,
     ScrollPanel,
+    Divider,
 
   },
   data() {
@@ -395,6 +433,56 @@ export default {
     isItFloat(str) {
       return /^\-?[0-9]+(\.[0-9]+)?$/.test(str);
     },
+    validateCSV(csv, col_names, col_types) {
+      let rows = csv.split('\n')
+      let error_log = []
+      let error_msg = null
+      const strand_chars = ['+', '-']
+
+      // Iterate line by line
+      for (var i = 1; i < rows.length; i++) {
+        let cols = rows[i].split(',')
+        // if (i % 100 == 0) console.log(i)
+        
+        // Column by column
+        for (var j = 0; j < col_types.length; j++) {
+          let value = cols[j]
+          if (col_types[j] != 'optional' && (!value || !value.length)) {
+            // Fail
+            error_msg = `Null Error on line ${i} column ${col_names[j]}, value: ${value}`
+            error_log.push(error_msg)
+            console.log(error_msg)            
+            continue
+          }
+          if (col_types[j] == 'integer') {
+            if (!this.isItInteger(value.trim())) {
+              // Fail
+              error_msg = `Integer Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+              error_log.push(error_msg)
+              console.log(error_msg)
+              continue 
+            }
+          } else if (col_types[j] == 'float') {
+            if (!this.isItFloat(value.trim())) {
+              // Fail
+              error_msg = `Float Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+              error_log.push(error_msg)
+              console.log(error_msg)
+              continue 
+            }          
+          } else if (col_types[j] == 'char(+/-)') {
+            if (!strand_chars.some((arrVal) => value === arrVal)) {
+              // Fail
+              error_msg = `Char(+/-) Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+              error_log.push(error_msg)
+              console.log(error_msg)
+              continue
+            }              
+          }
+        }
+      }
+      return error_log
+    },
     upload_gene_metadata(e) {
       console.log('upload_gene_metadata')
       console.log(e)
@@ -406,10 +494,10 @@ export default {
       	'strand',	'length',	'copies',	'annotation_divergence',	'ensembl_gene_id',
         'description',	'external_gene_name',	'gene_biotype',	'ensembl_peptide_id']
       const col_types = ['string', 'string', 'string', 'string', 'integer', 
-        'integer', 'char(+/-)', 'integer', 'string', 'string', 'string', 'optional',
+        'integer', 'char(+/-)', 'float', 'string', 'string', 'string', 'optional',
         'optional', 'optional', 'optional']
 
-      const strand_chars = ['+', '-']
+      // const strand_chars = ['+', '-']
 
       let error_log = []
       const gene_ids = {}
@@ -420,52 +508,7 @@ export default {
       reader.onload = (evt) => {
         console.log('reader.onload')
         let csv = evt.target.result
-        let rows = csv.split('\n')
-        let error_msg = null
-
-        // Iterate line by line
-        for (var i = 1; i < rows.length; i++) {
-          let cols = rows[i].split(',')
-          // if (i % 100 == 0) console.log(i)
-          
-          // Column by column
-          for (var j = 0; j < cols.length; j++) {
-            let value = cols[j]
-            if (col_types[j] != 'optional' && !value.length) {
-              // Fail
-              error_msg = `Null Error on line ${i} column ${col_names[j]}, value: ${value}`
-              error_log.push(error_msg)
-              console.log(error_msg)            
-              continue
-            }
-            if (col_types[j] == 'integer') {
-              if (!this.isItInteger(value.trim())) {
-                // Fail
-                error_msg = `Integer Type Error on line ${i} column ${col_names[j]}, value: ${value}`
-                error_log.push(error_msg)
-                console.log(error_msg)
-                continue 
-              }
-            } else if (col_types[j] == 'float') {
-              if (!this.isItFloat(value.trim())) {
-                // Fail
-                error_msg = `Float Type Error on line ${i} column ${col_names[j]}, value: ${value}`
-                error_log.push(error_msg)
-                console.log(error_msg)
-                continue 
-              }
-          
-            } else if (col_types[j] == 'char(+/-)') {
-              if (!strand_chars.some((arrVal) => value === arrVal)) {
-                // Fail
-                error_msg = `Char(+/-) Type Error on line ${i} column ${col_names[j]}, value: ${value}`
-                error_log.push(error_msg)
-                console.log(error_msg)
-                continue
-              }              
-            }
-          }
-        }
+        error_log = this.validateCSV(csv, col_names, col_types)
 
         this.upload_gene_metadata_error_log = error_log
         this.upload_gene_metadata_error = error_log.length
@@ -503,52 +546,7 @@ export default {
       reader.onload = (evt) => {
         console.log('reader.onload')
         let csv = evt.target.result
-        let rows = csv.split('\n')
-        let error_msg = null
-
-        // Iterate line by line
-        for (var i = 1; i < rows.length; i++) {
-          let cols = rows[i].split(',')
-          // if (i % 100 == 0) console.log(i)
-          
-          // Column by column
-          for (var j = 0; j < cols.length; j++) {
-            let value = cols[j]
-            if (col_types[j] != 'optional' && !value.length) {
-              // Fail
-              error_msg = `Null Error on line ${i} column ${col_names[j]}, value: ${value}`
-              error_log.push(error_msg)
-              console.log(error_msg)            
-              continue
-            }
-            if (col_types[j] == 'integer') {
-              if (!this.isItInteger(value.trim())) {
-                // Fail
-                error_msg = `Integer Type Error on line ${i} column ${col_names[j]}, value: ${value}`
-                error_log.push(error_msg)
-                console.log(error_msg)
-                continue 
-              }
-            } else if (col_types[j] == 'float') {
-              if (!this.isItFloat(value.trim())) {
-                // Fail
-                error_msg = `Float Type Error on line ${i} column ${col_names[j]}, value: ${value}`
-                error_log.push(error_msg)
-                console.log(error_msg)
-                continue 
-              }
-          
-            } else if (col_types[j] == 'char(+/-)') {
-              if (!strand_chars.some((arrVal) => value === arrVal)) {
-                // Fail
-                error_msg = `Char(+/-) Type Error on line ${i} column ${col_names[j]}, value: ${value}`
-                error_log.push(error_msg)
-                console.log(error_msg)
-                continue
-              }              
-            }
-          }
-        }
+        error_log = this.validateCSV(csv, col_names, col_types)
 
         this.upload_sample_metadata_error_log = error_log
         this.upload_sample_metadata_error = error_log.length
@@ -586,54 +584,7 @@ export default {
       reader.onload = (evt) => {
         console.log('reader.onload')
         let csv = evt.target.result
-        let rows = csv.split('\n')
-        let error_msg = null
-
-        // Iterate line by line
-        for (var i = 1; i < rows.length; i++) {
-          let cols = rows[i].split(',')
-          // if (i % 100 == 0) console.log(i)
-
-          if (error_log.length > 2) break
-          
-          // Column by column
-          for (var j = 0; j < cols.length; j++) {
-            let value = cols[j]
-            if (col_types[j] != 'optional' && !value.length) {
-              // Fail
-              error_msg = `Null Error on line ${i} column ${col_names[j]}, value: ${value}`
-              error_log.push(error_msg)
-              console.log(error_msg)            
-              continue
-            }
-            if (col_types[j] == 'integer') {
-              if (!this.isItInteger(value.trim())) {
-                // Fail
-                error_msg = `Integer Type Error on line ${i} column ${col_names[j]}, value: ${value}`
-                error_log.push(error_msg)
-                console.log(error_msg)
-                continue 
-              }
-            } else if (col_types[j] == 'float') {
-              if (!this.isItFloat(value.trim())) {
-                // Fail
-                error_msg = `Float Type Error on line ${i} column ${col_names[j]}, value: ${value}`
-                error_log.push(error_msg)
-                console.log(error_msg)
-                continue 
-              }
-          
-            } else if (col_types[j] == 'char(+/-)') {
-              if (!strand_chars.some((arrVal) => value === arrVal)) {
-                // Fail
-                error_msg = `Char(+/-) Type Error on line ${i} column ${col_names[j]}, value: ${value}`
-                error_log.push(error_msg)
-                console.log(error_msg)
-                continue
-              }              
-            }
-          }
-        }
+        error_log = this.validateCSV(csv, col_names, col_types)
 
         this.upload_gene_expression_data_error_log = error_log
         this.upload_gene_expression_data_error = error_log.length
@@ -676,8 +627,6 @@ export default {
         return 
       }
       this.experimentInvalid = false
-
-
 
       // Validate year
       this.year = Number.parseInt(this.year)
@@ -753,53 +702,56 @@ export default {
 
       this.saveMsg = "Dataset details saved."
       this.databaseTablePrefix = `${this.experiment}_${this.species}_${this.tissue}_${this.year}`
-    
-
-
-
-
 
     },
-    uploadFiles() {
+    async uploadFiles() {
+      console.log('uploadFiles')
       this.save()
       if (!this.saveMsg) {
         // Failed validation
-        return 
+        console.log('Failed validation')
+        // return 
       }
+      this.databaseTablePrefix = 'TestExperiment_Human_Brain_2022'
 
       const gene_metadata_table_name = `${this.databaseTablePrefix}_gene_metadata`
       const sample_metadata_table_name = `${this.databaseTablePrefix}_sample_metadata`
       const gene_expression_data_table_name = `${this.databaseTablePrefix}_gene_expression_data`
 
       const auth = getAuth()
-      const createUser = await createUserWithEmailAndPassword(auth, this.email, this.password)
-        .catch((err) => {
-          const errorCode = error.code;
-          const errorMessage = error.message;
-          console.log('Error creating user: ', errorMessage)
-          if (errorCode =='auth/email-already-in-use') {
-            this.registerErrorMsg = "Account already in use."
-            return
-          }
+      const datasetsCollectionRef = collection(firestore, 'datasets')
+      // console.log('datasetsCollectionRef')
+      // console.log(datasetsCollectionRef)
+
+      const newDocRef = doc(firestore, 'datasets', this.databaseTablePrefix)
+      console.log('newDocRef')
+      console.log(newDocRef)
+
+      const docSnap = await getDoc(newDocRef);
+
+      if (docSnap.exists()) {
+        console.log('ERROR: Dataset already exists.')
+      } else {
+        await setDoc(newDocRef, {
+          owner: this.$store.state.profileId,
+          experiment: this.experiment || 'TestExp', 
+          institution: this.institution || 'Inst', 
+          species: this.species || 'Human', 
+          tissue: this.tissue || 'Brain', 
+          year: this.year || '2022', 
+          doi : this.doi || 'https://doi.org/10.1016/S0092-8674(02)00722-5',
+          otherInformation: this.other,
+          permittedUsers: [],
+          gene_metadata_table_name: gene_metadata_table_name,
+          sample_metadata_table_name: sample_metadata_table_name,
+          gene_expression_data_table_name: gene_expression_data_table_name,
+        }).catch((err) => {
+          console.log('Fail after await setDoc')
+          console.log(err)
         })
+        console.log('Success!')
 
-      const userId = createUser.user.uid
-
-      const newDoc = doc(firestore, 'users', userId)
-
-
-      await setDoc(doc(firestore, 'users', userId), {
-        firstName: this.firstName,
-        lastName: this.lastName,
-        email: this.email, 
-        institution: this.institution,
-      }).catch((err) => {
-        console.log('Fail after await setDoc')
-        console.log(err)
-      })
-      console.log('Successfully created new account.')
-
-      
+      }
 
     }
   }
@@ -817,8 +769,8 @@ export default {
 }
 
 .custom .p-scrollpanel-bar {
-    background-color: #1976d2;
-    opacity: 1;
+    background-color: #1976d2 !important;
+    opacity: 0.5;
     transition: background-color .3s;
 }
 

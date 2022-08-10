@@ -158,6 +158,7 @@ export default {
       }
       this.passwordInvalid = false
       console.log('Passed validation')
+      
       const auth = getAuth()
       const createUser = await createUserWithEmailAndPassword(auth, this.email, this.password)
         .catch((err) => {
