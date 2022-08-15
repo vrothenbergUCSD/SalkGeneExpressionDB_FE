@@ -16,7 +16,7 @@
         <InputText id="email" type="text" v-model="email" class="w-full mb-3" />
 
         <label for="password" class="block text-900 font-medium mb-2">Password</label>
-        <InputText id="password" type="password" v-model="password" class="w-full mb-3" />
+        <InputText id="password" type="password" v-model="password" class="w-full mb-3"/>
         <div v-show="error" class="error">{{ this.errorMsg }}</div>
 
         <div class="flex align-items-center justify-content-between my-6">
@@ -44,7 +44,7 @@ import Button from "primevue/button"
 import Checkbox from "primevue/checkbox"
 // import { auth } from "firebase/firebaseInit"
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { firestore } from "@/firebase/firebaseInit";
+// import { firestore } from "@/firebase/firebaseInit";
 
 export default {
   name: 'Login',
@@ -82,6 +82,9 @@ export default {
         this.errorMsg = err.message;
         console.log(err.message)
       });
+    },
+    myFunc() {
+      console.log('hello')
     }
   }
 }

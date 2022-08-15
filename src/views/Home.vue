@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/multi-word-component-names -->
 <template>
   <div class="p-5 font-semibold text-5xl text-center">
-    RBIO-P Data Sharing
+    RBIO-P Data Sharing Web App
   </div>
   <div id="call-to-action">
     <div class="surface-section px-4 py-8 md:px-6 lg:px-8">

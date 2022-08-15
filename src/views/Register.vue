@@ -68,7 +68,7 @@
         </div>
         
 
-        <Button label="Register" icon="pi pi-user" class="w-full" @click="register"></Button>
+        <Button label="Register" icon="pi pi-user" class="w-full" @click="register" @keyup.enter="register"></Button>
     </div>
 </div>
 </template>
