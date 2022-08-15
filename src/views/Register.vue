@@ -43,7 +43,9 @@
         
         <div class="mb-2">
           <label for="password" class="block text-900 w-full font-medium mb-2">Password</label>
-          <Password class="w-full mb-3" inputClass="w-full" :class="{ 'p-invalid' : passwordInvalid }" v-model="password" toggleMask >
+          <Password class="w-full mb-3" inputClass="w-full" 
+            :class="{ 'p-invalid' : passwordInvalid }" v-model="password" 
+            toggleMask @keyup.enter="register" >
               <template #header>
               <h6>Pick a password</h6>
               </template>

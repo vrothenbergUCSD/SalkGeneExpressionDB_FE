@@ -16,7 +16,7 @@
         <InputText id="email" type="text" v-model="email" class="w-full mb-3" />
 
         <label for="password" class="block text-900 font-medium mb-2">Password</label>
-        <InputText id="password" type="password" v-model="password" class="w-full mb-3"/>
+        <InputText id="password" type="password" v-model="password" class="w-full mb-3" @keyup.enter="signIn"/>
         <div v-show="error" class="error">{{ this.errorMsg }}</div>
 
         <div class="flex align-items-center justify-content-between my-6">
@@ -32,7 +32,7 @@
 
         </div>
 
-        <Button label="Sign In" icon="pi pi-user" class="w-full" @click="signIn"></Button>
+        <Button label="Sign In" icon="pi pi-user" class="w-full" @click="signIn" @keyup.enter="signIn"></Button>
     </div>
 </div>
   
