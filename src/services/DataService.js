@@ -8,6 +8,8 @@ import http from "../http-common";
 
 
 class DataService {
+
+  // GET Requests 
   async getAllSampleMetadata() {
     return http.get("sample_metadata/data");
   }
@@ -25,28 +27,44 @@ class DataService {
   async getDatabaseMetadata() {
     return http.get('database_metadata/data')
   }
-  // getAllSampleMetadata = async () => {
-  //   return axios.get("/samples_metadata");
-  // }
-  /*
-  get(id) {
-    return http.get(`/tutorials/${id}`);
+
+  // POST Requests
+  async postSampleMetadata(formData) {
+    return http.post('upload/sample_metadata', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
   }
-  create(data) {
-    return http.post("/tutorials", data);
+  async postSampleMetadata(formData) {
+    return http.post('upload/sample_metadata', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
   }
-  update(id, data) {
-    return http.put(`/tutorials/${id}`, data);
+  async postGeneExpressionData(formData) {
+    return http.post('upload/gene_expression_data', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
   }
-  delete(id) {
-    return http.delete(`/tutorials/${id}`);
+  async postDatasetMetadata(formData) {
+    return http.post('upload/dataset_metadata', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
   }
-  deleteAll() {
-    return http.delete(`/tutorials`);
+  async postDataset(formData) {
+    return http.post('upload/dataset', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
   }
-  findByTitle(title) {
-    return http.get(`/tutorials?title=${title}`);
-  }
-  */
+
 }
+
 export default new DataService();

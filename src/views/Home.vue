@@ -53,7 +53,8 @@ export default {
     }
   },
   async mounted() {
-    // console.log(import.meta.env.VITE_VAR)
+    console.log('Home mounted')
+    console.log(import.meta.env.VITE_VAR)
   },
   methods: {
     incrementCount() {

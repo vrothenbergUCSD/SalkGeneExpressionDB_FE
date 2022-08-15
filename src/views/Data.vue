@@ -5,7 +5,7 @@
       <div class="text-center my-5">
           <div class="text-900 text-3xl font-medium mb-3">Upload New Dataset</div>
       </div>
-      <div class="text-xl font-medium mb-3">
+      <div id="dataset-details" class="text-xl font-medium mb-3">
         Dataset details
       </div>
       <div class="p-fluid grid">
@@ -19,7 +19,7 @@
             <div class="field col-3">
               <label for="year" class="block text-900 font-medium mb-2">Year</label>
               <InputNumber v-model="year" mode="decimal" :useGrouping="false" class="w-full mb-2" :class="{ 'p-invalid': yearInvalid }" />
-              <small id="year-help" class="p-error" v-show="yearInvalid">{{ yearErrorMsg}}</small>
+              <small id="year-help" class="p-error" v-show="yearInvalid">{{ yearErrorMsg}} </small>
             </div>
           </div>
 
@@ -119,15 +119,10 @@
           </Panel>
         </div>
 
-        <!-- <div>
-          <div class="text-lg font-medium mb-3">Upload gene metadata CSV </div>
-          <FileUpload mode="basic" name="upload_gene_metadata" :chooseLabel="upload_gene_metadata_filename" :auto="true" :customUpload="true" accept=".csv" :maxFileSize="100000000" @uploader="upload_gene_metadata" />
-        </div> -->
-
-        <div class="flex items-center content-center my-1">
+        <div  class="flex items-center content-center my-1">
           <div class="text-lg align-middle font-medium">Select gene metadata CSV</div>
-          <div class="ml-5">
-            <FileUpload mode="basic" name="upload_gene_metadata" 
+          <div class="ml-5" >
+            <FileUpload :class="{ 'p-button-warning': upload_gene_metadata_highlight }" mode="basic" name="upload_gene_metadata" 
             :chooseLabel="upload_gene_metadata_filename" :auto="true" 
             :customUpload="true" accept=".csv" :maxFileSize="100000000" 
             @uploader="upload_gene_metadata" />
@@ -190,7 +185,8 @@
         <div class="flex items-center content-center my-1">
           <div class="text-lg align-middle font-medium">Select sample metadata CSV</div>
           <div class="ml-5">
-            <FileUpload mode="basic" name="upload_sample_metadata" 
+            <FileUpload :class="{ 'p-button-warning': upload_sample_metadata_highlight }" 
+            mode="basic" name="upload_sample_metadata" 
             :chooseLabel="upload_sample_metadata_filename" :auto="true" 
             :customUpload="true" accept=".csv" :maxFileSize="100000000" 
             @uploader="upload_sample_metadata" />
@@ -243,7 +239,8 @@
         <div class="flex items-center content-center my-1">
           <div class="text-lg align-middle font-medium">Select gene expression CSV</div>
           <div class="ml-5">
-            <FileUpload mode="basic" name="upload_gene_expression_data" 
+            <FileUpload mode="basic" :class="{ 'p-button-warning': upload_gene_metadata_highlight }"
+              name="upload_gene_expression_data" 
               :chooseLabel="upload_gene_expression_data_filename" :auto="true" 
               :customUpload="true" accept=".csv" :maxFileSize="100000000" 
               @uploader="upload_gene_expression_data" />
@@ -256,12 +253,21 @@
         <div class="text-center my-5">
           <div class="text-900 text-2xl font-medium mb-3">Finalize and upload dataset</div>
         </div>
-        <div class="my-3 p-error">
+        <div class="my-3 p-error" v-show="uploadMsg">
           {{ uploadMsg }}
+        </div>
+        <div id="upload_files_error_panel" v-show="this.upload_files_error" class="my-3">
+          <Panel header="Upload Files Error Log" class="custom">
+            <ScrollPanel style="width: 100%; height: 200px" class="custom">
+              <li v-for="error in this.upload_files_error_log">
+                {{ error }}
+              </li>
+            </ScrollPanel>
+          </Panel>
         </div>
         
         <div class="mx-auto flex items-center justify-center">
-          <Button label="Upload Files" icon="pi pi-cloud" class="p-button-lg mx-auto"  @click="uploadFiles"/>
+          <Button label="Upload Files" icon="pi pi-cloud" class="p-button-lg mx-auto"  @click="upload_files"/>
         </div>
         <!-- <span v-show="uploadMsg">{{ uploadMsg }} </span> -->
       </div>
@@ -288,6 +294,8 @@ import { storage, firestore } from "@/firebase/firebaseInit.js"
 import { ref, getDownloadURL } from "firebase/storage";
 import { getAuth } from "firebase/auth";
 import { doc, collection, getDoc, addDoc, setDoc } from "firebase/firestore"
+
+import DataService from "@/services/DataService.js"
 
 export default {
   components: {
@@ -407,22 +415,27 @@ export default {
 
       ],
 
-      uploadMsg: null,
-
       upload_gene_metadata_error: null,
       upload_gene_metadata_error_log: null,
       upload_gene_metadata_filename: 'Select', 
       upload_gene_metadata_file: null,
+      upload_gene_metadata_highlight: null,
 
       upload_sample_metadata_error: null,
       upload_sample_metadata_error_log: null,
       upload_sample_metadata_filename: 'Select', 
       upload_sample_metadata_file: null,
+      upload_sample_metadata_highlight: null,
 
       upload_gene_expression_data_error: null,
       upload_gene_expression_data_error_log: null,
       upload_gene_expression_data_filename: 'Select', 
       upload_gene_expression_data_file: null,
+      upload_gene_expression_data_highlight: null, 
+
+      uploadMsg: null,
+      upload_files_error: null, 
+      upload_files_error_log: null, 
 
     }
   },
@@ -438,6 +451,24 @@ export default {
       let error_log = []
       let error_msg = null
       const strand_chars = ['+', '-']
+
+      let headers = rows[0].split(',')
+      for (var i = 0; i < col_names.length; i++) {
+        if (!headers[i]) {
+          if (col_types[i].valueOf() !== 'optional') {
+            error_msg = `Header Error on column ${i+1}, missing ${col_names[i]}`
+            error_log.push(error_msg)
+            console.log(error_msg)
+          }
+        } else {
+          if (headers[i].valueOf().trim() != col_names[i].valueOf().trim()) {
+            error_msg = `Header Error on column ${i}, expected ${col_names[i]} got ${headers[i]}`
+            error_log.push(error_msg)
+            console.log(error_msg)
+          }
+        }
+        
+      }
 
       // Iterate line by line
       for (var i = 1; i < rows.length; i++) {
@@ -497,7 +528,6 @@ export default {
         'integer', 'char(+/-)', 'float', 'string', 'string', 'string', 'optional',
         'optional', 'optional', 'optional']
 
-      // const strand_chars = ['+', '-']
 
       let error_log = []
       const gene_ids = {}
@@ -518,6 +548,7 @@ export default {
           this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 5000});
           this.upload_gene_metadata_filename = file.name
           this.upload_gene_metadata_file = file
+          this.upload_gene_metadata_highlight = false
         } else {
           this.$toast.add({severity: 'error', summary: 'Error', detail: 'Failed Type Validation', life: 5000});
           this.upload_gene_metadata_filename = 'Select'
@@ -533,7 +564,7 @@ export default {
       console.log(file)
       console.log(typeof(file))
       const col_names = ['sample_name',	'species',	'time_point',	'group_name',
-      	'age',	'gender',	'tissue',	'number_of_replicates',	'data_type']
+      	'age_years',	'gender',	'tissue',	'number_of_replicates',	'data_type']
       const col_types = ['string', 'string', 'string', 'string', 'float', 
         'string', 'string', 'integer', 'string']
 
@@ -556,6 +587,7 @@ export default {
           this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 5000});
           this.upload_sample_metadata_filename = file.name
           this.upload_sample_metadata_file = file
+          this.upload_sample_metadata_highlight = false
         } else {
           this.$toast.add({severity: 'error', summary: 'Error', detail: 'Failed Type Validation', life: 5000});
           this.upload_sample_metadata_filename = 'Select'
@@ -594,6 +626,7 @@ export default {
           this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 5000});
           this.upload_gene_expression_data_filename = file.name
           this.upload_gene_expression_data_file = file
+          this.upload_gene_expression_data_highlight = false
         } else {
           this.$toast.add({severity: 'error', summary: 'Error', detail: 'Failed Type Validation', life: 5000});
           this.upload_gene_expression_data_filename = 'Select'
@@ -619,14 +652,18 @@ export default {
       this.saveMsg = null
       this.databaseTablePrefix = null
 
+      let errors = false
+
       // Validate experiment 
       if (!this.experiment) {
         console.log('ERROR: Invalid experiment name')
         this.experimentInvalid = true
         this.experimentErrorMsg = "Experiment name required."
-        return 
+        errors = true 
+      } else {
+        this.experimentInvalid = false
       }
-      this.experimentInvalid = false
+      
 
       // Validate year
       this.year = Number.parseInt(this.year)
@@ -634,85 +671,223 @@ export default {
         console.log('ERROR: Year required.')
         this.yearInvalid = true
         this.yearErrorMsg = "Year required."
-        return 
+        errors = true 
       } else if (this.year > 2050 || this.year < 1850) {
         console.log('ERROR: Year must be reasonable.')
         this.yearInvalid = true 
         this.yearErrorMsg = "Year must be non-silly."
-        return
+        errors = true
+      } else {
+        this.yearInvalid = false
       }
-      this.yearInvalid = false
+      
 
       // Validate institution
       if (this.institution && this.institution.length > 100) {
         console.log('ERROR: Institution name too long')
         this.institutionInvalid = true 
         this.institutionErrorMsg = "Institution name too long, must be less than 100 characters."
-        return
+        errors = true
+      } else {
+        this.institutionInvalid = false
       }
-      this.institutionInvalid = false
+      
 
       // Validate species
       if (!this.species) {
         console.log('ERROR: Invalid species name')
         this.speciesInvalid = true
         this.speciesErrorMsg = "Species name required."
-        return 
-      }
-      this.speciesInvalid = false
-
-      RegExp.escape = function(string) {
-        return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
-      };
-
-      // Validate doi 
-      const pat = '\\b(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?!["&\'])\\S)+)\\b'
-      const re = new RegExp(pat)
-      console.log('this.doi', this.doi)
-      console.log('re:', re)
-      var found = re.exec(this.doi);
-      console.log(found)
-      if (!found) {
-        console.log('ERROR: Invalid DOI format.')
-        this.doiInvalid = true 
-        this.doiErrorMsg = "Invalid DOI format."
-        return
+        errors = true 
       } else {
-        console.log('DOI found: ', found + ' in ' + this.doi)
+        this.speciesInvalid = false
       }
-      this.doiInvalid = false
-
+      
+      // Validate doi 
+      if (this.doi) {
+        RegExp.escape = function(string) {
+          return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+        };
+        const pat = '\\b(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?!["&\'])\\S)+)\\b'
+        const re = new RegExp(pat)
+        console.log('this.doi', this.doi)
+        console.log('re:', re)
+        var found = re.exec(this.doi);
+        console.log(found)
+        if (!found) {
+          console.log('ERROR: Invalid DOI format.')
+          this.doiInvalid = true 
+          this.doiErrorMsg = "Invalid DOI format."
+          errors = true
+        } else {
+          // console.log('DOI found: ', found + ' in ' + this.doi)
+        }
+      } else {
+        this.doiInvalid = false
+      }
+      
       // Validate tissue
       if (!this.tissue) {
         console.log('ERROR: Invalid tissue')
         this.tissueInvalid = true
         this.tissueErrorMsg = "Tissue required."
-        return 
+        errors = true 
+      } else {
+        this.tissueInvalid = false
       }
-      this.tissueInvalid = false
+      
 
       // Validate other details 
       if (this.other && this.other.length > 10000) {
         console.log('ERROR: Other details too long.')
         this.otherInvalid = true 
         this.otherErrorMsg = "Other information section too long, must be less than 10,000 characters."
-        return 
+        errors = true 
+      } else {
+        this.otherInvalid = false
       }
-      this.otherInvalid = false
+      
+
+      if (errors) return
 
       this.saveMsg = "Dataset details saved."
       this.databaseTablePrefix = `${this.experiment}_${this.species}_${this.tissue}_${this.year}`
 
     },
-    async uploadFiles() {
-      console.log('uploadFiles')
+    // async post_gene_metadata(file) {
+    //   let formData  = new FormData()
+    //   formData.append('file', file)
+    //   let api_result = await DataService.postGeneMetadata(formData)
+    //   return api_result
+    // },
+    // async post_sample_metadata(file) {
+    //   let formData  = new FormData()
+    //   formData.append('file', file)
+    //   let api_result = await DataService.postSampleMetadata(formData)
+    //   return api_result
+    // },
+    // async post_gene_expression_data(file) {
+    //   let formData = new FormData()
+    //   formData.append('file', file)
+    //   let api_result = await DataService.postGeneExpressionData(formData)
+    //   return api_result
+    // },
+    // async post_dataset_metadata() {
+    //   const gene_metadata_table_name = `${this.databaseTablePrefix}_gene_metadata`
+    //   const sample_metadata_table_name = `${this.databaseTablePrefix}_sample_metadata`
+    //   const gene_expression_data_table_name = `${this.databaseTablePrefix}_gene_expression_data`
+    //   let metadata = {
+    //     owner: this.$store.state.profileId,
+    //     experiment: this.experiment || 'TestExp', 
+    //     institution: this.institution || 'Inst', 
+    //     species: this.species || 'Human', 
+    //     tissue: this.tissue || 'Brain', 
+    //     year: this.year || '2022', 
+    //     doi : this.doi || 'https://doi.org/10.1016/S0092-8674(02)00722-5',
+    //     otherInformation: this.other || '',
+    //     permittedUsers: [],
+    //     permissionGroups: [], 
+    //     gene_metadata_table_name: gene_metadata_table_name,
+    //     sample_metadata_table_name: sample_metadata_table_name,
+    //     gene_expression_data_table_name: gene_expression_data_table_name,
+    //   }
+    //   let formData = new FormData() 
+    //   formData.append('metadata', metadata)
+
+    //   let api_result = await DataService.postDatasetMetadata(metadata)
+    //   return api_result
+
+    // },
+    async post_dataset() {
+      console.log('post_dataset: Posting dataset to BigQuery')
+      const start = Date.now()
+      let formData = new FormData() 
+      formData.append('files', this.upload_gene_metadata_file)
+      formData.append('files', this.upload_sample_metadata_file)
+      formData.append('files', this.upload_gene_expression_data_file)
+
+      const gene_metadata_table_name = `${this.databaseTablePrefix}_gene_metadata`
+      const sample_metadata_table_name = `${this.databaseTablePrefix}_sample_metadata`
+      const gene_expression_data_table_name = `${this.databaseTablePrefix}_gene_expression_data`
+
+      let metadata = {
+        owner: this.$store.state.profileId,
+        experiment: this.experiment, 
+        institution: this.institution, 
+        species: this.species, 
+        tissue: this.tissue, 
+        year: this.year, 
+        doi : this.doi,
+        otherInformation: this.other || '',
+        permittedUsers: [],
+        gene_metadata_table_name: `${gene_metadata_table_name}_${this.$store.state.profileId}`,
+        sample_metadata_table_name: `${sample_metadata_table_name}_${this.$store.state.profileId}`,
+        gene_expression_data_table_name: `${gene_expression_data_table_name}_${this.$store.state.profileId}`,
+      }
+
+      // formData.append('body', metadata)
+      for (const [key, value] of Object.entries(metadata)) {
+        formData.append(key, value)
+      }
+
+      formData.append('gene_metadata_filename', this.upload_gene_metadata_filename)
+      formData.append('sample_metadata_filename', this.upload_sample_metadata_filename)
+      formData.append('gene_expression_data_filename', this.upload_gene_expression_data_filename)
+
+      let api_result = await DataService.postDataset(formData)
+      const time_elapsed = (Date.now() - start) / 1000
+      console.log(`post_dataset: Time elapsed: ${time_elapsed}s`)
+      return api_result
+    },
+    
+    async upload_files() {
+      console.log('upload_files')
+      this.upload_files_error = false
+      this.upload_gene_metadata_highlight = false
+      this.upload_sample_metadata_highlight = false
+      this.upload_gene_expression_data_highlight = false
+      this.upload_files_error_log = []
+
       this.save()
       if (!this.saveMsg) {
         // Failed validation
+        this.upload_files_error = true
+        this.upload_files_error_log.push('ERROR: Failed validation of dataset details.')
+
+        const element = document.getElementById("dataset-details");
+        element.scrollIntoView({behavior:"smooth"})
         console.log('Failed validation')
-        // return 
+        return 
       }
-      this.databaseTablePrefix = 'TestExperiment_Human_Brain_2022'
+
+      if (!this.upload_gene_metadata_file) {
+        this.upload_files_error = true
+        this.upload_gene_metadata_highlight = true
+        this.upload_files_error_log.push('ERROR: Missing gene metadata file.')
+        const element = document.getElementById("gene_metadata");
+        element.scrollIntoView({behavior:"smooth"})
+        console.log('ERROR: Missing gene metadata file.')
+      }
+
+      if (!this.upload_sample_metadata_file) {
+        this.upload_files_error = true
+        this.upload_sample_metadata_highlight = true
+        this.upload_files_error_log.push('ERROR: Missing sample metadata file.')
+        const element = document.getElementById("sample_metadata");
+        element.scrollIntoView({behavior:"smooth"})
+        console.log('ERROR: Missing sample metadata file.')
+      }
+
+      if (!this.upload_gene_expression_data_file) {
+        this.upload_files_error = true
+        this.upload_gene_expression_data_highlight = true
+        this.upload_files_error_log.push('ERROR: Missing gene expression data file.')
+        const element = document.getElementById("gene_expression_data");
+        element.scrollIntoView({behavior:"smooth"})
+        console.log('ERROR: Missing gene expression data file.') 
+      }
+
+      if (this.upload_files_error) return
 
       const gene_metadata_table_name = `${this.databaseTablePrefix}_gene_metadata`
       const sample_metadata_table_name = `${this.databaseTablePrefix}_sample_metadata`
@@ -720,17 +895,19 @@ export default {
 
       const auth = getAuth()
       const datasetsCollectionRef = collection(firestore, 'datasets')
-      // console.log('datasetsCollectionRef')
-      // console.log(datasetsCollectionRef)
 
       const newDocRef = doc(firestore, 'datasets', this.databaseTablePrefix)
-      console.log('newDocRef')
-      console.log(newDocRef)
+      // console.log('newDocRef')
+      // console.log(newDocRef)
 
       const docSnap = await getDoc(newDocRef);
 
       if (docSnap.exists()) {
         console.log('ERROR: Dataset already exists.')
+        this.upload_files_error = true 
+        this.upload_files_error_log.push(`ERROR: Dataset ${this.databaseTablePrefix} already exists in database.`)
+        this.upload_files_error_log.push('If you are the owner of the dataset you can modify its tables here: [NOT IMPLEMENTED]')
+
       } else {
         await setDoc(newDocRef, {
           owner: this.$store.state.profileId,
@@ -751,15 +928,27 @@ export default {
         })
         console.log('Success!')
 
-      }
+        let api_result = await this.post_dataset()
+        console.log('api_result')
+        console.log(api_result)
+        if (api_result.status != 200) {
+          this.upload_files_error = true
+          this.upload_files_error_log.push(`ERROR: ${api_result.statusText}`)
+        }
 
+        for (let i = 0; i < api_result.data.error_log.length; i++) {
+          if (api_result.data.error_log[i].length > 0) {
+            this.upload_files_error_log.concat(api_result.data.error_log[i]) 
+          }
+        } 
+      }
     }
   }
 
 }
 </script>
 
-<style>
+<style lang="scss" scoped>
 .p-panel-header {
   background-color:#EF4444 !important;
   color: white !important;
