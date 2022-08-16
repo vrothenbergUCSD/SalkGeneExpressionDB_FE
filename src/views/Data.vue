@@ -457,6 +457,7 @@ export default {
       }, 1000);
     },
     endProgress() {
+      this.upload_progress = 0
       clearInterval(this.interval);
       this.interval = null;
     },
@@ -882,9 +883,8 @@ export default {
       if (docSnap.exists()) {
         console.log('ERROR: Dataset already exists.')
         this.upload_files_error = true 
-        this.upload_files_error_log.push(`ERROR: Dataset ${this.databaseTablePrefix} already exists in database.`)
-        this.upload_files_error_log.push('If you are the owner of the dataset you can modify its tables here: [NOT IMPLEMENTED]')
-
+        this.upload_files_error_log.push(`ERROR: Dataset ${this.databaseTablePrefix} already exists in database.
+        \nIf you are the owner of the dataset you can modify its tables here: [NOT IMPLEMENTED]`)
       } else {
         await setDoc(newDocRef, {
           owner: this.$store.state.profileId,
@@ -913,7 +913,7 @@ export default {
           this.upload_files_error = true
           this.upload_files_error_log.push(`ERROR: ${api_result.statusText}`)
         } else {
-          this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 10000});
+          this.$toast.add({severity: 'success', summary: 'Success', detail: 'Dataset Uploaded', life: 10000});
         }
 
         for (let i = 0; i < api_result.data.errorLog.length; i++) {

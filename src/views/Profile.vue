@@ -163,6 +163,8 @@ export default {
   },
   methods: {
     toggleEdit() {
+      // TODO: Toggle edit shows Cancel button.  Cancel resets changes.
+      //
       this.editMode = !this.editMode
     },
     async update() {

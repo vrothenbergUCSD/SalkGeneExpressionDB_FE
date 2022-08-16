@@ -258,6 +258,8 @@ export default {
       return table
     },
     updateLookupTable(metadata, origin) {
+      // TODO: Fix filter bug, sometimes get stuck 
+      // TODO: Implement new filter condition UI (ANDs of ORs)
       console.log('updateLookupTable')
       this.categories.forEach((cat) => {
         // species, experiments, tissues
