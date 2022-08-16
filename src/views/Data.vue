@@ -227,7 +227,7 @@
         </div>
 
         <div id="upload_gene_expression_data_error_panel" v-show="this.upload_gene_expression_data_error" class="my-3">
-          <Panel header="Gene Metadata Error Log" class="p-error">
+          <Panel header="Gene Expression Data Error Log" class="p-error">
             <ScrollPanel style="width: 100%; height: 200px" class="custom">
               <li v-for="error in this.upload_gene_expression_data_error_log">
                 {{ error }}
@@ -451,6 +451,7 @@ export default {
       let error_log = []
       let error_msg = null
       const strand_chars = ['+', '-']
+      console.log(col_names)
 
       let headers = rows[0].split(',')
       for (var i = 0; i < col_names.length; i++) {
@@ -462,7 +463,7 @@ export default {
           }
         } else {
           if (headers[i].valueOf().trim() != col_names[i].valueOf().trim()) {
-            error_msg = `Header Error on column ${i}, expected ${col_names[i]} got ${headers[i]}`
+            error_msg = `Header Error on column ${i+1}, expected ${col_names[i]} got ${headers[i]}`
             error_log.push(error_msg)
             console.log(error_msg)
           }
@@ -470,10 +471,19 @@ export default {
         
       }
 
+      // Check last line 
+      let last = rows[rows.length-1].split(',')
+      let sum_len = 0
+      for (var j = 0; j < last.length; j++) {
+        sum_len += last[j].length
+      }
+      if (sum_len == 0) rows.pop()
+
       // Iterate line by line
       for (var i = 1; i < rows.length; i++) {
         let cols = rows[i].split(',')
         // if (i % 100 == 0) console.log(i)
+        
         
         // Column by column
         for (var j = 0; j < col_types.length; j++) {
@@ -516,14 +526,11 @@ export default {
     },
     upload_gene_metadata(e) {
       console.log('upload_gene_metadata')
-      console.log(e)
       const files = e.files
       const file = files[0]
-      console.log(file)
-      console.log(typeof(file))
       const col_names = ['gene_id',	'gene_name',	'refseq',	'chr',	'start',	'end',
-      	'strand',	'length',	'copies',	'annotation_divergence',	'ensembl_gene_id',
-        'description',	'external_gene_name',	'gene_biotype',	'ensembl_peptide_id']
+      	'strand',	'length',	'description', 'ensembl_gene_id','gene_biotype','copies',
+        'annotation_divergence', 'external_gene_name', 'ensembl_peptide_id']
       const col_types = ['string', 'string', 'string', 'string', 'integer', 
         'integer', 'char(+/-)', 'float', 'string', 'string', 'string', 'optional',
         'optional', 'optional', 'optional']
@@ -536,14 +543,12 @@ export default {
       let reader = new FileReader() 
       reader.readAsText(file)
       reader.onload = (evt) => {
-        console.log('reader.onload')
         let csv = evt.target.result
         error_log = this.validateCSV(csv, col_names, col_types)
 
         this.upload_gene_metadata_error_log = error_log
         this.upload_gene_metadata_error = error_log.length
         
-        console.log('reader.onload finished')
         if (!this.upload_gene_metadata_error) {
           this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 5000});
           this.upload_gene_metadata_filename = file.name
@@ -558,11 +563,8 @@ export default {
     },
     upload_sample_metadata(e) {
       console.log('upload_sample_metadata')
-      console.log(e)
       const files = e.files
       const file = files[0]
-      console.log(file)
-      console.log(typeof(file))
       const col_names = ['sample_name',	'species',	'time_point',	'group_name',
       	'age_years',	'gender',	'tissue',	'number_of_replicates',	'data_type']
       const col_types = ['string', 'string', 'string', 'string', 'float', 
@@ -575,7 +577,7 @@ export default {
       let reader = new FileReader() 
       reader.readAsText(file)
       reader.onload = (evt) => {
-        console.log('reader.onload')
+        // console.log('reader.onload')
         let csv = evt.target.result
         error_log = this.validateCSV(csv, col_names, col_types)
 
@@ -593,17 +595,13 @@ export default {
           this.upload_sample_metadata_filename = 'Select'
           this.upload_sample_metadata_file = null
         }
-        console.log('reader.onload finished')
       }
 
     },
     upload_gene_expression_data(e) {
-      console.log('upload_gene_expression_data')
-      console.log(e)
+      // console.log('upload_gene_expression_data')
       const files = e.files
       const file = files[0]
-      console.log(file)
-      console.log(typeof(file))
       const col_names = ['gene_id', 'sample_name', 'gene_expression']
       const col_types = ['string', 'string', 'float']
 
@@ -614,7 +612,6 @@ export default {
       let reader = new FileReader() 
       reader.readAsText(file)
       reader.onload = (evt) => {
-        console.log('reader.onload')
         let csv = evt.target.result
         error_log = this.validateCSV(csv, col_names, col_types)
 
@@ -632,7 +629,6 @@ export default {
           this.upload_gene_expression_data_filename = 'Select'
           this.upload_gene_expression_data_file = null
         }
-        console.log('reader.onload finished')
       }
 
     },
@@ -733,6 +729,7 @@ export default {
         this.tissueErrorMsg = "Tissue required."
         errors = true 
       } else {
+        this.tissue = this.tissue.replace(/ /g,"_")
         this.tissueInvalid = false
       }
       
@@ -751,7 +748,7 @@ export default {
       if (errors) return
 
       this.saveMsg = "Dataset details saved."
-      this.databaseTablePrefix = `${this.experiment}_${this.species}_${this.tissue}_${this.year}`
+      this.databaseTablePrefix = `${this.experiment}_${this.year}_${this.species}_${this.tissue}`
 
     },
     // async post_gene_metadata(file) {
