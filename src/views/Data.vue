@@ -546,7 +546,7 @@ export default {
       return error_log
     },
     upload_gene_metadata(e) {
-      console.log('upload_gene_metadata')
+      // console.log('upload_gene_metadata')
       const files = e.files
       const file = files[0]
       const col_names = ['gene_id',	'gene_name',	'refseq',	'chr',	'start',	'end',
@@ -579,11 +579,12 @@ export default {
           this.$toast.add({severity: 'error', summary: 'Error', detail: 'Failed Type Validation', life: 5000});
           this.upload_gene_metadata_filename = 'Select'
           this.upload_gene_metadata_file = null
+          console.log('upload_gene_metadata: ERROR')
         }
       }
     },
     upload_sample_metadata(e) {
-      console.log('upload_sample_metadata')
+      // console.log('upload_sample_metadata')
       const files = e.files
       const file = files[0]
       const col_names = ['sample_name',	'species',	'time_point',	'group_name',
@@ -903,9 +904,10 @@ export default {
           console.log('Fail after await setDoc')
           console.log(err)
         })
-        console.log('Success!')
+        console.log('Firestore: Successfully uploaded dataset metadata.')
 
         let api_result = await this.post_dataset()
+        
         console.log('api_result')
         console.log(api_result)
         if (api_result.status != 200) {
@@ -914,6 +916,7 @@ export default {
           this.upload_files_error_log.push(`ERROR: ${api_result.statusText}`)
         } else {
           this.$toast.add({severity: 'success', summary: 'Success', detail: 'Dataset Uploaded', life: 10000});
+          console.log('BigQuery: Successfully uploaded dataset tables.')
         }
 
         for (let i = 0; i < api_result.data.errorLog.length; i++) {
