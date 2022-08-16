@@ -267,7 +267,10 @@
         </div>
         
         <div class="mx-auto flex items-center justify-center">
-          <Button label="Upload Files" icon="pi pi-cloud" class="p-button-lg mx-auto"  @click="upload_files"/>
+          <Button label="Upload Files" icon="pi pi-cloud" class="p-button-lg mx-auto"  @click="upload_files" v-show="!this.uploading"/>
+        </div>
+        <div class="mx-auto my-3 w-1/3" v-show="this.uploading">
+          <ProgressBar :value="this.upload_progress"/>
         </div>
         <!-- <span v-show="uploadMsg">{{ uploadMsg }} </span> -->
       </div>
@@ -285,10 +288,11 @@ import InputNumber from 'primevue/inputnumber'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
-import Textarea from 'primevue/textarea';
-import Panel from 'primevue/panel';
-import ScrollPanel from 'primevue/scrollpanel';
+import Textarea from 'primevue/textarea'
+import Panel from 'primevue/panel'
+import ScrollPanel from 'primevue/scrollpanel'
 import Divider from 'primevue/divider'
+import ProgressBar from 'primevue/progressbar'
 
 import { storage, firestore } from "@/firebase/firebaseInit.js"
 import { ref, getDownloadURL } from "firebase/storage";
@@ -310,6 +314,7 @@ export default {
     Panel,
     ScrollPanel,
     Divider,
+    ProgressBar,
 
   },
   data() {
@@ -436,10 +441,25 @@ export default {
       uploadMsg: null,
       upload_files_error: null, 
       upload_files_error_log: null, 
+      upload_progress: 0,
+      uploading:null,
 
     }
   },
   methods: {
+    startProgress() {
+      this.interval = setInterval(() => {
+        let newValue = this.upload_progress + 5;
+        if (newValue >= 99) {
+            newValue = 99;
+        }
+        this.upload_progress = newValue;
+      }, 1000);
+    },
+    endProgress() {
+      clearInterval(this.interval);
+      this.interval = null;
+    },
     isItInteger(str) {
       return /^\-?[0-9]+$/.test(str);
     },
@@ -451,7 +471,7 @@ export default {
       let error_log = []
       let error_msg = null
       const strand_chars = ['+', '-']
-      console.log(col_names)
+      // console.log(col_names)
 
       let headers = rows[0].split(',')
       for (var i = 0; i < col_names.length; i++) {
@@ -751,52 +771,10 @@ export default {
       this.databaseTablePrefix = `${this.experiment}_${this.year}_${this.species}_${this.tissue}`
 
     },
-    // async post_gene_metadata(file) {
-    //   let formData  = new FormData()
-    //   formData.append('file', file)
-    //   let api_result = await DataService.postGeneMetadata(formData)
-    //   return api_result
-    // },
-    // async post_sample_metadata(file) {
-    //   let formData  = new FormData()
-    //   formData.append('file', file)
-    //   let api_result = await DataService.postSampleMetadata(formData)
-    //   return api_result
-    // },
-    // async post_gene_expression_data(file) {
-    //   let formData = new FormData()
-    //   formData.append('file', file)
-    //   let api_result = await DataService.postGeneExpressionData(formData)
-    //   return api_result
-    // },
-    // async post_dataset_metadata() {
-    //   const gene_metadata_table_name = `${this.databaseTablePrefix}_gene_metadata`
-    //   const sample_metadata_table_name = `${this.databaseTablePrefix}_sample_metadata`
-    //   const gene_expression_data_table_name = `${this.databaseTablePrefix}_gene_expression_data`
-    //   let metadata = {
-    //     owner: this.$store.state.profileId,
-    //     experiment: this.experiment || 'TestExp', 
-    //     institution: this.institution || 'Inst', 
-    //     species: this.species || 'Human', 
-    //     tissue: this.tissue || 'Brain', 
-    //     year: this.year || '2022', 
-    //     doi : this.doi || 'https://doi.org/10.1016/S0092-8674(02)00722-5',
-    //     otherInformation: this.other || '',
-    //     permittedUsers: [],
-    //     permissionGroups: [], 
-    //     gene_metadata_table_name: gene_metadata_table_name,
-    //     sample_metadata_table_name: sample_metadata_table_name,
-    //     gene_expression_data_table_name: gene_expression_data_table_name,
-    //   }
-    //   let formData = new FormData() 
-    //   formData.append('metadata', metadata)
-
-    //   let api_result = await DataService.postDatasetMetadata(metadata)
-    //   return api_result
-
-    // },
     async post_dataset() {
       console.log('post_dataset: Posting dataset to BigQuery')
+      this.uploading = true
+      this.startProgress()
       const start = Date.now()
       let formData = new FormData() 
       formData.append('files', this.upload_gene_metadata_file)
@@ -834,6 +812,8 @@ export default {
       let api_result = await DataService.postDataset(formData)
       const time_elapsed = (Date.now() - start) / 1000
       console.log(`post_dataset: Time elapsed: ${time_elapsed}s`)
+      this.uploading=false
+      this.endProgress()
       return api_result
     },
     
@@ -929,15 +909,22 @@ export default {
         console.log('api_result')
         console.log(api_result)
         if (api_result.status != 200) {
+          this.$toast.add({severity: 'error', summary: 'Error', detail: 'HTTP Error', life: 10000});
           this.upload_files_error = true
           this.upload_files_error_log.push(`ERROR: ${api_result.statusText}`)
+        } else {
+          this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 10000});
         }
 
-        for (let i = 0; i < api_result.data.error_log.length; i++) {
-          if (api_result.data.error_log[i].length > 0) {
-            this.upload_files_error_log.concat(api_result.data.error_log[i]) 
+        for (let i = 0; i < api_result.data.errorLog.length; i++) {
+          if (api_result.data.errorLog[i].length > 0) {
+            this.upload_files_error_log.concat(api_result.data.errorLog[i]) 
           }
         } 
+
+        if (this.upload_files_error_log.length > 0) {
+          this.$toast.add({severity: 'error', summary: 'Error', detail: 'Error Uploading', life: 10000});
+        }
       }
     }
   }
