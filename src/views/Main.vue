@@ -1,15 +1,43 @@
 <template>
+<div id="main" class="w-11/12 p-3 mx-auto">
   <div class="p-5 font-semibold text-3xl text-center">Temporal Gene Expression</div>
-  <div class="flex flex-wrap p-5 mx-auto w-11/12">
+  <div id="filters-ui" class="my-3 p-2 mx-auto bg-slate-100 rounded-2xl flex flex-wrap" v-if="this.speciesSelected.length || this.experimentSelected.length || this.tissueSelected.length"> 
+    <div id="filters-species" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.speciesSelected.length">
+      <div class="font-semibold text-sm pl-1">Species:</div>
+      <div v-for="(item, index) in this.speciesSelected" :key="item">
+        <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeSpeciesFilter(item.name)"/>
+        <span class="px-1 font-semibold" v-if="index < this.speciesSelected.length-1">or</span>
+      </div>
+    </div>
+    <div id="filters-experiment" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.experimentSelected.length">
+      <div class="font-semibold text-sm pl-1">Experiments:</div>
+      <div v-for="(item, index) in this.experimentSelected" :key="item" class="my-1">
+        <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeExperimentFilter(item.name)"/>
+        <span class="px-1 font-semibold text-sm" v-if="index < this.experimentSelected.length-1">or</span>
+      </div>
+    </div>
+    <div id="filters-tissue" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.tissueSelected.length">
+      <div class="font-semibold text-sm pl-1">Tissues:</div>
+      <div v-for="(item, index) in this.tissueSelected" :key="item">
+        <!-- content -->
+        <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeTissueFilter(item.name)"/>
+        <span class="px-1 font-semibold text-sm" v-if="index < this.tissueSelected.length-1">or</span>
+      </div>
+    </div>
+    <div id="clear-filters" class=" my-2 flex flex-wrap align-items-center mx-3" >
+      <Chip label="Clear All Filters" class="mx-1 text-sm font-semibold" removable @remove="clearAllFilters"/>
+    </div>
+  </div>
+  <div class="flex flex-wrap mx-auto " v-if="!this.filterWarning">
     <div class="w-1/3 px-2 border">
       <div class="font-semibold my-2">Species</div>
       <DataTable :value="speciesFiltered" v-model:selection="speciesSelected" 
         class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-        :loading="loading" @row-select="speciesRowChange(update=false)" 
-        @row-unselect="speciesRowChange(update=true)"
-        @row-select-all="speciesRowChange(update=false)"
-        @row-unselect-all="speciesRowChange(update=true)">
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
+        :loading="loading" @row-select="speciesRowChange('select')" 
+        @row-unselect="speciesRowChange('unselect')"
+        @row-select-all="speciesRowChange('select-all')"
+        @row-unselect-all="speciesRowChange('unselect-all')">
+      <Column selectionMode="multiple" style="width: 3rem" ></Column>
       <Column field="name" header=""></Column>
       <Column field="count" header="#">
         <template #body="slotProps">
@@ -25,13 +53,13 @@
     </div>
     <div class="w-1/3 px-2 border" >
       <div class="font-semibold my-2">Experiment</div>
-      <DataTable :value="experimentsFiltered" v-model:selection="experimentsSelected" 
+      <DataTable :value="experimentFiltered" v-model:selection="experimentSelected" 
         class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-        :loading="loading" @row-select="experimentsRowChange(update=false)"
-        @row-unselect="experimentsRowChange(update=true)"
-        @row-select-all="experimentsRowChange(update=false)"
-        @row-unselect-all="experimentsRowChange(update=true)">
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
+        :loading="loading" @row-select="experimentRowChange('select')"
+        @row-unselect="experimentRowChange('unselect')"
+        @row-select-all="experimentRowChange('select-all')"
+        @row-unselect-all="experimentRowChange('unselect-all')">
+      <Column selectionMode="multiple" style="width: 3rem"></Column>
       <Column field="name" header=""></Column>
       <Column field="count" header="#">
         <template #body="slotProps">
@@ -49,12 +77,12 @@
     </div>
     <div class="w-1/3 px-2 border">
       <div class="font-semibold my-2">Tissue</div>
-      <DataTable :value="tissuesFiltered" v-model:selection="tissuesSelected" 
+      <DataTable :value="tissueFiltered" v-model:selection="tissueSelected" 
         class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-        :loading="loading" @row-select="tissuesRowChange(update=false)" 
-        @row-unselect="tissuesRowChange(update=true)"
-        @row-select-all="tissuesRowChange(update=false)"
-        @row-unselect-all="tissuesRowChange(update=true)">
+        :loading="loading" @row-select="tissueRowChange('select')" 
+        @row-unselect="tissueRowChange('unselect')"
+        @row-select-all="tissueRowChange('select-all')"
+        @row-unselect-all="tissueRowChange('unselect-all')">
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
       <Column field="name" header=""></Column>
       <Column field="count" header="#">
@@ -71,19 +99,18 @@
       
     </div>
   </div>
-  <div class="mx-auto w-3/4">
+  <div v-else class="text-center font-semibold text-lg">
+    Warning: No datasets in filtered selection.  Clear filters to regain datasets for selection.
+  </div>
+  <div class="mx-auto my-3 w-3/4">
     <div class="font-semibold m-2">Genes</div>
     <div v-show="this.loadingGenes">
       <ProgressBar mode="indeterminate" />
     </div>
     <span class="p-fluid" v-show="!this.loadingGenes">
       <AutoComplete :multiple="true" v-model="this.genesSelected" 
-      :suggestions="this.genesFiltered" @complete="searchGenes($event)" 
-      @item-select="updatePlot" @item-unselect="updatePlot" field="name" />
+      :suggestions="this.genesFiltered" @complete="searchGenes($event)" field="name" />
     </span>
-    
-    
-
   </div>
 
 
@@ -93,17 +120,19 @@
       <router-view :genes="this.genesSelected"/>
     </div>
   </div>
-
+</div>
 
 </template>
 
 <script>
+// TODO: Fix Experiment # Count alignment CSS
 import ProgressBar from 'primevue/progressbar';
 import AutoComplete from "primevue/autocomplete"
 import TabMenu from 'primevue/tabmenu'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import Chip from 'primevue/chip'
 
 import Selection from "@/components/Selection.vue"
 import Prime from "@/components/Prime.vue"
@@ -121,6 +150,7 @@ export default {
     Button,
     DataTable,
     Column,
+    Chip,
 
     Selection,
     Prime,
@@ -150,21 +180,25 @@ export default {
 
       filtered_metadata: null,
       lookup_table: null,
+      filterWarning: false,
 
       columns: null,
       categories: ['species', 'experiment', 'tissue'],
 
-      species: [], //["Mouse", "Human", "Baboon"],
+      speciesList: [], //["Mouse", "Human", "Baboon"],
       speciesFiltered: [], // [{name: Mouse}, {name:Human}]
       speciesSelected: [],
+      speciesSelectedFilters: [],
 
-      experiments: [], //["Mouse_TRF_2018", "Mouse_TRF_2019", "Baboon_TRF_2020", "Human_ABC_2020"],
-      experimentsFiltered: [],
-      experimentsSelected: [],
+      experimentList: [], //["Mouse_TRF_2018", "Mouse_TRF_2019", "Baboon_TRF_2020", "Human_ABC_2020"],
+      experimentFiltered: [],
+      experimentSelected: [],
+      experimentSelectedFilters: [],
 
-      tissues: [], //["Liver", "Muscle", "Adipose", "Heart", "Neuron", "Something", "Another", "Some more", "Over"],
-      tissuesFiltered: [],     
-      tissuesSelected: [],
+      tissueList: [], //["Liver", "Muscle", "Adipose", "Heart", "Neuron"],
+      tissueFiltered: [],     
+      tissueSelected: [],
+      tissueSelectedFilters: [],
 
       genes: [],
       genesFiltered: [],
@@ -181,17 +215,18 @@ export default {
       {field:'freq', header:'Freq'}
     ]
 
-    this.species = this.buildList(this.species)
-    this.speciesFiltered = this.species
+    this.speciesList = this.buildList(this.speciesList)
+    this.speciesFiltered = this.speciesList
     
-    this.experiments = this.buildList(this.experiments)
-    this.experimentsFiltered = this.experiments
+    this.experimentList = this.buildList(this.experimentList)
+    this.experimentFiltered = this.experimentList
 
-    this.tissues = this.buildList(this.tissues)
-    this.tissuesFiltered = this.tissues
+    this.tissueList = this.buildList(this.tissueList)
+    this.tissueFiltered = this.tissueList
 
     this.genesSelected = this.buildList(this.genesSelected)
 
+    // Not necessary to immediately display a visualization
     // this.$router.push('/main/bar')
   },
   async mounted() {
@@ -223,24 +258,75 @@ export default {
       this.lookup_table = this.initializeLookupTable(this.db_metadata)
       this.filtered_metadata = this.db_metadata
 
-      this.species = this.buildList([...new Set(this.db_metadata.map(item => item.species))])
-      this.speciesFiltered = this.species
+      this.speciesList = this.buildList([...new Set(this.db_metadata.map(item => item.species))])
+      this.speciesFiltered = this.speciesList
 
-      this.experiments = this.buildList([...new Set(this.db_metadata.map(item => item.experiment))])
-      this.experimentsFiltered = this.experiments
+      this.experimentList = this.buildList([...new Set(this.db_metadata.map(item => item.experiment))])
+      this.experimentFiltered = this.experimentList
 
-      this.tissues = this.buildList([...new Set(this.db_metadata.map(item => item.tissue))])
-      this.tissuesFiltered = this.tissues
+      this.tissueList = this.buildList([...new Set(this.db_metadata.map(item => item.tissue))])
+      this.tissueFiltered = this.tissueList
 
       this.loading = false
       console.log('loadMetadata time elapsed:')
       console.log(Date.now() - start)
     },
+    getCount(cat, value) {
+      // cat = 'species' 
+      // value = 'Human'
+      if (Object.keys(this.lookup_table[cat]).includes(value))
+        return this.lookup_table[cat][value].count
+      return null
+    },
+    getFreq(cat, value) {
+      if (Object.keys(this.lookup_table[cat]).includes(value))
+        return (this.lookup_table[cat][value].freq * 100).toFixed(2) + '%'
+      return null
+    },
+    buildList(list) {
+      // Converts array of strings to array of objects with name properties of strings
+      return list.map(object => {
+        return {'name' : object}
+    })},
+    removeSpeciesFilter(text) {
+      // console.log('removeSpeciesFilter')
+      this.speciesSelected = this.speciesSelected.filter((obj) => 
+         obj.name != text
+      );
+      let reset = false
+      if (!this.speciesSelected.length) reset = true
+      this.updateLookupTable('species', reset)
+    },
+    removeExperimentFilter(text) {
+      // console.log('removeExperimentsFilter')
+      this.experimentSelected = this.experimentSelected.filter((obj) => 
+         obj.name != text
+      );
+      let reset = false
+      if (!this.experimentSelected.length) reset = true
+      this.updateLookupTable('experiment', reset)
+    },
+    removeTissueFilter(text) {
+      // console.log('removeTissuesFilter')
+      this.tissueSelected = this.tissueSelected.filter((obj) => 
+         obj.name != text
+      );
+      let reset = false
+      if (!this.tissueSelected.length) reset = true
+      this.updateLookupTable('tissue', reset)
+    },
+    clearAllFilters() {
+      console.log('clearAllFilters')
+      this.speciesSelected = []
+      this.experimentSelected = []
+      this.tissueSelected = []
+      this.updateLookupTable('', true)
+    },
     initializeLookupTable(metadata) {
       console.log('initializeLookupTable')
       const table = {}
       this.categories.forEach((cat) => {
-        // species, experiments, tissues
+        // species, experiment, tissue
         table[cat] = {}
         const uniqVal = [...new Set(metadata.map(item => item[cat]))]
         let sum = 0
@@ -257,111 +343,181 @@ export default {
       })
       return table
     },
-    updateLookupTable(metadata, origin) {
+    updateLookupTable(origin, reset) {
       // TODO: Fix filter bug, sometimes get stuck 
-      // TODO: Implement new filter condition UI (ANDs of ORs)
-      console.log('updateLookupTable')
+      // TODO: If filters result in 0 elements, show warning message
+      console.log('===========')
+      console.log('updateLookupTable', origin, reset)
+
+      // Inputs are arrays of strings
+      // If array is empty then no filter is performed
+      const speciesSelectedNames = this.speciesSelected.map(el => el.name)
+      const experimentSelectedNames = this.experimentSelected.map(el => el.name)
+      const tissueSelectedNames = this.tissueSelected.map(el => el.name)
+
+      // Array of full dataset objects, to be filtered down, then intersected (ANDs of ORs)
+      let speciesResult = this.db_metadata
+      let experimentsResult = this.db_metadata
+      let tissuesResult = this.db_metadata
+
+      // Check if there are any filters selected, then filter down from full array of dataset metadata
+      if (speciesSelectedNames.length)
+        speciesResult = this.db_metadata.filter(
+          ({ species }) => speciesSelectedNames.some(
+            (s) => species.toLowerCase().includes(s.toLowerCase())))
+
+      if (experimentSelectedNames.length) 
+        experimentsResult = this.db_metadata.filter(
+          ({ experiment }) => experimentSelectedNames.some(
+            (s) => experiment.toLowerCase().includes(s.toLowerCase())))
+
+      if (tissueSelectedNames.length)
+        tissuesResult = this.db_metadata.filter(
+          ({ tissue }) => tissueSelectedNames.some(
+            (s) => tissue.toLowerCase().includes(s.toLowerCase())))
+
+      // If any filters were selected, one of the result arrays will be smaller than db_metadata 
+      // The intersection of results will be used to display remaining possible datasets to select
+      let intersection = speciesResult.filter(value => experimentsResult.includes(value));
+      intersection = intersection.filter(value => tissuesResult.includes(value));
+      console.log('intersection')
+      console.log(intersection)
+      // If no datasets in intersection, show warning
+      this.filterWarning = intersection.length == 0
+
+
+      // If not called from species change, update possible selections  
+      // If called from species change, and reset is true
+      // Reset is true if there are now 0 filters selected, should show all possible choices
+      if (origin != 'species' || (origin == 'species' && reset))
+        // List of unique values 
+        this.speciesFiltered = this.buildList([...new Set(intersection.map(item => item.species))])
+
+      if (origin != 'experiment' || (origin == 'experiment' && reset))
+        this.experimentFiltered = this.buildList([...new Set(intersection.map(item => item.experiment))])
+
+      if (origin != 'tissue' || (origin == 'tissue' && reset))
+        this.tissueFiltered = this.buildList([...new Set(intersection.map(item => item.tissue))])
+
       this.categories.forEach((cat) => {
-        // species, experiments, tissues
-        if (cat == origin) return
-        const uniqVal = [...new Set(metadata.map(item => item[cat]))]
+        // cat = species, experiment, tissue
+        let uniqVal = [...new Set(intersection.map(item => item[cat]))]
+        // If called by current category and not resetting 
+        //  then only use the older, not updated filtered list 
+        //  Solves frequency count bug.   
+        if (cat == origin && !reset) {
+          let filterIdentifier = cat + 'Filtered'
+          uniqVal = this[filterIdentifier]
+        }
+
         let sum = 0
         uniqVal.forEach((val) => {
           // Mouse, TRF_2020, Liver, etc. 
           this.lookup_table[cat][val] = {}
-          this.lookup_table[cat][val].count = metadata
+          this.lookup_table[cat][val].count = intersection
             .reduce((acc, cur) => cur[cat] === val ? ++acc : acc, 0)
           sum += this.lookup_table[cat][val].count
         })
         uniqVal.forEach((val) => {
           this.lookup_table[cat][val].freq = this.lookup_table[cat][val].count / sum
         })
+        // console.log(this.lookup_table)
       })
+      console.log('===========')
     },
-    updatePlot() {
 
-    },
-    getCount(cat, value) {
-      // cat = 'species' 
-      // value = 'Human'
-      if (Object.keys(this.lookup_table[cat]).includes(value))
-        return this.lookup_table[cat][value].count
-      return null
-    },
-    getFreq(cat, value) {
-      if (Object.keys(this.lookup_table[cat]).includes(value))
-        return (this.lookup_table[cat][value].freq * 100).toFixed(2) + '%'
-      return null
-    },
-    buildList(list) {
-      return list.map(object => {
-        return {'name' : object}
-    })},
-    speciesRowChange(update) {
+    speciesRowChange(text) {
+      console.log('----------------')
       console.log('speciesRowChange')
-      console.log(update)
-      const result = this.filterResults()
-      let origin = update ? '' : 'species'
-      this.updateLookupTable(result, origin)
-      this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
-      this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
-      if (!this.speciesSelected.length)
-        this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
-    },
-    experimentsRowChange(update) {
-      const result = this.filterResults()
+      // console.log(text)
+      // console.log(this.speciesFiltered)
+      let reset = this.speciesSelected.length == 0
 
-      let origin = update ? '' : 'experiment'
-      this.updateLookupTable(result, origin)
-
-      this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
-      this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
-
-      if (!this.experimentsSelected.length) {
-        this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
+      if (text == 'unselect-all') {
+        this.speciesSelected = []
+        reset = true
+      } else if (text == 'select-all') {
+        this.speciesSelected = this.speciesFiltered
+        reset = false
       }
-
+      
+      console.log('----------------')
+      this.updateLookupTable('species', reset)
     },
-    tissuesRowChange(update) {
-      const result = this.filterResults()
-      
-      let origin = update ? '' : 'tissue'
-      this.updateLookupTable(result, origin)
-      
-      this.speciesFiltered = this.buildList([...new Set(result.map(item => item.species))])
-      this.experimentsFiltered = this.buildList([...new Set(result.map(item => item.experiment))])
-      
-      if (!this.tissuesSelected.length) {
-        this.tissuesFiltered = this.buildList([...new Set(result.map(item => item.tissue))])
+
+    experimentRowChange(text) {
+      console.log('----------------')
+      console.log('experimentRowChange')
+      // console.log(text)
+      // console.log('this.experimentSelected')
+      // console.log(this.experimentSelected)
+      let reset = this.experimentSelected.length == 0
+      if (text == 'unselect-all') {
+        this.experimentSelected = []
+        reset = true
+      } else if (text == 'select-all') {
+        this.experimentSelected = this.experimentFiltered
+        reset = false
       }
-        
-    },
+      console.log('----------------')
+      this.updateLookupTable('experiment', reset)
 
+    },
+    tissueRowChange(text) {
+      console.log('----------------')
+      console.log('tissueRowChange')
+      console.log(this.tissueSelected)
+      let reset = this.tissueSelected.length == 0
+      if (text == 'unselect-all') {
+        this.tissueSelected = []
+        reset = true
+      } else if (text == 'select-all') {
+        this.tissueSelected = this.tissueFiltered
+        reset = false
+      }
+      this.updateLookupTable('tissue', reset)
+      console.log('----------------')
+    },
     filterResults() {
       // Inputs are arrays of strings
       // If array is empty then no filter is performed
       const speciesSelectedNames = this.speciesSelected.map(el => el.name)
-      const experimentsSelectedNames = this.experimentsSelected.map(el => el.name)
-      const tissuesSelectedNames = this.tissuesSelected.map(el => el.name)
+      const experimentSelectedNames = this.experimentSelected.map(el => el.name)
+      const tissueSelectedNames = this.tissueSelected.map(el => el.name)
 
-      let result = this.db_metadata
+      // let result = this.db_metadata
+      let speciesResult = this.db_metadata
+      let experimentsResult = this.db_metadata
+      let tissuesResult = this.db_metadata
 
       if (speciesSelectedNames.length)
-        result = result.filter(
+        speciesResult = this.db_metadata.filter(
           ({ species }) => speciesSelectedNames.some(
             (s) => species.toLowerCase().includes(s.toLowerCase())))
 
-      if (experimentsSelectedNames.length) 
-        result = result.filter(
-          ({ experiment }) => experimentsSelectedNames.some(
+      if (experimentSelectedNames.length) 
+        experimentsResult = this.db_metadata.filter(
+          ({ experiment }) => experimentSelectedNames.some(
             (s) => experiment.toLowerCase().includes(s.toLowerCase())))
 
-      if (tissuesSelectedNames.length)
-        result = result.filter(
-          ({ tissue }) => tissuesSelectedNames.some(
+      if (tissueSelectedNames.length)
+        tissuesResult = this.db_metadata.filter(
+          ({ tissue }) => tissueSelectedNames.some(
             (s) => tissue.toLowerCase().includes(s.toLowerCase())))
 
-      return result
+      // console.log('speciesResult')
+      // console.log(speciesResult)
+      // console.log('experimentsResult')
+      // console.log(experimentsResult)
+      // console.log('tissuesResult')
+      // console.log(tissuesResult)
+
+      let intersection = speciesResult.filter(value => experimentsResult.includes(value));
+      intersection = intersection.filter(value => tissuesResult.includes(value));
+      console.log('intersection')
+      console.log(intersection)
+
+      return intersection
     },
     async searchGenes(event) {
       setTimeout(() => {
@@ -377,10 +533,14 @@ export default {
     },
   },
 
-
 }
 </script>
 
-<style>
+<style lang="scss" scoped>
+.p-chip.custom-chip {
+  // 78, 128, 238
+    background: rgb(78,128,238);
+    color: #ffffff;
+}
 
 </style>
