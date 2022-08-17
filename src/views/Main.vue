@@ -102,24 +102,33 @@
   <div v-else class="text-center font-semibold text-lg">
     Warning: No datasets in filtered selection.  Clear filters to regain datasets for selection.
   </div>
-  <div class="mx-auto my-3 w-3/4">
-    <div class="font-semibold m-2">Genes</div>
-    <div v-show="this.loadingGenes">
-      <ProgressBar mode="indeterminate" />
-    </div>
-    <span class="p-fluid" v-show="!this.loadingGenes">
-      <AutoComplete :multiple="true" v-model="this.genesSelected" 
-      :suggestions="this.genesFiltered" @complete="searchGenes($event)" field="name" />
-    </span>
+  <div id="fetch-datasets" class="mx-auto my-5 text-center">
+    <Button label="Fetch Datasets" class="p-button-lg" @click="fetchDatasets"/>
   </div>
+  
+
+  <div id="selected-metadata-view" v-if="this.fetched">
+    <div id="genes-view" class="mx-auto my-3 w-3/4" >
+      <div class="font-semibold m-2">Genes</div>
+      <div v-show="this.loadingGenes">
+        <ProgressBar mode="indeterminate" />
+      </div>
+      <span class="p-fluid" v-show="!this.loadingGenes">
+        <AutoComplete :multiple="true" v-model="this.genesSelected" 
+        :suggestions="this.genesFiltered" @complete="searchGenes($event)" field="name" />
+      </span>
+    </div>
+    <div id="graphs-view">
+      <div class="card w-3/4 mx-auto mt-2">
+        <TabMenu :model="items"/>
+        <router-view :genes="this.genesSelected"/>
+      </div>
+    </div>
+
+  </div>
+ 
 
 
-  <div>
-    <div class="card w-3/4 mx-auto mt-2">
-      <TabMenu :model="items"/>
-      <router-view :genes="this.genesSelected"/>
-    </div>
-  </div>
 </div>
 
 </template>
@@ -179,8 +188,10 @@ export default {
       db_metadata: null,
 
       filtered_metadata: null,
+      selected_metadata: null,
       lookup_table: null,
       filterWarning: false,
+      fetched: false,
 
       columns: null,
       categories: ['species', 'experiment', 'tissue'],
@@ -202,9 +213,24 @@ export default {
 
       genes: [],
       genesFiltered: [],
-      genesSelected: ['Alb', 'Fga','Trf'],
+      genesSelected: [],
 
     }
+  },
+  computed: {
+    speciesOnlySelected() {
+      return (this.speciesSelected.length 
+        && !this.experimentSelected.length && !this.tissueSelected.length)
+    },
+    experimentOnlySelected() {
+      return (!this.speciesSelected.length 
+        && this.experimentSelected.length && !this.tissueSelected.length)
+    },
+    tissueOnlySelected() {
+      return (!this.speciesSelected.length 
+        && !this.experimentSelected.length && this.tissueSelected.length)
+    }
+
   },
   created() {
     console.log('Main created')
@@ -234,7 +260,10 @@ export default {
     console.log('Main mounted, await genes: ')
     const start = Date.now()
 
-    await Promise.all([this.loadMetadata(), this.loadGenes()])
+    await Promise.all([
+      this.loadMetadata(), 
+      // this.loadGenes()
+    ])
 
     // this.loadMetadata()
     // this.loadGenes()
@@ -244,6 +273,56 @@ export default {
     console.log(Date.now() - start)
   },
   methods: {
+    async fetchDatasets() {
+      console.log('fetchDatasets')
+      const start = Date.now()
+      // console.log(this.filtered_metadata)
+      // this.getSelectedDatasets()
+      console.log(this.selected_metadata)
+      let gene_metadata_tables = []
+      let sample_metadata_tables = []
+      let gene_expression_data_tables = []
+      this.selected_metadata.forEach((e) => {
+        // Build list of gene_metadata_tables
+        console.log(e)
+        gene_metadata_tables.push(e.gene_metadata_table_name)
+        sample_metadata_tables.push(e.sample_metadata_table_name)
+        gene_expression_data_tables.push(e.gene_expression_data_table_name)
+      })
+
+      await Promise.all([
+        this.fetchGeneMetadataTables(gene_metadata_tables), 
+        // this.loadGenes()
+      ])
+
+      // this.genes = await DataService.getGenes()
+      // this.genes = this.genes.data.map((d) => ({name: d.gene_name}))
+      // this.loadingGenes = false
+      // this.datasets = await DataService.getDatasets
+      this.fetched = true
+      console.log('fetchDatasets time elapsed: ')
+      console.log(Date.now() - start)
+    },
+    
+    async fetchGeneMetadataTables(tables) {
+      console.log('fetchGeneMetadataTables')
+      const results = await Promise.all(tables.map(async (t) => {
+        const result = await DataService.getGenes(t)
+        console.log('table: ', t)
+        
+        console.log(result)
+        let data = result.data.map(d => d.gene_name)
+        console.log(data)
+        return data
+      }))
+
+      let uniqGenes = [...new Set(...results)]
+      console.log(uniqGenes) 
+      this.genes = this.buildList(uniqGenes)
+
+      this.loadingGenes = false
+      return results
+    },
     async loadGenes() {
       const start = Date.now()
       this.genes = await DataService.getGenes()
@@ -258,6 +337,7 @@ export default {
       this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
       this.lookup_table = this.initializeLookupTable(this.db_metadata)
       this.filtered_metadata = this.db_metadata
+      this.selected_metadata = []
 
       this.speciesList = this.buildList([...new Set(this.db_metadata.map(item => item.species))])
       this.speciesFiltered = this.speciesList
@@ -317,7 +397,7 @@ export default {
       this.updateLookupTable('tissue', reset)
     },
     clearAllFilters() {
-      console.log('clearAllFilters')
+      // console.log('clearAllFilters')
       this.speciesSelected = []
       this.experimentSelected = []
       this.tissueSelected = []
@@ -345,10 +425,8 @@ export default {
       return table
     },
     updateLookupTable(origin, reset) {
-      // TODO: Fix filter bug, sometimes get stuck 
-      // TODO: If filters result in 0 elements, show warning message
-      console.log('===========')
-      console.log('updateLookupTable', origin, reset)
+      // console.log('===========')
+      // console.log('updateLookupTable', origin, reset)
 
       // Inputs are arrays of strings
       // If array is empty then no filter is performed
@@ -381,11 +459,17 @@ export default {
       // The intersection of results will be used to display remaining possible datasets to select
       let intersection = speciesResult.filter(value => experimentsResult.includes(value));
       intersection = intersection.filter(value => tissuesResult.includes(value));
-      console.log('intersection')
-      console.log(intersection)
+      this.filtered_metadata = intersection
+
+      // Assign selected_metadata to intersection if there is at least one selection
+      this.selected_metadata = []
+      if (speciesSelectedNames.length || experimentSelectedNames.length || tissueSelectedNames.length )
+        this.selected_metadata = intersection
+
+      // console.log('intersection')
+      // console.log(intersection)
       // If no datasets in intersection, show warning
       this.filterWarning = intersection.length == 0
-
 
       // If not called from species change, update possible selections  
       // If called from species change, and reset is true
@@ -393,29 +477,46 @@ export default {
       if (origin != 'species' || (origin == 'species' && reset))
         // List of unique values 
         this.speciesFiltered = this.buildList([...new Set(intersection.map(item => item.species))])
+      if (this.speciesOnlySelected)
+        this.speciesFiltered = this.buildList([...new Set(this.db_metadata.map(item => item.species))])
 
       if (origin != 'experiment' || (origin == 'experiment' && reset))
         this.experimentFiltered = this.buildList([...new Set(intersection.map(item => item.experiment))])
+      if (this.experimentOnlySelected)
+        this.experimentFiltered = this.buildList([...new Set(this.db_metadata.map(item => item.experiment))])
 
       if (origin != 'tissue' || (origin == 'tissue' && reset))
         this.tissueFiltered = this.buildList([...new Set(intersection.map(item => item.tissue))])
+      if (this.tissueOnlySelected)
+        this.tissueFiltered = this.buildList([...new Set(this.db_metadata.map(item => item.tissue))])
 
       this.categories.forEach((cat) => {
         // cat = species, experiment, tissue
         let uniqVal = [...new Set(intersection.map(item => item[cat]))]
         // If called by current category and not resetting 
         //  then only use the older, not updated filtered list 
-        //  Solves frequency count bug.   
+        //  Solves frequency count bug.  
+        let onlySelected = cat + 'OnlySelected'
+        let dataset = intersection
+
         if (cat == origin && !reset) {
+          // console.log('cat == ', origin, reset)
           let filterIdentifier = cat + 'Filtered'
           uniqVal = this[filterIdentifier]
+        }
+        if (this[onlySelected] && reset) {
+          // console.log('only..')
+          // console.log(onlySelected )
+          uniqVal = [...new Set(this.db_metadata.map(item => item[cat]))]
+          // console.log(uniqVal)
+          dataset = this.db_metadata
         }
 
         let sum = 0
         uniqVal.forEach((val) => {
           // Mouse, TRF_2020, Liver, etc. 
           this.lookup_table[cat][val] = {}
-          this.lookup_table[cat][val].count = intersection
+          this.lookup_table[cat][val].count = dataset
             .reduce((acc, cur) => cur[cat] === val ? ++acc : acc, 0)
           sum += this.lookup_table[cat][val].count
         })
@@ -424,12 +525,11 @@ export default {
         })
         // console.log(this.lookup_table)
       })
-      console.log('===========')
+      // console.log('===========')
     },
-
     speciesRowChange(text) {
-      console.log('----------------')
-      console.log('speciesRowChange')
+      // console.log('----------------')
+      // console.log('speciesRowChange')
       // console.log(text)
       // console.log(this.speciesFiltered)
       let reset = this.speciesSelected.length == 0
@@ -441,14 +541,13 @@ export default {
         this.speciesSelected = this.speciesFiltered
         reset = false
       }
-      
-      console.log('----------------')
+      // console.log('----------------')
       this.updateLookupTable('species', reset)
     },
 
     experimentRowChange(text) {
-      console.log('----------------')
-      console.log('experimentRowChange')
+      // console.log('----------------')
+      // console.log('experimentRowChange')
       // console.log(text)
       // console.log('this.experimentSelected')
       // console.log(this.experimentSelected)
@@ -460,14 +559,14 @@ export default {
         this.experimentSelected = this.experimentFiltered
         reset = false
       }
-      console.log('----------------')
+      // console.log('----------------')
       this.updateLookupTable('experiment', reset)
 
     },
     tissueRowChange(text) {
-      console.log('----------------')
-      console.log('tissueRowChange')
-      console.log(this.tissueSelected)
+      // console.log('----------------')
+      // console.log('tissueRowChange')
+      // console.log(this.tissueSelected)
       let reset = this.tissueSelected.length == 0
       if (text == 'unselect-all') {
         this.tissueSelected = []
@@ -477,7 +576,7 @@ export default {
         reset = false
       }
       this.updateLookupTable('tissue', reset)
-      console.log('----------------')
+      // console.log('----------------')
     },
     filterResults() {
       // Inputs are arrays of strings
