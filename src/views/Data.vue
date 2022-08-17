@@ -448,13 +448,14 @@ export default {
   },
   methods: {
     startProgress() {
+      // 30 second progress bar
       this.interval = setInterval(() => {
         let newValue = this.upload_progress + 5;
         if (newValue >= 99) {
             newValue = 99;
         }
         this.upload_progress = newValue;
-      }, 1000);
+      }, 1500);
     },
     endProgress() {
       this.upload_progress = 0
