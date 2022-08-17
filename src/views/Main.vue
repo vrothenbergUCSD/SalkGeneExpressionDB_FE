@@ -254,7 +254,8 @@ export default {
     },
     async loadMetadata() {
       const start = Date.now()
-      this.db_metadata = await DataService.getDatabaseMetadata().then(e => e.data)
+      // this.db_metadata = await DataService.getDatabaseMetadata().then(e => e.data)
+      this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
       this.lookup_table = this.initializeLookupTable(this.db_metadata)
       this.filtered_metadata = this.db_metadata
 

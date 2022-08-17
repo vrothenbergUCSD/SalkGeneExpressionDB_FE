@@ -27,6 +27,9 @@ class DataService {
   async getDatabaseMetadata() {
     return http.get('database_metadata/data')
   }
+  async getDatasetsMetadata() {
+    return http.get('datasets_metadata/data')
+  }
 
   // POST Requests
   async postSampleMetadata(formData) {
