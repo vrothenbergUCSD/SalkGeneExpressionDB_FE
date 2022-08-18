@@ -26,6 +26,7 @@ export default {
   props: { 
     msg: String,
     genes: Array,
+    datasets: Array,
   },
   data() {
     return {
@@ -46,19 +47,33 @@ export default {
   created() {
   },
   async mounted() {
-    console.log('mounting')
+    console.log('=================')
+    console.log('LinePlot mounting')
     // console.log(this.complete)
     console.log(this.genes)
     this.genesData = this.genes.map((d) => d.name)
+    console.log('datasets')
+    console.log(this.datasets)
     this.initialize_line_plot()
-    await this.update_line_plot()
+    // await this.update_line_plot()
     console.log('finished update_line_plot')
     this.complete = true
     console.log(this.complete)
+    console.log('=================')
   },
   async updated () {
+    console.log('-----------------')
+    console.log('LinePlot updated')
+    const start = Date.now()
+    console.log('this.genes')
+    console.log(this.genes)
+    console.log('this.datasets')
+    console.log(this.datasets)
     this.genesData = this.genes.map((d) => d.name)
-    this.update_line_plot()
+    // this.update_line_plot()
+    const elapsed = Date.now() - start
+    console.log('LinePlot updated ', elapsed)
+    console.log('-----------------')
   },
   methods: {
     async get_dataset() {

@@ -102,9 +102,16 @@
   <div v-else class="text-center font-semibold text-lg">
     Warning: No datasets in filtered selection.  Clear filters to regain datasets for selection.
   </div>
-  <div id="fetch-datasets" class="mx-auto my-5 text-center">
-    <Button label="Fetch Datasets" class="p-button-lg" @click="fetchDatasets"/>
+
+
+  <div id="fetch-datasets" class="mx-auto my-5 text-center" >
+    <Button label="Get Datasets" class="p-button-lg" @click="fetchDatasets" v-if="!this.fetching"/>
+    <ProgressSpinner class="mx-auto w-1/2" v-else/>
   </div>
+  <!-- <div v-else class="my-3 mx-auto text-center">
+    
+
+  </div> -->
   
 
   <div id="selected-metadata-view" v-if="this.fetched">
@@ -113,29 +120,27 @@
       <div v-show="this.loadingGenes">
         <ProgressBar mode="indeterminate" />
       </div>
-      <span class="p-fluid" v-show="!this.loadingGenes">
+      <div class="p-fluid" v-show="!this.loadingGenes">
         <AutoComplete :multiple="true" v-model="this.genesSelected" 
         :suggestions="this.genesFiltered" @complete="searchGenes($event)" field="name" />
-      </span>
+      </div>
     </div>
     <div id="graphs-view">
       <div class="card w-3/4 mx-auto mt-2">
         <TabMenu :model="items"/>
-        <router-view :genes="this.genesSelected"/>
+        <router-view :genes="this.genesSelected" :datasets="this.datasets"/>
       </div>
     </div>
 
   </div>
- 
-
 
 </div>
 
 </template>
 
 <script>
-// TODO: Fix Experiment # Count alignment CSS
-import ProgressBar from 'primevue/progressbar';
+import ProgressBar from 'primevue/progressbar'
+import ProgressSpinner from 'primevue/progressspinner'
 import AutoComplete from "primevue/autocomplete"
 import TabMenu from 'primevue/tabmenu'
 import Button from 'primevue/button'
@@ -154,6 +159,7 @@ export default {
   name: "Main",
   components: {
     ProgressBar,
+    ProgressSpinner,
     AutoComplete,
     TabMenu,
     Button,
@@ -184,14 +190,16 @@ export default {
       ],
       loading: true,
       loadingGenes: true,
+      fetched: false,
+      fetching: false,
 
       db_metadata: null,
-
       filtered_metadata: null,
       selected_metadata: null,
+      datasets: null,
+
       lookup_table: null,
       filterWarning: false,
-      fetched: false,
 
       columns: null,
       categories: ['species', 'experiment', 'tissue'],
@@ -253,32 +261,43 @@ export default {
     this.genesSelected = this.buildList(this.genesSelected)
 
     // Not necessary to immediately display a visualization
-    // this.$router.push('/main/bar')
+    
   },
   async mounted() {
     // Populate array with all genes
     console.log('Main mounted, await genes: ')
     const start = Date.now()
 
+    // Concurrent await
     await Promise.all([
       this.loadMetadata(), 
       // this.loadGenes()
     ])
 
-    // this.loadMetadata()
-    // this.loadGenes()
+    // Testing - Remove later
+    this.tissueSelected = [{name:'Adrenal'}, {name:'EWAT'}]
+    this.genesSelected = [{name:'Alb'}]
+    this.fetchDatasets()
+    this.$router.push('/main/line')
+
     
-    console.log('Main mount finished')
-    console.log('Time elapsed')
-    console.log(Date.now() - start)
+    const elapsed = Date.now() - start
+    console.log('Main mounted time elapsed ', elapsed)
+  },
+  async updated() {
+    // console.log('=============')
+    // console.log('Main updated')
+    // console.log(this.genesSelected)
+    // console.log('=============')
   },
   methods: {
     async fetchDatasets() {
       console.log('fetchDatasets')
       const start = Date.now()
+      this.fetching = true
       // console.log(this.filtered_metadata)
       // this.getSelectedDatasets()
-      console.log(this.selected_metadata)
+      // console.log(this.selected_metadata)
       let gene_metadata_tables = []
       let sample_metadata_tables = []
       let gene_expression_data_tables = []
@@ -292,7 +311,7 @@ export default {
 
       await Promise.all([
         this.fetchGeneMetadataTables(gene_metadata_tables), 
-        // this.loadGenes()
+        this.fetchSampleMetadataTables(sample_metadata_tables),
       ])
 
       // this.genes = await DataService.getGenes()
@@ -300,36 +319,65 @@ export default {
       // this.loadingGenes = false
       // this.datasets = await DataService.getDatasets
       this.fetched = true
-      console.log('fetchDatasets time elapsed: ')
-      console.log(Date.now() - start)
+      this.fetching = false
+
+      const elapsed = Date.now() - start
+      console.log('fetchDatasets time elapsed: ', elapsed)
     },
     
     async fetchGeneMetadataTables(tables) {
       console.log('fetchGeneMetadataTables')
+      const start = Date.now()
+      this.loadingGenes = true
       const results = await Promise.all(tables.map(async (t) => {
         const result = await DataService.getGenes(t)
-        console.log('table: ', t)
-        
-        console.log(result)
+        // console.log('table: ', t)
+        // console.log(result)
         let data = result.data.map(d => d.gene_name)
-        console.log(data)
+        // console.log(data)
         return data
       }))
 
       let uniqGenes = [...new Set(...results)]
-      console.log(uniqGenes) 
+      // console.log(uniqGenes) 
       this.genes = this.buildList(uniqGenes)
 
       this.loadingGenes = false
+      const elapsed = Date.now() - start
+      console.log('fetchGeneMetadataTables time elapsed: ', elapsed)
       return results
     },
+    async fetchSampleMetadataTables(tables) {
+      console.log('fetchSampleMetadataTables')
+      const start = Date.now()
+      const results = await Promise.all(tables.map(async (t) => {
+        const result = await DataService.getSampleMetadata(t)
+        // console.log('table: ', t)
+        
+        // console.log(result)
+        // let data = result.data.map(d => d.gene_name)
+        // console.log(data)
+        return result
+      }))
+
+      // let uniqGenes = [...new Set(...results)]
+      // console.log(uniqGenes) 
+      // this.genes = this.buildList(uniqGenes)
+      // console.log(results)
+      const elapsed = Date.now() - start
+      console.log('fetchSampleMetadataTables time elapsed: ', elapsed)
+
+      return results
+
+    },
     async loadGenes() {
+      // Defunct?
       const start = Date.now()
       this.genes = await DataService.getGenes()
       this.genes = this.genes.data.map((d) => ({name: d.gene_name}))
       this.loadingGenes = false
-      console.log('loadGenes time elapsed: ')
-      console.log(Date.now() - start)
+      const elapsed = Date.now() - start
+      console.log('loadGenes time elapsed: ', elapsed)
     },
     async loadMetadata() {
       const start = Date.now()
@@ -349,8 +397,8 @@ export default {
       this.tissueFiltered = this.tissueList
 
       this.loading = false
-      console.log('loadMetadata time elapsed:')
-      console.log(Date.now() - start)
+      const elapsed = Date.now() - start
+      console.log('loadMetadata time elapsed: ', elapsed)
     },
     getCount(cat, value) {
       // cat = 'species' 
@@ -530,10 +578,7 @@ export default {
     speciesRowChange(text) {
       // console.log('----------------')
       // console.log('speciesRowChange')
-      // console.log(text)
-      // console.log(this.speciesFiltered)
       let reset = this.speciesSelected.length == 0
-
       if (text == 'unselect-all') {
         this.speciesSelected = []
         reset = true
@@ -544,13 +589,9 @@ export default {
       // console.log('----------------')
       this.updateLookupTable('species', reset)
     },
-
     experimentRowChange(text) {
       // console.log('----------------')
       // console.log('experimentRowChange')
-      // console.log(text)
-      // console.log('this.experimentSelected')
-      // console.log(this.experimentSelected)
       let reset = this.experimentSelected.length == 0
       if (text == 'unselect-all') {
         this.experimentSelected = []
@@ -566,7 +607,6 @@ export default {
     tissueRowChange(text) {
       // console.log('----------------')
       // console.log('tissueRowChange')
-      // console.log(this.tissueSelected)
       let reset = this.tissueSelected.length == 0
       if (text == 'unselect-all') {
         this.tissueSelected = []
@@ -579,6 +619,8 @@ export default {
       // console.log('----------------')
     },
     filterResults() {
+      // Defunct? 
+      //
       // Inputs are arrays of strings
       // If array is empty then no filter is performed
       const speciesSelectedNames = this.speciesSelected.map(el => el.name)
@@ -614,8 +656,8 @@ export default {
 
       let intersection = speciesResult.filter(value => experimentsResult.includes(value));
       intersection = intersection.filter(value => tissuesResult.includes(value));
-      console.log('intersection')
-      console.log(intersection)
+      // console.log('intersection')
+      // console.log(intersection)
 
       return intersection
     },

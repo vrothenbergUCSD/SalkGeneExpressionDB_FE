@@ -19,10 +19,13 @@ class DataService {
   }
   async getExpressionDataByGenes(genes, table) {
     //http://127.0.0.1:8000/expression_data/gene_name/0610009B22Rik,Agrn
-    return http.get(`gene_expression/gene_names?gene_names=${genes}`)
+    return http.get(`gene_expression/gene_names?gene_names=${genes}&table=${table}`)
   }
   async getGenes(table = "Mouse_TRF_2018_Liver_gene_metadata") {
     return http.get(`gene_metadata/names?table=${table}`)
+  }
+  async getSampleMetadata(table) {
+    return http.get(`sample_metadata/data?table=${table}`)
   }
   async getDatabaseMetadata() {
     return http.get('database_metadata/data')
