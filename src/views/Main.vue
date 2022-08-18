@@ -114,19 +114,26 @@
   </div> -->
   
 
-  <div id="selected-metadata-view" v-if="this.fetched">
-    <div id="genes-view" class="mx-auto my-3 w-3/4" >
+  <div id="selected-metadata-view" class="mx-auto w-3/4" v-if="this.fetched">
+    <div id="genes-view" class="my-3" >
       <div class="font-semibold m-2">Genes</div>
-      <div v-show="this.loadingGenes">
+      <div v-if="this.loadingGenes">
         <ProgressBar mode="indeterminate" />
       </div>
-      <div class="p-fluid" v-show="!this.loadingGenes">
-        <AutoComplete :multiple="true" v-model="this.genesSelected" 
-        :suggestions="this.genesFiltered" @complete="searchGenes($event)" field="name" />
+      <div class="flex flex-row" v-else>
+        <div class="p-fluid w-3/4" v-show="!this.loadingGenes">
+          <AutoComplete :multiple="true" v-model="this.genesSelected" 
+          :suggestions="this.genesFiltered" @complete="searchGenes($event)" field="name" />
+        </div>
+        <div>
+          <Button label="Get Gene Data" class="ml-3" @click="fetchData"/>
+        </div>
       </div>
+      
     </div>
+
     <div id="graphs-view">
-      <div class="card w-3/4 mx-auto mt-2">
+      <div class="card mt-2">
         <TabMenu :model="items"/>
         <router-view :genes="this.genesSelected" :datasets="this.datasets"/>
       </div>
@@ -192,15 +199,13 @@ export default {
       loadingGenes: true,
       fetched: false,
       fetching: false,
+      filterWarning: false,
 
       db_metadata: null,
       filtered_metadata: null,
       selected_metadata: null,
-      datasets: null,
-
       lookup_table: null,
-      filterWarning: false,
-
+      
       columns: null,
       categories: ['species', 'experiment', 'tissue'],
 
@@ -219,10 +224,20 @@ export default {
       tissueSelected: [],
       tissueSelectedFilters: [],
 
-      genes: [],
+      genes: [], // [{name:'Alb'},...]
       genesFiltered: [],
       genesSelected: [],
 
+      gene_metadata_table_names: [],
+      sample_metadata_table_names: [],
+      gene_expression_data_table_names: [],
+
+      gene_metadata_tables: [],
+      sample_metadata_tables: [],
+      gene_expression_data_tables: [],
+
+      datasets: null,
+      
     }
   },
   computed: {
@@ -237,9 +252,34 @@ export default {
     tissueOnlySelected() {
       return (!this.speciesSelected.length 
         && !this.experimentSelected.length && this.tissueSelected.length)
-    }
-
+    },
+    // datasets() {
+    //   console.log('computed datasets')
+    //   return {
+    //     gene_metadata_tables: this.gene_metadata_tables,
+    //     sample_metadata_tables: this.sample_metadata_tables,
+    //     gene_expression_data_tables: this.gene_expression_data_tables,
+    //   }
+    // }
   },
+  // watch: {
+  //   genesSelected(newValue, oldValue) {
+  //     console.log('watch: genesSelected')
+  //     if (newValue == oldValue) {
+  //       // No change?
+  //       console.log('No change')
+  //     } else {
+  //       console.log('Change')
+  //       if (this.fetched) {
+  //         console.log('Fetched. Ready for get gene expression data')
+  //         // console.log(this.genesSelected)
+  //         // console.log(this.gene_expression_data_table_names)
+  //         this.fetchGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names)
+
+  //       }
+  //     }
+  //   }
+  // },
   created() {
     console.log('Main created')
 
@@ -260,12 +300,10 @@ export default {
 
     this.genesSelected = this.buildList(this.genesSelected)
 
-    // Not necessary to immediately display a visualization
-    
   },
   async mounted() {
     // Populate array with all genes
-    console.log('Main mounted, await genes: ')
+    console.log('Main mounted, await datasets metadata: ')
     const start = Date.now()
 
     // Concurrent await
@@ -275,11 +313,11 @@ export default {
     ])
 
     // Testing - Remove later
-    this.tissueSelected = [{name:'Adrenal'}, {name:'EWAT'}]
+    this.tissueSelected = [{name:'BAT'}, {name:'DG'}]
+    this.tissueRowChange('select')
+    await this.fetchDatasets()
     this.genesSelected = [{name:'Alb'}]
-    this.fetchDatasets()
     this.$router.push('/main/line')
-
     
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
@@ -298,20 +336,21 @@ export default {
       // console.log(this.filtered_metadata)
       // this.getSelectedDatasets()
       // console.log(this.selected_metadata)
-      let gene_metadata_tables = []
-      let sample_metadata_tables = []
-      let gene_expression_data_tables = []
+      this.gene_metadata_table_names = []
+      this.sample_metadata_table_names = []
+      this.gene_expression_data_table_names = []
+
       this.selected_metadata.forEach((e) => {
         // Build list of gene_metadata_tables
-        console.log(e)
-        gene_metadata_tables.push(e.gene_metadata_table_name)
-        sample_metadata_tables.push(e.sample_metadata_table_name)
-        gene_expression_data_tables.push(e.gene_expression_data_table_name)
+        // console.log(e)
+        this.gene_metadata_table_names.push(e.gene_metadata_table_name)
+        this.sample_metadata_table_names.push(e.sample_metadata_table_name)
+        this.gene_expression_data_table_names.push(e.gene_expression_data_table_name)
       })
 
       await Promise.all([
-        this.fetchGeneMetadataTables(gene_metadata_tables), 
-        this.fetchSampleMetadataTables(sample_metadata_tables),
+        this.fetchGeneMetadataTables(this.gene_metadata_table_names), 
+        this.fetchSampleMetadataTables(this.sample_metadata_table_names),
       ])
 
       // this.genes = await DataService.getGenes()
@@ -324,23 +363,25 @@ export default {
       const elapsed = Date.now() - start
       console.log('fetchDatasets time elapsed: ', elapsed)
     },
-    
     async fetchGeneMetadataTables(tables) {
       console.log('fetchGeneMetadataTables')
       const start = Date.now()
       this.loadingGenes = true
       const results = await Promise.all(tables.map(async (t) => {
         const result = await DataService.getGenes(t)
-        // console.log('table: ', t)
-        // console.log(result)
-        let data = result.data.map(d => d.gene_name)
-        // console.log(data)
-        return data
+        return {
+          table: t, 
+          data: result.data.map(d => d.gene_name)
+        }
       }))
+      this.gene_metadata_tables = results
+      // results = results.map(e => e.data)
 
-      let uniqGenes = [...new Set(...results)]
+      let uniqGenes = [...new Set(...results.map(e => e.data))]
       // console.log(uniqGenes) 
       this.genes = this.buildList(uniqGenes)
+      this.genesFiltered = this.genes
+      // console.log(this.genes)
 
       this.loadingGenes = false
       const elapsed = Date.now() - start
@@ -357,18 +398,65 @@ export default {
         // console.log(result)
         // let data = result.data.map(d => d.gene_name)
         // console.log(data)
-        return result
+        return {
+          table: t,
+          data: result.data 
+        }
       }))
 
-      // let uniqGenes = [...new Set(...results)]
-      // console.log(uniqGenes) 
-      // this.genes = this.buildList(uniqGenes)
-      // console.log(results)
+      this.sample_metadata_tables = results
+
+
       const elapsed = Date.now() - start
       console.log('fetchSampleMetadataTables time elapsed: ', elapsed)
 
       return results
 
+    },
+    async fetchGeneExpressionDataTables(genes, tables) {
+      console.log('fetchGeneExpressionDataTables')
+      // console.log(genes)
+      let genesStr = genes.map((d) => d.name).toString()
+      console.log('genesStr')
+      console.log(genesStr)
+      const start = Date.now()
+      const results = await Promise.all(tables.map(async (t) => {
+        // const result = []
+        // if (this.gene_expression_data_tables)
+        // console.log('table: ', t)
+        // if (this.gene_expression_data_tables)
+
+        const result = await DataService.getExpressionDataByGenes(genesStr, t)
+        
+        // console.log(result)
+        // let data = result.data.map(d => d.gene_name)
+        // console.log(data)
+        return {
+          table_name: t,
+          data: result.data
+        }
+      }))
+
+      this.gene_expression_data_tables = results
+      console.log('gene_expression_data_tables')
+      console.log(this.gene_expression_data_tables)
+
+      const elapsed = Date.now() - start
+      console.log('fetchGeneExpressionDataTables time elapsed: ', elapsed)
+
+      return results
+    },
+    async fetchData() {
+      console.log('fetchData')
+      const start = Date.now()
+      await this.fetchGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names)
+      this.datasets = {
+        // gene_metadata_tables: this.gene_metadata_tables,
+        sample_metadata_tables: this.sample_metadata_tables,
+        gene_expression_data_tables: this.gene_expression_data_tables,
+      }
+      const elapsed = Date.now() - start
+      console.log('fetchData time elapsed ', elapsed)
     },
     async loadGenes() {
       // Defunct?

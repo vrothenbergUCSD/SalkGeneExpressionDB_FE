@@ -17,6 +17,7 @@ import * as d3 from "d3";
 import DataService from "@/services/DataService.js";
 
 import ProgressSpinner from 'primevue/progressspinner';
+import _ from 'underscore';
 
 export default {
   name: "LinePlot",
@@ -26,12 +27,16 @@ export default {
   props: { 
     msg: String,
     genes: Array,
-    datasets: Array,
+    datasets: Object,
   },
   data() {
     return {
-      dataset: [],
-      genesData: null,
+      // dataset: [],
+      genes_str_arr: null,
+      gene_expression_datasets: [],
+      expression_merged: [],
+      expression_averaged: [],
+
       margin: null,
       width: null,
       height: null,
@@ -44,42 +49,125 @@ export default {
       complete: false,
     }
   },
+  watch: {
+    datasets() {
+      console.log('%%%%%%%%%%%%%%%%')
+      console.log('datasets updated')
+      const start = Date.now()
+      // console.log('this.genes', this.genes)
+      // console.log(this.genes)
+      console.log('this.datasets')
+      console.log(this.datasets)
+      this.genes_str_arr = this.genes.map((d) => d.name)
+      // console.log('this.genes_str_arr')
+      // console.log(this.genes_str_arr)
+      if (this.datasets) {
+        this.expression_merged = []
+        this.gene_expression_datasets = this.datasets.gene_expression_data_tables
+        // console.log('gene_expression_datasets')
+        // console.log(this.gene_expression_datasets)
+        this.gene_expression_datasets.forEach((e) => {
+          // console.log('this.gene_expression_datasets.forEach')
+          // console.log(e)
+          let table = e.table_name
+          // "TRF_2018_Mouse_Adrenal_gene_expression_data_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"
+          // console.log('table ', table)
+          let sample_table = table.replace('gene_expression_data', 'sample_metadata')
+          // console.log('sample_table', sample_table)
+          let expression_data = e.data
+          let sample_data = this.datasets.sample_metadata_tables.find(obj => {
+            return obj.table == sample_table
+          }).data
+          // console.log('sample_data')
+          // console.log(sample_data)
+
+          const merged_data = expression_data.map(itm => ({
+              ...sample_data.find((item) => (item.sample_name == itm.sample_name) && item),
+              ...itm
+          }))
+          // console.log('merged_data')
+          // console.log(merged_data)
+          e.data = merged_data
+          this.expression_merged = this.expression_merged.concat(merged_data)
+          
+
+        })
+        this.expression_merged.forEach((e) => {
+          e.time_point = parseInt(e.time_point.split('ZT')[1])
+        })
+
+        const grouped = _.groupBy(this.expression_merged, function(e){
+          return `${e.gene_id}_${e.sample_name.split('-')[0]}_${e.tissue.replaceAll(' ', '-')}`
+        })
+        console.log('grouped')
+        console.log(grouped)
+       
+        this.expression_averaged = _.mapObject(grouped, function(val, key) {
+          let o = JSON.parse(JSON.stringify(val[0]))
+          o.gene_expression = _.reduce(val, function(memo, v) { 
+            return memo + v.gene_expression; 
+          }, 0) / val.length
+          
+          return o
+        });
+
+        console.log('expression_averaged')
+        // console.log(this.expression_averaged)
+        // console.log(Object.entries(this.expression_averaged))
+        this.expression_averaged = Object.entries(this.expression_averaged).map(e => {
+          e[1].identifier = e[0]
+          return e[1]
+        })
+        console.log(this.expression_averaged)
+
+
+
+        console.log('After mutation')
+        console.log(this.gene_expression_datasets)
+
+      }
+      this.update_line_plot()
+
+      const elapsed = Date.now() - start
+      console.log('datasets updated ', elapsed)
+      console.log('%%%%%%%%%%%%%%%%')
+    }
+
+  },
   created() {
   },
   async mounted() {
-    console.log('=================')
-    console.log('LinePlot mounting')
+    console.log('LinePlot height')
+    // console.log(this.$refs.refName.clientHeight)
+    // console.log('=================')
+    // console.log('LinePlot mounting')
     // console.log(this.complete)
-    console.log(this.genes)
-    this.genesData = this.genes.map((d) => d.name)
-    console.log('datasets')
-    console.log(this.datasets)
+    // console.log(this.genes)
+    // this.genes_str_arr = this.genes.map((d) => d.name)
+    // console.log('datasets')
+    // console.log(this.datasets)
     this.initialize_line_plot()
     // await this.update_line_plot()
-    console.log('finished update_line_plot')
+    // console.log('finished update_line_plot')
     this.complete = true
-    console.log(this.complete)
-    console.log('=================')
+    // console.log(this.complete)
+    // console.log('=================')
   },
   async updated () {
-    console.log('-----------------')
-    console.log('LinePlot updated')
-    const start = Date.now()
-    console.log('this.genes')
-    console.log(this.genes)
-    console.log('this.datasets')
-    console.log(this.datasets)
-    this.genesData = this.genes.map((d) => d.name)
+    // console.log('-----------------')
+    // console.log('LinePlot updated')
+    // const start = Date.now()
     // this.update_line_plot()
-    const elapsed = Date.now() - start
-    console.log('LinePlot updated ', elapsed)
-    console.log('-----------------')
+    // const elapsed = Date.now() - start
+    // console.log('LinePlot updated ', elapsed)
+    // console.log('-----------------')
   },
   methods: {
-    async get_dataset() {
-      let data = await DataService.getExpressionDataByGenes(this.genesData.toString())
-      this.dataset = data.data
-    },
+    // async get_dataset() {
+    //   // Defunct
+    //   let data = await DataService.getExpressionDataByGenes(this.genes_str_arr.toString())
+    //   this.dataset = data.data
+    // },
     initialize_line_plot() {
       // set the dimensions and margins of the graph
       this.margin = {top: 30, right: 30, bottom: 70, left: 60}
@@ -126,35 +214,62 @@ export default {
         .text("Gene Expression");
     },
     async update_line_plot() {
-      if (this.genesData.length) {
-        await this.get_dataset()
-      } else {
-        this.dataset = []
-      }
+      console.log('update_line_plot')
+      // if (this.genes_str_arr.length) {
+      //   await this.get_dataset()
+      // } else {
+      //   this.dataset = []
+      // }
+      console.log('this.expression_merged')
+      console.log(this.expression_merged)
+
+      console.log('this.expression_averaged')
+      console.log(this.expression_averaged)
+
+      // let dataset = 
+      
+      // return
+      // console.log(this.expression_merged)
 
       const sumstat = d3
-        .group(this.dataset, d => `${d.gene_name}_${d.group_name}`);
-      const sumstat_arr = this.dataset.map((d,i) => [
-        `${d.gene_name}_${d.group_name}_${d.time_point}`,{
-        time_point: d.time_point,
-        gene_expression: d.gene_expression,
-        gene_group: `${d.gene_name}_${d.group_name}`,
-        i: i,
-        }]
+        .group(this.expression_averaged, d => `${d.gene_id}_${d.group_name}_${d.tissue.replaceAll(' ', '-')}`);
+      
+      console.log('sumstat')
+      console.log(sumstat)
+      console.log([...sumstat.keys()].length)
+
+      const sumstat_arr = this.expression_merged.map((d,i) => [
+        `${d.gene_id}_${d.tissue.replaceAll(' ', '-')}_${d.sample_name}`,
+          Object.assign(JSON.parse(JSON.stringify(d)), {
+            i: i,
+            gene_group: `${d.gene_id}_${d.group_name}_${d.tissue.replaceAll(' ', '-')}`
+            })
+        ]
       )
+      console.log('sumstat_arr')
+      console.log(sumstat_arr)
+
       const sumstat_map = new Map(sumstat_arr)
+      // const sumstat_map = _.groupBy(this.expression_merged, function(e) {
+      //   return `${e.gene_id}_${e.group_name}_${e.tissue.replaceAll(' ', '-')}`
+      // })
+
+      console.log('sumstat_map')
+      console.log(sumstat_map)
+
       var color = d3.scaleOrdinal(d3.schemeCategory10);
+      // var color = d3.scaleOrdinal(d3.interpolateSinebow)
 
       // Create the X axis
       var x = this.x
-      x.domain([0, d3.max(this.dataset, (d) => d.time_point )])
+      x.domain([0, d3.max(this.expression_merged, (d) => d.time_point )])
       this.svg.selectAll(".myXaxis").transition()
         .duration(1000)
         .call(this.xAxis);
 
       // Create the Y axis
       var y = this.y
-      y.domain([0, d3.max(this.dataset, (d) => +d.gene_expression)])
+      y.domain([0, 1.1*d3.max(this.expression_merged, (d) => +d.gene_expression)])
       this.svg.selectAll('.myYaxis')
           .transition()
           .duration(1000)
@@ -162,8 +277,8 @@ export default {
 
       var updateInterval = 500
 
-      console.log('sumstat')
-      console.log(sumstat)
+      // console.log('sumstat')
+      // console.log(sumstat)
 
       // Logic for plotting lines
       this.svg.selectAll(".line")
@@ -172,11 +287,13 @@ export default {
             function(enter) {
               enter.append('path')
                 .attr('class', 'line')
-                .attr("d", (d) => d3.line()
+                .attr("d", (d) => {
+                    return d3.line()
                     .curve(d3.curveNatural)
                     .x((d) => x(d.time_point))
                     .y((d) => y(+d.gene_expression))
                     (d[1])
+                }
                 )
                 .attr("fill", "none")
                 .attr("stroke-width", 1.5)
@@ -247,7 +364,10 @@ export default {
                 .attr('x', legendX+20)
                 .attr('y', (d,i) => i*25)
                 .style('fill', (d) => color(d[0]))
-                .text((d) => d[0] )
+                .text((d) => {
+                  // console.log(d)
+                  return d[0]
+                  })
                 .attr('text-anchor', 'left')
                 .attr('font-size', '0.7em')
                 .style('fill-opacity', 1)
@@ -276,7 +396,10 @@ export default {
           (enter) => {
             enter.append("circle")
               .attr("class", "dot")
-              .style("fill", d => color(d[1].gene_group))
+              .style("fill", d => {
+                // console.log('dots')
+                // console.log(d)
+                return color(d[1].gene_group)})
               .attr("cx", d => x(d[1].time_point))
               .attr("cy", d => y(d[1].gene_expression))
               .attr("r", 2)
@@ -327,8 +450,13 @@ export default {
                 this.svg.append('g')
                   .attr('class', 'tooltip')
                   .attr("transform", `translate(${x(i[1].time_point)},${y(i[1].gene_expression)})`)
-                  .call(popover, `${i[1].gene_group} 
-                  Time: ZT${i[1].time_point} 
+                  .call(popover, `Data Point Details
+                  Gene: ${i[1].gene_id}
+                  Group: ${i[1].group_name}
+                  Tissue: ${i[1].tissue}
+                  Age: ${i[1].age_months} months
+                  Species: ${i[1].species}
+                  Time: ZT${i[1].time_point}
                   Expr: ${Math.round(i[1].gene_expression)}`, i[1].gene_group)
               }
             })
@@ -409,7 +537,7 @@ export default {
 
       console.log('rows')
       console.log(rows)
-      console.log(this.dataset)
+      console.log(this.expression_merged)
 
       // create a cell in each row for each column
       var cells = rows.selectAll("td")
