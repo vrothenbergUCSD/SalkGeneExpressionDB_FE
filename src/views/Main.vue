@@ -114,8 +114,8 @@
   </div> -->
   
 
-  <div id="selected-metadata-view" class="mx-auto w-3/4" v-if="this.fetched">
-    <div id="genes-view" class="my-3" >
+  <div id="selected-metadata-view" class="mx-auto" v-if="this.fetched">
+    <div id="genes-view" class="my-3 w-3/4 mx-auto" >
       <div class="font-semibold m-2">Genes</div>
       <div v-if="this.loadingGenes">
         <ProgressBar mode="indeterminate" />
@@ -134,7 +134,10 @@
 
     <div id="graphs-view">
       <div class="card mt-2">
-        <TabMenu :model="items"/>
+        <div class="mx-auto w-3/4">
+          <TabMenu :model="items"/>
+        </div>
+        
         <router-view :genes="this.genesSelected" :datasets="this.datasets"/>
       </div>
     </div>

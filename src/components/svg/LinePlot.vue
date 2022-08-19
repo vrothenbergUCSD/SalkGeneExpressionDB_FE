@@ -94,6 +94,7 @@ export default {
         })
         this.expression_merged.forEach((e) => {
           e.time_point = parseInt(e.time_point.split('ZT')[1])
+          e.replicate = e.sample_name.split('-').at(-1)
         })
 
         const grouped = _.groupBy(this.expression_merged, function(e){
@@ -116,6 +117,7 @@ export default {
         // console.log(Object.entries(this.expression_averaged))
         this.expression_averaged = Object.entries(this.expression_averaged).map(e => {
           e[1].identifier = e[0]
+          
           return e[1]
         })
         console.log(this.expression_averaged)
@@ -177,9 +179,11 @@ export default {
       this.svg = d3.select("#plot-area")
           .append("svg")
             .attr("id", "plot-svg")
-            .attr("width", this.width + this.margin.left + this.margin.right)
-            .attr("height", this.height + this.margin.top + this.margin.bottom)
+            // .attr("width", this.width + this.margin.left + this.margin.right)
+            // .attr("height", this.height + this.margin.top + this.margin.bottom)
             .attr("class", "mx-auto")
+            .attr("viewBox", `0 0 ${this.width + this.margin.left + this.margin.right} ${this.height + this.margin.top + this.margin.bottom}`)
+            .attr("preserveAspectRatio", "xMinYMid")
           .append("g")
             .attr("transform", `translate(${this.margin.left},${this.margin.top})`);
 
@@ -215,39 +219,48 @@ export default {
     },
     async update_line_plot() {
       console.log('update_line_plot')
-      // if (this.genes_str_arr.length) {
-      //   await this.get_dataset()
-      // } else {
-      //   this.dataset = []
-      // }
-      console.log('this.expression_merged')
-      console.log(this.expression_merged)
-
-      console.log('this.expression_averaged')
-      console.log(this.expression_averaged)
-
-      // let dataset = 
-      
-      // return
+      // console.log('this.expression_merged')
       // console.log(this.expression_merged)
 
+      // console.log('this.expression_averaged')
+      // console.log(this.expression_averaged)
+      // let dataset = 
+      // return
+      // console.log(this.expression_merged)
+      // const comparison = 
+
       const sumstat = d3
-        .group(this.expression_averaged, d => `${d.gene_id}_${d.group_name}_${d.tissue.replaceAll(' ', '-')}`);
+        .group(this.expression_averaged, d => `${d.gene_id}_${d.tissue.replaceAll(' ', '-')}_${d.group_name}`);
       
       console.log('sumstat')
       console.log(sumstat)
-      console.log([...sumstat.keys()].length)
+
+      // Unique categories of genes and tissues
+      const categories = [...new Set(
+          [...sumstat.keys()] 
+          .map(e => e.split('_').slice(0,-1).join('_'))
+          )]
+
+      console.log('categories')
+      console.log(categories)
+
+      const cat_map = new Map(categories.map((d,i) => [
+        d, i/categories.length
+      ]))
+      console.log('cat_map')
+      console.log(cat_map)
+      console.log('Number of categories: ', categories.length)
 
       const sumstat_arr = this.expression_merged.map((d,i) => [
-        `${d.gene_id}_${d.tissue.replaceAll(' ', '-')}_${d.sample_name}`,
+        `${d.gene_id}_${d.tissue.replaceAll(' ', '-')}_${d.group_name}_${d.time_point}-${d.replicate}`,
           Object.assign(JSON.parse(JSON.stringify(d)), {
             i: i,
-            gene_group: `${d.gene_id}_${d.group_name}_${d.tissue.replaceAll(' ', '-')}`
-            })
+            gene_group: `${d.gene_id}_${d.tissue.replaceAll(' ', '-')}_${d.group_name}`
+          })
         ]
       )
-      console.log('sumstat_arr')
-      console.log(sumstat_arr)
+      // console.log('sumstat_arr')
+      // console.log(sumstat_arr)
 
       const sumstat_map = new Map(sumstat_arr)
       // const sumstat_map = _.groupBy(this.expression_merged, function(e) {
@@ -258,8 +271,11 @@ export default {
       console.log(sumstat_map)
 
       var color = d3.scaleOrdinal(d3.schemeCategory10);
-      // var color = d3.scaleOrdinal(d3.interpolateSinebow)
+      // var color = d3.scaleSequential().domain([1,categories]).interpolator(d3.interpolateSinebow)
+      var color2 = d3.scaleSequential(d3.interpolateWarm)
 
+      // console.log('color2', color2(0))
+      // console.log(d3.hsl(color2(0)))
       // Create the X axis
       var x = this.x
       x.domain([0, d3.max(this.expression_merged, (d) => d.time_point )])
@@ -289,7 +305,7 @@ export default {
                 .attr('class', 'line')
                 .attr("d", (d) => {
                     return d3.line()
-                    .curve(d3.curveNatural)
+                    .curve(d3.curveBasis)
                     .x((d) => x(d.time_point))
                     .y((d) => y(+d.gene_expression))
                     (d[1])
@@ -297,7 +313,19 @@ export default {
                 )
                 .attr("fill", "none")
                 .attr("stroke-width", 1.5)
-                .attr("stroke", (d) => color(d[0]))
+                .attr("stroke", (d) => {
+                  return getHSL(d[0], cat_map, color2)
+                  // console.log('sumstat color')
+                  // const cat = d[0].split('_').slice(0,-1).join('_')
+                  // const group = d[0].split('_').at(-1)
+                  // console.log(cat, group)
+                  // let hsl = d3.hsl(color2(cat_map.get(cat)))
+                  // const factor = 1 + (((group === 'ALF') - 0.5) / 3)
+                  // hsl.l *= factor
+                  // // console.log(hsl)
+                  // return hsl
+                  // return color2(0.5)
+                  })
               
               enter.append('g')
 
@@ -311,7 +339,10 @@ export default {
                     .x((d) => x(d.time_point))
                     .y((d) => y(+d.gene_expression))
                     (d[1]))
-                .attr('stroke', (d) => color(d[0]))
+                .attr('stroke', (d) => {
+                  return getHSL(d[0], cat_map, color2)
+                  // color(d[0])
+                  })
             },
             (exit) => {
               exit  
@@ -335,7 +366,9 @@ export default {
                 .attr('x2', legendX + 15)
                 .attr('y1', (d,i) => i*25 )
                 .attr('y2', (d,i) => i*25 )
-                .style("stroke", (d) => color(d[0]))
+                .style("stroke", (d) => {
+                  return getHSL(d[0], cat_map, color2)
+                  })
                 .style("stroke-width", 1.5)
             },
             (update) => {
@@ -363,8 +396,12 @@ export default {
                 .attr('class', 'legendText')
                 .attr('x', legendX+20)
                 .attr('y', (d,i) => i*25)
-                .style('fill', (d) => color(d[0]))
+                .style('fill', (d) => {
+                  return getHSL(d[0], cat_map, color2)
+                  // color(d[0])
+                  })
                 .text((d) => {
+                  // console.log('legend')
                   // console.log(d)
                   return d[0]
                   })
@@ -397,9 +434,15 @@ export default {
             enter.append("circle")
               .attr("class", "dot")
               .style("fill", d => {
-                // console.log('dots')
+                // console.log('dots color')
                 // console.log(d)
-                return color(d[1].gene_group)})
+                const name = d[0].split('_').slice(0,-1).join('_')
+                // console.log('name', name)
+                return getHSL(name, cat_map, color2)
+                // console.log(color(d[1].gene_group))
+                // return this.getHSL(d[1])
+                // return color(d[1].gene_group)
+                })
               .attr("cx", d => x(d[1].time_point))
               .attr("cy", d => y(d[1].gene_expression))
               .attr("r", 2)
@@ -470,6 +513,17 @@ export default {
 
           }
         )
+      
+      function getHSL(name, cat_map, color_func) {
+        // console.log('getHSL')
+        const cat = name.split('_').slice(0,-1).join('_')
+        const group = name.split('_').at(-1)
+        let hsl = d3.hsl(color_func(cat_map.get(cat)))
+        const factor = 1 + (((group === 'ALF') - 0.5) / 3)
+        hsl.l *= factor
+        // console.log(hsl)
+        return hsl
+      }
            
       function popover(g, value, key) {
         if (!value) return g.style("display", "none");
@@ -486,7 +540,7 @@ export default {
           .join("path")
             .attr("fill", "white")
             .attr("fill-opacity", 1)
-            .attr("stroke", color(key));
+            .attr("stroke", getHSL(key, cat_map, color2));
 
         // tooltip content
         const text = g.selectAll("text")
@@ -508,55 +562,9 @@ export default {
         
         // tooltip container path
         path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
-      }
-          
-    },
-    tabulate(data, columns) {
-      console.log("Tabulating")
-      var table = d3.select("#table-area").append("table")
-              .attr("style", "margin-left: 0px")
-              .style("border-collapse", "collapse")// <= Add this line in
-              .style("border", "2px black solid") // <= Add this line in
-              .attr("class", "mx-auto"),
-          thead = table.append("thead"),
-          tbody = table.append("tbody");
-
-      // append the header row
-      thead.append("tr")
-          .selectAll("th")
-          .data(columns)
-          .enter()
-          .append("th")
-              .text(function(column) { return column; });
-
-      // create a row for each object in the data
-      var rows = tbody.selectAll("tr")
-          .data(data)
-          .enter()
-          .append("tr");
-
-      console.log('rows')
-      console.log(rows)
-      console.log(this.expression_merged)
-
-      // create a cell in each row for each column
-      var cells = rows.selectAll("td")
-          .data(function(row) {
-              return columns.map(function(column) {
-                  return {column: column, value: row[column]};
-              });
-          })
-          .enter()
-          .append("td")
-          .attr("style", "font-family: Courier") // sets the font style
-              .html(function(d) { return d.value; });
-      console.log('cells')
-      console.log(cells)
-      
-      return table;
+      }     
     },
   }
-
 }
 </script>
 
