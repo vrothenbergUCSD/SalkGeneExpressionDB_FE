@@ -320,7 +320,7 @@ export default {
     this.tissueRowChange('select')
     await this.fetchDatasets()
     this.genesSelected = [{name:'Alb'}]
-    this.$router.push('/main/line')
+    // this.$router.push('/main/line')
     
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
@@ -336,16 +336,12 @@ export default {
       console.log('fetchDatasets')
       const start = Date.now()
       this.fetching = true
-      // console.log(this.filtered_metadata)
-      // this.getSelectedDatasets()
-      // console.log(this.selected_metadata)
       this.gene_metadata_table_names = []
       this.sample_metadata_table_names = []
       this.gene_expression_data_table_names = []
 
       this.selected_metadata.forEach((e) => {
         // Build list of gene_metadata_tables
-        // console.log(e)
         this.gene_metadata_table_names.push(e.gene_metadata_table_name)
         this.sample_metadata_table_names.push(e.sample_metadata_table_name)
         this.gene_expression_data_table_names.push(e.gene_expression_data_table_name)

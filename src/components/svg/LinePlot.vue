@@ -36,6 +36,7 @@ export default {
       gene_expression_datasets: [],
       expression_merged: [],
       expression_averaged: [],
+      expression_normalized: [],
 
       margin: null,
       width: null,
@@ -98,7 +99,7 @@ export default {
         })
 
         const grouped = _.groupBy(this.expression_merged, function(e){
-          return `${e.gene_id}_${e.sample_name.split('-')[0]}_${e.tissue.replaceAll(' ', '-')}`
+          return `${e.gene_id}_${e.tissue.replaceAll(' ', '-')}_${e.group_name}_${e.time_point}`
         })
         console.log('grouped')
         console.log(grouped)
@@ -122,7 +123,82 @@ export default {
         })
         console.log(this.expression_averaged)
 
+        this.expression_normalized
 
+        const grouped_tissue = _.groupBy(this.expression_averaged, function(e){
+          return `${e.tissue.replaceAll(' ', '-')}`
+        })
+        // console.log('grouped_tissue')
+        // console.log(grouped_tissue)
+
+        const grouped_tissue_gene = Object.keys(grouped_tissue).map((key) => {
+          // console.log(key)
+          // console.log(grouped_tissue)
+          // console.log(grouped_tissue[key])
+          return [key, _.groupBy(grouped_tissue[key], function(e) {
+            return `${e.gene_id}`
+          })]
+        })
+
+        console.log('grouped_tissue_gene')
+        console.log(grouped_tissue_gene)
+
+        const grouped_tissue_gene_groupname = grouped_tissue_gene.map((tissue) => {
+          // console.log(tissue)
+          return [tissue[0], Object.keys(tissue[1]).map((key) => {
+            // console.log(key) // gene_id
+            return [key, _.groupBy(tissue[1][key], function(e) {
+              // console.log(e)
+              return `${e.group_name}`
+            })]
+          })]
+          // tissue[1].forEach((gene) => {
+          //   console.log(gene)
+          // })
+        })
+
+        
+        // console.log(grouped_tissue_gene_groupname)
+
+        grouped_tissue_gene_groupname.forEach((tissue) => {
+          // console.log(tissue[0])
+          tissue[1].forEach((gene) => {
+            // console.log('gene', gene[0])
+            // console.log(gene)
+            // console.log(Object.entries(gene[1]))
+            gene[1] = Object.entries(gene[1])
+            gene[1].forEach((groupname) => {
+              // console.log
+              // console.log('groupname', groupname)
+              const max = Math.max.apply(Math, groupname[1].map(function(o) { return o.gene_expression; }))
+              // console.log('max', max)
+              const min = Math.min.apply(Math, groupname[1].map(function(o) { return o.gene_expression; }))
+              // console.log('min', min)
+              groupname[1].forEach((sample) => {
+                sample.gene_expression_norm = (sample.gene_expression - min) / (max - min)
+              })
+            })
+            // gene[1].forEach((groupname) => {
+            //   console.log('groupname', groupname[0])
+            //   console.log(groupname)
+            //   return [groupname[0], Object.entries(groupname[1])]
+
+            // })
+            
+            // return [gene[0], Obje]
+            // return [gene[0], Object.keys(gene[1]).map((key) => {
+            //   return [key, _.groupBy(gene[1][key], function(e) {
+            //     console.log(e)
+            //     return `${e.}`
+            //   })]
+            // })]
+          })
+        })
+
+        this.expression_normalized = grouped_tissue_gene_groupname
+
+        console.log('this.expression_normalized')
+        console.log(this.expression_normalized)
 
         console.log('After mutation')
         console.log(this.gene_expression_datasets)
@@ -235,6 +311,22 @@ export default {
       console.log('sumstat')
       console.log(sumstat)
 
+      // const sumstat2 = d3
+      //   .groups(this.expression_averaged, 
+      //     d => `${d.gene_id}`, 
+      //     d => `${d.tissue.replaceAll(' ', '-')}`, 
+      //     d => `${d.group_name}`)
+      // console.log('sumstat2')
+      // console.log(sumstat2)
+
+      // sumstat2.forEach((gene) => {
+      //   gene[1].forEach((tissue) => {
+      //     tissue[1].forEach((group) => {
+      //       // Normalize
+      //     })
+      //   })
+      // })
+
       // Unique categories of genes and tissues
       const categories = [...new Set(
           [...sumstat.keys()] 
@@ -259,6 +351,9 @@ export default {
           })
         ]
       )
+
+
+
       // console.log('sumstat_arr')
       // console.log(sumstat_arr)
 
@@ -353,39 +448,99 @@ export default {
                 .remove()
             }
           )
-      
+      // Gene > Tissue > Group 
+
       // Legend color
-      var legendX = this.width*this.drawable_width_scale+20
-      this.svg.selectAll(".legendLines")
-          .data(sumstat)
+      var legendX = this.width*this.drawable_width_scale
+      this.svg.selectAll("div.legend_gene")
+          .data(this.expression_normalized)
           .join(
             (enter) => {
-              enter.append('line')
-                .attr('class', 'legendLines')
-                .attr('x1', legendX)
-                .attr('x2', legendX + 15)
-                .attr('y1', (d,i) => i*25 )
-                .attr('y2', (d,i) => i*25 )
-                .style("stroke", (d) => {
-                  return getHSL(d[0], cat_map, color2)
-                  })
-                .style("stroke-width", 1.5)
+              enter.append('g')
+                .attr('class', 'legend_gene')
+                .style('fill', (d,i) => color2(i*0.25))
+                .attr('transform', (d,i) => `translate(${legendX}, ${i*20})`)
+                .append('text')
+                  .attr('class', 'legend_gene_text')
+                  // .attr('x', 0)
+                  // .attr('y', (d,i) => i*25)    
+                  // .style('fill', (d) => {
+                  // return getHSL(d[0], cat_map, color2)
+                  // // color(d[0])
+                  // })
+                  .text((d,i) => { 
+                    return `hullo ${i}`
+                    // console.log('legend')
+                    // console.log(d)
+                    // return d[0]
+                    })
+                  .attr('text-anchor', 'left')
+                  .attr('font-size', '0.7em')
+                  .style('fill-opacity', 1)
+                  .style('margin-bottom', 5)
+                .selectAll('.legend_tissue')
+                .data(d => d[1])
+                .join(
+                  (enter) => {
+                    enter.append('g')
+                    .attr('class', 'legend_tissue')
+                    // .style('fill', (d,i) => color2())
+                    .attr('transform', (d,i) => `translate(${legendX}, ${i*25})`)
+                    .append('text')
+                      .text((d,i) => {
+                        return `down here ${i}`
+                      })
+                  }
+                )
             },
-            (update) => {
-              update.attr('x1', legendX)
-                .attr('x2', legendX + 15)
-                .attr('y1', (d,i) =>  i*25 )
-                .attr('y2', (d,i) =>  i*25 )
-                .style("stroke", (d) => color(d[0]))
-            },
-            (exit) => {
-              exit.transition()
-                .ease(Math.sqrt)
-                .duration(updateInterval)
-                .style('stroke-opacity', 0)
-                .remove()
-            }
+            // (update) => {
+            //   update.attr('x1', legendX)
+            //     .attr('x2', legendX + 15)
+            //     .attr('y1', (d,i) =>  i*25 )
+            //     .attr('y2', (d,i) =>  i*25 )
+            //     .style("stroke", (d) => color(d[0]))
+            // },
+            // (exit) => {
+            //   exit.transition()
+            //     .ease(Math.sqrt)
+            //     .duration(updateInterval)
+            //     .style('stroke-opacity', 0)
+            //     .remove()
+            // }
           )
+      
+      // // Legend color
+      // var legendX = this.width*this.drawable_width_scale+20
+      // this.svg.selectAll(".legendLines")
+      //     .data(sumstat)
+      //     .join(
+      //       (enter) => {
+      //         enter.append('line')
+      //           .attr('class', 'legendLines')
+      //           .attr('x1', legendX)
+      //           .attr('x2', legendX + 15)
+      //           .attr('y1', (d,i) => i*25 )
+      //           .attr('y2', (d,i) => i*25 )
+      //           .style("stroke", (d) => {
+      //             return getHSL(d[0], cat_map, color2)
+      //             })
+      //           .style("stroke-width", 1.5)
+      //       },
+      //       (update) => {
+      //         update.attr('x1', legendX)
+      //           .attr('x2', legendX + 15)
+      //           .attr('y1', (d,i) =>  i*25 )
+      //           .attr('y2', (d,i) =>  i*25 )
+      //           .style("stroke", (d) => color(d[0]))
+      //       },
+      //       (exit) => {
+      //         exit.transition()
+      //           .ease(Math.sqrt)
+      //           .duration(updateInterval)
+      //           .style('stroke-opacity', 0)
+      //           .remove()
+      //       }
+      //     )
       
       // Legend text
       this.svg.selectAll('.legendText')
