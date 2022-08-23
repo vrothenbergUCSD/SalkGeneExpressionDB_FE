@@ -5,6 +5,14 @@
     <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
       <ProgressSpinner class="w-full mt-10" />
     </div>
+    <div id="plot-options" class="w-3/4 mx-auto mt-3" v-show="this.complete">
+      <div class="mx-auto flex flex-col align-items-center">
+        <div class="font-semibold">Data Points</div>
+        <InputSwitch v-model="showDataPoints" />
+
+      </div>
+      
+    </div>
     <div id="plot-area" class="mt-10" v-show="this.complete">
     </div>
   </div>
@@ -16,12 +24,17 @@ import * as d3 from "d3";
 import DataService from "@/services/DataService.js";
 
 import ProgressSpinner from 'primevue/progressspinner';
+import InputSwitch from 'primevue/inputswitch'
 import _ from 'underscore';
+
+// import eye from '@/assets/eye.svg'
+// import eye
 
 export default {
   name: "LinePlot",
   components: {
     ProgressSpinner,
+    InputSwitch,
   },
   props: { 
     msg: String,
@@ -39,6 +52,11 @@ export default {
       expression_normalized_averaged: [],
       expression_normalized_flattened: [],
 
+      sumstat: null,
+      sumstat_dots: null,
+      categories: null,
+      // cat_map: null,
+
       margin: null,
       width: null,
       height: null,
@@ -50,6 +68,9 @@ export default {
       yAxis: null,
       svg: null,
       complete: false,
+
+      showDataPoints: false,
+      showErrorBars: true,
     }
   },
   watch: {
@@ -92,9 +113,8 @@ export default {
           // console.log(merged_data)
           e.data = merged_data
           this.expression_merged = this.expression_merged.concat(merged_data)
-          
-
         })
+
         this.expression_merged.forEach((e) => {
           e.time_point = parseInt(e.time_point.split('ZT')[1])
           e.replicate = e.sample_name.split('-').at(-1)
@@ -207,6 +227,22 @@ export default {
         // console.log('After mutation')
         // console.log(this.gene_expression_datasets)
 
+        this.sumstat = d3
+          .group(this.expression_normalized_averaged, 
+          d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
+
+        this.sumstat_dots = d3
+          .group(this.expression_normalized_flattened, 
+          d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
+
+        this.categories = [...new Set(
+          [...this.sumstat.keys()] 
+          .map(e => e.split('_').slice(0,-1).join('_'))
+          )]
+
+        // cat_map = new Map(this.categories.map((d,i) => [
+        //   d, i/this.categories.length
+        // ]))
       }
       this.update_line_plot()
 
@@ -236,20 +272,21 @@ export default {
     // console.log('=================')
   },
   async updated () {
-    // console.log('-----------------')
-    // console.log('LinePlot updated')
-    // const start = Date.now()
-    // this.update_line_plot()
-    // const elapsed = Date.now() - start
-    // console.log('LinePlot updated ', elapsed)
-    // console.log('-----------------')
+    console.log('-----------------')
+    console.log('LinePlot updated')
+    const start = Date.now()
+    if (this.datasets) {
+      console.log('this.datasets exists')
+      console.log('showDataPoints:', this.showDataPoints)
+      this.update_line_plot()
+
+    }
+      
+    const elapsed = Date.now() - start
+    console.log('LinePlot updated ', elapsed)
+    console.log('-----------------')
   },
   methods: {
-    // async get_dataset() {
-    //   // Defunct
-    //   let data = await DataService.getExpressionDataByGenes(this.genes_str_arr.toString())
-    //   this.dataset = data.data
-    // },
     initialize_line_plot() {
       // set the dimensions and margins of the graph
       this.margin = {top: 30, right: 30, bottom: 120, left: 80}
@@ -302,45 +339,58 @@ export default {
       this.svg.append("g")
         .attr("id", "lines")
 
-      // Circles grouping element
+      // avgPoints grouping element
       this.svg.append("g")
-        .attr("id", "circles")
+        .attr("id", "avgPoints")
+
+      // dataPoints grouping element
+      this.svg.append("g")
+        .attr("id", "dataPoints")
 
       // Voronoi wrapper
       this.svg.append("g")
         .attr("id", "voronoiWrapper")
+
+      // Visibility icons
+      this.showIcon = d3.create('svg')
+        .attr('xlmns', 'http://www.w3.org/2000/svg')
+        .attr('viewBox', '0 0 24 24')
+        .append('path')
+          .attr('d', 'M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z')
+
+      // this.hideIcon
     },
     async update_line_plot() {
       console.log('update_line_plot')
 
-      const sumstat = d3
-        .group(this.expression_normalized_averaged, 
-        d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
+      // const sumstat = d3
+      //   .group(this.expression_normalized_averaged, 
+      //   d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
       
       // console.log('sumstat')
       // console.log(sumstat)
 
-      const sumstat_dots = d3
-        .group(this.expression_normalized_flattened, 
-        d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
+      // const sumstat_dots = d3
+      //   .group(this.expression_normalized_flattened, 
+      //   d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
 
       console.log('sumstat_dots')
-      console.log(sumstat_dots)
-      // Unique categories of genes and tissues
-      const categories = [...new Set(
-          [...sumstat.keys()] 
-          .map(e => e.split('_').slice(0,-1).join('_'))
-          )]
+      console.log(this.sumstat_dots)
+      // // Unique categories of genes and tissues
+      // const categories = [...new Set(
+      //     [...sumstat.keys()] 
+      //     .map(e => e.split('_').slice(0,-1).join('_'))
+      //     )]
 
       // console.log('categories')
       // console.log(categories)
 
-      const cat_map = new Map(categories.map((d,i) => [
-        d, i/categories.length
+      const cat_map = new Map(this.categories.map((d,i) => [
+        d, i/this.categories.length
       ]))
       console.log('cat_map')
       console.log(cat_map)
-      console.log('Number of categories: ', categories.length)
+      console.log('Number of categories: ', this.categories.length)
 
       // console.log('this.expression_merged')
       // console.log(this.expression_merged)
@@ -372,11 +422,14 @@ export default {
       // //   return `${e.gene_id}_${e.group_name}_${e.tissue.replaceAll(' ', '-')}`
       // // })
 
+      // const encodedSVGString = 
+
       // console.log('sumstat_map')
       // console.log(sumstat_map)
 
       // var color = d3.scaleOrdinal(d3.schemeCategory10);
       // var color = d3.scaleSequential().domain([1,categories]).interpolator(d3.interpolateSinebow)
+      
       // TODO: More color schemes, color blind, etc.
       var color2 = d3.scaleSequential(d3.interpolateWarm)
 
@@ -399,17 +452,14 @@ export default {
 
       var updateInterval = 500
 
-      // console.log('sumstat')
-      // console.log(sumstat)
-
       // Logic for plotting lines
       this.svg.select("#lines")
           .selectAll(".line")
-          .data(sumstat)
+          .data(this.sumstat)
           .join(
             (enter) => {
-              console.log('line enter')
-              console.log(enter)
+              // console.log('line enter')
+              // console.log(enter)
               enter.append('path')
                 .attr('class', 'line')
                 .attr('id', d => `line_${d[0]}`)
@@ -427,24 +477,26 @@ export default {
                 .attr("stroke-width", 1.5)
                 .attr("stroke", d => getHSL(d[0], cat_map, color2))
                 .attr('stroke-opacity', 1)
+                
             },
             (update) => {
-              console.log('line update')
-              console.log(update)
+              // console.log('line update')
+              // console.log(update)
               update
                 .transition()
                 .ease(Math.sqrt)
                 .duration(updateInterval)
                 .attr("d", d => d3.line()
-                    .curve(d3.curveBasis)
+                    .curve(d3.curveMonotoneX)
                     .x((d) => x(d.time_point))
                     .y((d) => y(d.gene_expression_norm))
                     (d[1]))
                 .attr('stroke', d => getHSL(d[0], cat_map, color2))
+                .attr('id', d => `line_${d[0]}`)
             },
             (exit) => {
-              console.log('line exit')
-              console.log(exit)
+              // console.log('line exit')
+              // console.log(exit)
               exit  
                 .style('stroke-opacity', 0)
                 .transition()
@@ -480,7 +532,7 @@ export default {
                   })`)
                 .append('text')
                   .attr('class', 'legend_tissue_text')
-                  .text(d => d[0])
+                  .text(d => d[0].replaceAll('-', ' '))
                   .attr('text-anchor', 'left')
                   .attr('font-size', '0.7em')
                   .attr('fill-opacity', 1)
@@ -512,18 +564,60 @@ export default {
                           const groupname_root = enter.append('g')
                           groupname_root
                             .attr('class', 'legend_groupname')
+                            .style('display', 'inline')
+                            .style('white-space', 'no-wrap')
                             .style('fill', d => getHSL(d[1][0].identifier, cat_map, color2))
                             .attr('transform', (d,i) => `translate(${5}, ${
                               legendY_spacing * (i+1)
                               })`)
                             .on('click', groupnameClick)
-                            .append('text')
+                          groupname_root.append('svg:image')
+                            .attr('class', 'eye')
+                            .attr("xlink:href", "/assets/eye.svg")
+                            .attr('type', "image/svg+xml")
+                            .attr('x', -13)
+                            .attr('y', -9)
+                            .attr('width', 10)
+                            .attr('height', 10)
+                            .attr('opacity', 1)
+                          groupname_root.append('svg:image')
+                            .attr('class', 'eye-off')
+                            .attr("xlink:href", "/assets/eye-off.svg")
+                            .attr('type', "image/svg+xml")
+                            .attr('x', -13)
+                            .attr('y', -9)
+                            .attr('width', 10)
+                            .attr('height', 10)
+                            .attr('opacity', 0)
+                          groupname_root.append('text')
                               .attr('class', 'legend_groupname_text')
                               .text(d => d[0])
                               .attr('text-anchor', 'left')
                               .attr('font-size', '0.7em')
                               .attr('fill-opacity', 1)
-                              .style('margin-bottom', 5)
+                              // .style('margin-bottom', 5)
+                              .style('display', 'inline-block')
+                          
+
+                            // .style('fill', d => d3.color('red'))
+                          // groupname_root.append('circle')
+                          //   .style("fill", d => getHSL(d[1][0].identifier, cat_map, color2))
+                          //   .attr("cx", 0)
+                          //   .attr("cy", -4)
+                          //   .attr("r", 6)
+                          //   .attr('fill-opacity', 1)
+
+                          // groupname_root.append('g')
+                          //   .attr('class', 'showIcon')
+                          //   .attr('width', 10)
+                          //   .attr('height', 10)
+                          //   .attr('x', 0)
+                          //   .attr('y', 0)
+                          //   .style('fill', d3.color('steelblue'))
+                          //   .append('path')
+                          //     .attr('d', 'M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z')
+        
+            
                           return groupname_root
                         },
                         (update) => {
@@ -576,13 +670,33 @@ export default {
                             legendY_spacing * (i+1)
                             })`)
                           .on('click', groupnameClick)
-                          .append('text')
+
+                          groupname_root.append('text')
                             .attr('class', 'legend_groupname_text')
                             .text(d => d[0])
                             .attr('text-anchor', 'left')
                             .attr('font-size', '0.7em')
                             .attr('fill-opacity', 1)
                             .style('margin-bottom', 5)
+                          groupname_root.append('svg:image')
+                            .attr('class', 'eye')
+                            .attr("xlink:href", "/assets/eye.svg")
+                            .attr('type', "image/svg+xml")
+                            .attr('x', -13)
+                            .attr('y', -9)
+                            .attr('width', 10)
+                            .attr('height', 10)
+                            .attr('opacity', 1)
+                          groupname_root.append('svg:image')
+                            .attr('class', 'eye-off')
+                            .attr("xlink:href", "/assets/eye-off.svg")
+                            .attr('type', "image/svg+xml")
+                            .attr('x', -13)
+                            .attr('y', -9)
+                            .attr('width', 10)
+                            .attr('height', 10)
+                            .attr('opacity', 0)
+                            
 
                           return groupname_root
                         },
@@ -644,6 +758,24 @@ export default {
                             .attr('font-size', '0.7em')
                             .attr('fill-opacity', 1)
                             .style('margin-bottom', 5)
+                          groupname_root.append('svg:image')
+                            .attr('class', 'eye')
+                            .attr("xlink:href", "/assets/eye.svg")
+                            .attr('type', "image/svg+xml")
+                            .attr('x', -13)
+                            .attr('y', -9)
+                            .attr('width', 10)
+                            .attr('height', 10)
+                            .attr('opacity', 1)
+                          groupname_root.append('svg:image')
+                            .attr('class', 'eye-off')
+                            .attr("xlink:href", "/assets/eye-off.svg")
+                            .attr('type', "image/svg+xml")
+                            .attr('x', -13)
+                            .attr('y', -9)
+                            .attr('width', 10)
+                            .attr('height', 10)
+                            .attr('opacity', 0)
 
                           return groupname_root
                         },
@@ -698,8 +830,8 @@ export default {
             
             },
             (exit) => {
-              console.log('tissue exit')
-              console.log(exit)
+              // console.log('tissue exit')
+              // console.log(exit)
               exit.select('.legend_tissue_text')
                 .transition()
                 .ease(Math.sqrt)
@@ -713,12 +845,15 @@ export default {
                 .remove()
             }
           )
-    
-      // Draw dots on points
-      this.svg.select('#circles')
+
+      console.log('this.expression_normalized_averaged')
+      console.log(this.expression_normalized_averaged)
+
+      // Draw dots on line with averaged data points
+      this.svg.select('#avgPoints')
         .selectAll(".dot")
         // Flattened array
-        .data(this.expression_normalized_flattened)
+        .data(this.expression_normalized_averaged)
         .join(
           (enter) => {
             console.log('dot enter')
@@ -751,6 +886,7 @@ export default {
               .ease(Math.sqrt)
               .duration(updateInterval)
               .attr('fill-opacity', 1)
+              .attr('id', d => `dot_${d.identifier}`)
           },
           (exit) => {
             console.log('dot exit')
@@ -763,15 +899,94 @@ export default {
           }
         )
 
+      console.log('this.expression_normalized_flattened')
+      console.log(this.expression_normalized_flattened)
+
+      let dataPoints = []
+      let allPoints = this.expression_normalized_averaged
+      if (this.showDataPoints) {
+        dataPoints = this.expression_normalized_flattened
+        allPoints = [...allPoints, ...this.expression_normalized_flattened]
+      } 
+      console.log('dataPoints')
+      console.log(dataPoints)
+        
+      // Draw dots on data points
+      this.svg.select('#dataPoints')
+        .selectAll(".dot")
+        // Flattened array
+        .data(dataPoints)
+        .join(
+          (enter) => {
+            console.log('dot enter')
+            console.log(enter)
+            enter.append("circle")
+              // .attr("class", "dot")
+              .attr('class', 'dot')
+              .attr('id', d => `dot_${d.identifier}`)
+              .style("fill", d => getHSL(d.identifier, cat_map, color2))
+              .attr("cx", d => x(d.time_point))
+              .attr("cy", d => {
+                // console.log(d)
+                return y(d.gene_expression_norm)
+              })
+              .attr("r", 2)
+              .transition()
+              .ease(Math.sqrt)
+              .duration(updateInterval)
+              .attr('fill-opacity', 1)
+          },
+          (update) => {
+            console.log('dot update')
+            console.log(update)
+            update.attr('cx', d => x(d.time_point))
+              .attr('cy', d => {
+                // console.log(d)
+                return y(d.gene_expression_norm)})
+              .style('fill', d => getHSL(d.identifier, cat_map, color2))
+              .transition()
+              .ease(Math.sqrt)
+              .duration(updateInterval)
+              .attr('fill-opacity', 1)
+              .attr('id', d => `dot_${d.identifier}`)
+          },
+          (exit) => {
+            console.log('dot exit')
+            console.log(exit)
+            exit.transition()
+              .ease(Math.sqrt)
+              .duration(updateInterval)
+              .attr('fill-opacity', 0)
+              .remove()
+          }
+        )
+      
+      // // Only show tooltips for the averaged data points
+      // dataPoints = this.expression_normalized_averaged
+      
+      // Select all lines and dots and set to visible, prevents bug on update where if
+      // some lines are hidden then the associated dots will be out of sync
+      this.svg.select('#lines').selectAll('.line').attr('stroke-opacity', 1)
+      this.svg.select('#avgPoints').selectAll('.dot').attr('fill-opacity', 1)
+      // Reset opacity if show data points are toggled on
+      this.svg.select('#dataPoints').selectAll('.dot').attr('fill-opacity', 1)
+
+      this.svg.selectAll('.eye').attr('opacity', 1)
+      this.svg.selectAll('.eye-off').attr('opacity', 0)
+
+
+      console.log('allPoints')
+      console.log(allPoints)
+
       // Voronoi cells to select nearest point
       var voronoi = d3.Delaunay
-        .from(this.expression_normalized_flattened, d => x(d.time_point), d => y(d.gene_expression_norm))
+        .from(allPoints, d => x(d.time_point), d => y(d.gene_expression_norm))
         .voronoi([0, 0, this.width * this.drawable_width_scale, this.height])
 
       //Create the voronoi grid
       this.svg.select('#voronoiWrapper')
         .selectAll("path")
-        .data(this.expression_normalized_flattened)
+        .data(allPoints)
         .join(
           (enter) => {
             enter.append("path")
@@ -782,6 +997,7 @@ export default {
             .attr("d", (d, i) => voronoi.renderCell(i))
             .on("mouseover", (d,i) => {
               if (d.y > 1) {
+                console.log(i)
                 this.svg.append('g')
                   .attr('class', 'tooltip')
                   .attr("transform", `translate(${x(i.time_point)},${y(i.gene_expression_norm)})`)
@@ -814,7 +1030,6 @@ export default {
                   Expr: ${Math.round(i.gene_expression)}`, i.identifier)
               }
             })
-
           },
           (exit) => {
             exit.remove()
@@ -840,8 +1055,12 @@ export default {
       }
            
       function popover(g, value, key) {
+        console.log('popover', key)
+        // console.log(value)
+        // console.log(g)
+
         if (!value) return g.style("display", "none");
-        const opacity = d3.selectAll(`#dot_${key}`).attr('fill-opacity')
+        const opacity = d3.select('#avgPoints').selectAll(`#dot_${key}`).attr('fill-opacity')
         if (opacity == 0) return g.style("display", "none");
 
         // tooltip group
@@ -882,24 +1101,34 @@ export default {
       }    
       
       function groupnameClick(d, i) {
-        console.log('groupnameClick')
-        console.log(d)
-        console.log(i)
+        // console.log('groupnameClick')
+        // console.log(d)
+        // console.log(i)
         const id = i[1][0].identifier
-        console.log('id', id)
+        // console.log('id', id)
+        // console.log(this)
         
         const line = d3.selectAll(`#line_${id}`)
-        console.log(line)
+        // console.log(line)
         const opacity = line.attr('stroke-opacity')
         // console.log('opacity', opacity)
         const newOpacity = (opacity == 1) ? 0 : 1
+        const eye = this.getElementsByClassName('eye')[0]
+        const eyeOff = this.getElementsByClassName('eye-off')[0]
+
+        // console.log(eye)
+
+        eye.setAttribute('opacity', newOpacity)
+        // console.log(eye)
+        eyeOff.setAttribute('opacity', opacity)
+
         // console.log(newOpacity)
         line.attr('stroke-opacity', newOpacity)
         const dots = d3.selectAll(`#dot_${id}`)
         // console.log(dots)
-        const dot_opacity = dots.attr('fill-opacity')
-        const new_dot_opacity = (dot_opacity == 1) ? 0 : 1
-        dots.attr('fill-opacity', new_dot_opacity)
+        // const dot_opacity = dots.attr('fill-opacity')
+        // const new_dot_opacity = (dot_opacity == 1) ? 0 : 1
+        dots.attr('fill-opacity', newOpacity)
 
 
       }
