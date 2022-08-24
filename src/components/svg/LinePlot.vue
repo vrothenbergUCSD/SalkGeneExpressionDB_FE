@@ -1108,6 +1108,7 @@ export default {
       function transition_attributes(join_obj, in_out) {
         // join_obj is enter, update, or exit
         // in_out is integer, 1 or 0
+        // opacity is fill-opacity or stroke-opacity?
         return join_obj.transition()
               .ease(Math.sqrt)
               .duration(animationInterval)
