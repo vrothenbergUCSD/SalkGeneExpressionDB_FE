@@ -208,15 +208,38 @@ export default {
           `${e.gene_id}_${e.tissue.replaceAll(' ', '-')}_${e.group_name}_ZT${e.time_point}`)
         // console.log('grouped_norm')
         // console.log(grouped_norm)
-       
+
         this.expression_normalized_averaged = _.mapObject(grouped_norm, function(val, key) {
           let o = JSON.parse(JSON.stringify(val[0]))
           o.gene_expression_norm = _.reduce(val, function(memo, v) { 
             return memo + v.gene_expression_norm; 
           }, 0) / val.length
+          o.avg = o.gene_expression_norm
+
+          // console.log('o.avg', o.avg)
           
+          // o.std_dev = _.reduce(val, function(memo, v) {
+          //   return memo + Math.pow((v.gene_expression_norm - o.gene_expression_norm_avg),2)
+          // }, 0) / val.length
+
+          o.std_dev = Math.sqrt(_.reduce(val, function(memo, v) { 
+            return memo + Math.pow((v.gene_expression_norm - o.avg), 2); 
+          }, 0) / val.length)
+
+          // console.log('o.std_dev', o.std_dev)
+
+          o.std_err = o.std_dev / Math.sqrt(val.length)
+
+          // console.log('o.std_err', o.std_err)
+
           return o
         });
+
+        console.log('this.expression_normalized_averaged')
+        console.log(this.expression_normalized_averaged)
+
+        // console.log('average_expressions')
+        // console.log(average_expressions)
 
         // console.log('this.expression_normalized_averaged')
         // console.log(this.expression_averaged)
@@ -343,6 +366,10 @@ export default {
       this.svg.append("g")
         .attr("id", "avgPoints")
 
+      // errorBars grouping element
+      this.svg.append("g")
+        .attr("id", "errorBars")
+
       // dataPoints grouping element
       this.svg.append("g")
         .attr("id", "dataPoints")
@@ -359,6 +386,7 @@ export default {
           .attr('d', 'M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z')
 
       // this.hideIcon
+
     },
     async update_line_plot() {
       console.log('update_line_plot')
@@ -398,34 +426,8 @@ export default {
       // console.log('this.expression_normalized')
       // console.log(this.expression_normalized)
 
-      // // let expression_flattened = [].concat.apply([], this.expression_normalized.map(e => e[1]))
-      // // expression_flattened = [].concat.apply([], expression_flattened.map(e => e[1]))
-      // // expression_flattened = [].concat.apply([], expression_flattened.map(e => e[1]))
-      
-      console.log('this.expression_normalized_flattened')
-      console.log(this.expression_normalized_flattened)
-
-      // const sumstat_arr = this.expression_normalized_flattened.map((d,i) => [
-      //   `${d.gene_id}_${d.tissue.replaceAll(' ', '-')}_${d.group_name}_${d.time_point}-${d.replicate}`,
-      //     Object.assign(JSON.parse(JSON.stringify(d)), {
-      //       i: i,
-      //       // gene_group: `${d.gene_id}_${d.tissue.replaceAll(' ', '-')}_${d.group_name}`
-      //     })
-      //   ]
-      // )
-
-      // console.log('sumstat_arr')
-      // console.log(sumstat_arr)
-
-      // const sumstat_map = new Map(sumstat_arr)
-      // // const sumstat_map = _.groupBy(this.expression_merged, function(e) {
-      // //   return `${e.gene_id}_${e.group_name}_${e.tissue.replaceAll(' ', '-')}`
-      // // })
-
-      // const encodedSVGString = 
-
-      // console.log('sumstat_map')
-      // console.log(sumstat_map)
+      // console.log('this.expression_normalized_flattened')
+      // console.log(this.expression_normalized_flattened)
 
       // var color = d3.scaleOrdinal(d3.schemeCategory10);
       // var color = d3.scaleSequential().domain([1,categories]).interpolator(d3.interpolateSinebow)
@@ -433,8 +435,7 @@ export default {
       // TODO: More color schemes, color blind, etc.
       var color2 = d3.scaleSequential(d3.interpolateWarm)
 
-      // console.log('color2', color2(0))
-      // console.log(d3.hsl(color2(0)))
+
       // Create the X axis
       var x = this.x
       x.domain([0, d3.max(this.expression_merged, (d) => d.time_point )])
@@ -450,7 +451,8 @@ export default {
           .duration(1000)
           .call(this.yAxis)
 
-      var updateInterval = 500
+      // Animation transition time in ms
+      var animationInterval = 500
 
       // Logic for plotting lines
       this.svg.select("#lines")
@@ -485,7 +487,7 @@ export default {
               update
                 .transition()
                 .ease(Math.sqrt)
-                .duration(updateInterval)
+                .duration(animationInterval)
                 .attr("d", d => d3.line()
                     .curve(d3.curveMonotoneX)
                     .x((d) => x(d.time_point))
@@ -501,7 +503,7 @@ export default {
                 .style('stroke-opacity', 0)
                 .transition()
                 .ease(Math.sqrt)
-                .duration(updateInterval)
+                .duration(animationInterval)
                 .remove()
             }
           )
@@ -710,7 +712,7 @@ export default {
                             .style('fill', d => getHSL(d[1][0].identifier, cat_map, color2))
                             .transition()
                             .ease(Math.sqrt)
-                            .duration(updateInterval)
+                            .duration(animationInterval)
                           
                         },
                         (exit) => {
@@ -718,7 +720,7 @@ export default {
                           // console.log(exit)
                           exit.transition()
                           .ease(Math.sqrt)
-                          .duration(updateInterval)
+                          .duration(animationInterval)
                           .attr('fill-opacity', 0)
                           .remove()
                         }
@@ -735,7 +737,7 @@ export default {
                       .style('fill', d => getHSL(d[1][0][1][0].identifier, cat_map, color2, true))
                       .transition()
                       .ease(Math.sqrt)
-                      .duration(updateInterval)
+                      .duration(animationInterval)
                       .select('.legend_gene_text')
                         .text(d => d[0])
                     update.selectAll('.legend_groupname')
@@ -789,7 +791,7 @@ export default {
                             .on('click', groupnameClick)
                             .transition()
                             .ease(Math.sqrt)
-                            .duration(updateInterval)
+                            .duration(animationInterval)
                             .select('.legend_groupname_text')
                               .text(d => d[0])
                         
@@ -800,11 +802,11 @@ export default {
                           exit.select('.legend_groupname_text')
                             .transition()
                             .ease(Math.sqrt)
-                            .duration(updateInterval)
+                            .duration(animationInterval)
                             .attr('fill-opacity', 0)
                           exit.transition()
                             .ease(Math.sqrt)
-                            .duration(updateInterval)
+                            .duration(animationInterval)
                             .attr('fill-opacity', 0)
                             .remove()
                         }
@@ -816,12 +818,12 @@ export default {
                     exit.select('.legend_gene_text')
                       .transition()
                       .ease(Math.sqrt)
-                      .duration(updateInterval)
+                      .duration(animationInterval)
                       .attr('fill-opacity', 0)
                       .remove()
                     exit.transition()
                     .ease(Math.sqrt)
-                    .duration(updateInterval)
+                    .duration(animationInterval)
                     .attr('fill-opacity', 0)
                     .remove()
 
@@ -835,12 +837,12 @@ export default {
               exit.select('.legend_tissue_text')
                 .transition()
                 .ease(Math.sqrt)
-                .duration(updateInterval)
+                .duration(animationInterval)
                 .attr('fill-opacity', 0)
                 .remove()
               exit.transition()
                 .ease(Math.sqrt)
-                .duration(updateInterval)
+                .duration(animationInterval)
                 .attr('fill-opacity', 0)
                 .remove()
             }
@@ -856,8 +858,8 @@ export default {
         .data(this.expression_normalized_averaged)
         .join(
           (enter) => {
-            console.log('dot enter')
-            console.log(enter)
+            // console.log('dot enter')
+            // console.log(enter)
             enter.append("circle")
               // .attr("class", "dot")
               .attr('class', 'dot')
@@ -871,12 +873,12 @@ export default {
               .attr("r", 2)
               .transition()
               .ease(Math.sqrt)
-              .duration(updateInterval)
+              .duration(animationInterval)
               .attr('fill-opacity', 1)
           },
           (update) => {
-            console.log('dot update')
-            console.log(update)
+            // console.log('dot update')
+            // console.log(update)
             update.attr('cx', d => x(d.time_point))
               .attr('cy', d => {
                 // console.log(d)
@@ -884,16 +886,82 @@ export default {
               .style('fill', d => getHSL(d.identifier, cat_map, color2))
               .transition()
               .ease(Math.sqrt)
-              .duration(updateInterval)
+              .duration(animationInterval)
               .attr('fill-opacity', 1)
               .attr('id', d => `dot_${d.identifier}`)
           },
           (exit) => {
-            console.log('dot exit')
+            // console.log('dot exit')
+            // console.log(exit)
+            exit.transition()
+              .ease(Math.sqrt)
+              .duration(animationInterval)
+              .attr('fill-opacity', 0)
+              .remove()
+          }
+        )
+
+
+      // Draw error bars
+      this.svg.select('#errorBars')
+        .selectAll(".error")
+        // Flattened array
+        .data(this.expression_normalized_averaged)
+        .join(
+          (enter) => {
+            console.log('error enter')
+            console.log(enter)
+            enter.append("path")
+              .attr("class", "error")
+              .attr('id', d => `error_${d.identifier}`)
+              .attr('d', d => {
+                let p = d3.path()
+                // Vertical line
+                p.moveTo(x(d.time_point), y(d.avg - d.std_err))
+                p.lineTo(x(d.time_point), y(d.avg + d.std_err))
+                // Bottom error bar
+                p.moveTo(x(d.time_point) - 0.5, y(d.avg - d.std_err))
+                p.lineTo(x(d.time_point) + 0.5, y(d.avg - d.std_err))
+                // Top error bar
+                p.moveTo(x(d.time_point) - 0.5, y(d.avg + d.std_err))
+                p.lineTo(x(d.time_point) + 0.5, y(d.avg + d.std_err))
+                return p.toString()
+              })
+              .attr('stroke', d => getHSL(d.identifier, cat_map, color2))
+              .attr('stroke-width', 1)
+
+              // .style("fill", d => getHSL(d.identifier, cat_map, color2))
+            //   .attr("cx", d => x(d.time_point))
+            //   .attr("cy", d => {
+            //     // console.log(d)
+            //     return y(d.gene_expression_norm)
+            //   })
+            //   .attr("r", 2)
+            //   .transition()
+            //   .ease(Math.sqrt)
+            //   .duration(animationInterval)
+            //   .attr('fill-opacity', 1)
+          },
+          (update) => {
+            console.log('error update')
+            console.log(update)
+            // update.attr('cx', d => x(d.time_point))
+            //   .attr('cy', d => {
+            //     // console.log(d)
+            //     return y(d.gene_expression_norm)})
+            //   .style('fill', d => getHSL(d.identifier, cat_map, color2))
+            //   .transition()
+            //   .ease(Math.sqrt)
+            //   .duration(animationInterval)
+            //   .attr('fill-opacity', 1)
+            //   .attr('id', d => `dot_${d.identifier}`)
+          },
+          (exit) => {
+            console.log('error exit')
             console.log(exit)
             exit.transition()
               .ease(Math.sqrt)
-              .duration(updateInterval)
+              .duration(animationInterval)
               .attr('fill-opacity', 0)
               .remove()
           }
@@ -911,7 +979,7 @@ export default {
       console.log('dataPoints')
       console.log(dataPoints)
         
-      // Draw dots on data points
+      // Draw dots for each replicate data point
       this.svg.select('#dataPoints')
         .selectAll(".dot")
         // Flattened array
@@ -933,7 +1001,7 @@ export default {
               .attr("r", 2)
               .transition()
               .ease(Math.sqrt)
-              .duration(updateInterval)
+              .duration(animationInterval)
               .attr('fill-opacity', 1)
           },
           (update) => {
@@ -946,7 +1014,7 @@ export default {
               .style('fill', d => getHSL(d.identifier, cat_map, color2))
               .transition()
               .ease(Math.sqrt)
-              .duration(updateInterval)
+              .duration(animationInterval)
               .attr('fill-opacity', 1)
               .attr('id', d => `dot_${d.identifier}`)
           },
@@ -955,7 +1023,7 @@ export default {
             console.log(exit)
             exit.transition()
               .ease(Math.sqrt)
-              .duration(updateInterval)
+              .duration(animationInterval)
               .attr('fill-opacity', 0)
               .remove()
           }
