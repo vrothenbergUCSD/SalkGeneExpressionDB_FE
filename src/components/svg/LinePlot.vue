@@ -312,7 +312,7 @@ export default {
   methods: {
     initialize_line_plot() {
       // set the dimensions and margins of the graph
-      this.margin = {top: 30, right: 30, bottom: 120, left: 80}
+      this.margin = {top: 30, right: 30, bottom: 140, left: 80}
       this.width = 700 - this.margin.left - this.margin.right,
       this.height = 500 - this.margin.top - this.margin.bottom;
       this.drawable_width_scale = 4/5
@@ -909,8 +909,8 @@ export default {
         .data(this.expression_normalized_averaged)
         .join(
           (enter) => {
-            console.log('error enter')
-            console.log(enter)
+            // console.log('error enter')
+            // console.log(enter)
             enter.append("path")
               .attr("class", "error")
               .attr('id', d => `error_${d.identifier}`)
@@ -920,49 +920,45 @@ export default {
                 p.moveTo(x(d.time_point), y(d.avg - d.std_err))
                 p.lineTo(x(d.time_point), y(d.avg + d.std_err))
                 // Bottom error bar
-                p.moveTo(x(d.time_point) - 0.5, y(d.avg - d.std_err))
-                p.lineTo(x(d.time_point) + 0.5, y(d.avg - d.std_err))
+                p.moveTo(x(d.time_point-0.25), y(d.avg - d.std_err))
+                p.lineTo(x(d.time_point+0.25), y(d.avg - d.std_err))
                 // Top error bar
-                p.moveTo(x(d.time_point) - 0.5, y(d.avg + d.std_err))
-                p.lineTo(x(d.time_point) + 0.5, y(d.avg + d.std_err))
+                p.moveTo(x(d.time_point-0.25), y(d.avg + d.std_err))
+                p.lineTo(x(d.time_point+0.25), y(d.avg + d.std_err))
                 return p.toString()
               })
               .attr('stroke', d => getHSL(d.identifier, cat_map, color2))
-              .attr('stroke-width', 1)
-
-              // .style("fill", d => getHSL(d.identifier, cat_map, color2))
-            //   .attr("cx", d => x(d.time_point))
-            //   .attr("cy", d => {
-            //     // console.log(d)
-            //     return y(d.gene_expression_norm)
-            //   })
-            //   .attr("r", 2)
-            //   .transition()
-            //   .ease(Math.sqrt)
-            //   .duration(animationInterval)
-            //   .attr('fill-opacity', 1)
+              .attr('stroke-width', 1.5)
+              .attr('stroke-opacity', 1)
           },
           (update) => {
-            console.log('error update')
-            console.log(update)
-            // update.attr('cx', d => x(d.time_point))
-            //   .attr('cy', d => {
-            //     // console.log(d)
-            //     return y(d.gene_expression_norm)})
-            //   .style('fill', d => getHSL(d.identifier, cat_map, color2))
-            //   .transition()
-            //   .ease(Math.sqrt)
-            //   .duration(animationInterval)
-            //   .attr('fill-opacity', 1)
-            //   .attr('id', d => `dot_${d.identifier}`)
+            // console.log('error update')
+            // console.log(update)
+            update
+              .attr('id', d => `error_${d.identifier}`)
+              .attr('d', d => {
+                let p = d3.path()
+                // Vertical line
+                p.moveTo(x(d.time_point), y(d.avg - d.std_err))
+                p.lineTo(x(d.time_point), y(d.avg + d.std_err))
+                // Bottom error bar
+                p.moveTo(x(d.time_point-0.25), y(d.avg - d.std_err))
+                p.lineTo(x(d.time_point+0.25), y(d.avg - d.std_err))
+                // Top error bar
+                p.moveTo(x(d.time_point-0.25), y(d.avg + d.std_err))
+                p.lineTo(x(d.time_point+0.25), y(d.avg + d.std_err))
+                return p.toString()
+              })
+              .attr('stroke', d => getHSL(d.identifier, cat_map, color2))
+              
           },
           (exit) => {
-            console.log('error exit')
-            console.log(exit)
+            // console.log('error exit')
+            // console.log(exit)
             exit.transition()
               .ease(Math.sqrt)
               .duration(animationInterval)
-              .attr('fill-opacity', 0)
+              .attr('stroke-opacity', 0)
               .remove()
           }
         )
@@ -976,8 +972,8 @@ export default {
         dataPoints = this.expression_normalized_flattened
         allPoints = [...allPoints, ...this.expression_normalized_flattened]
       } 
-      console.log('dataPoints')
-      console.log(dataPoints)
+      // console.log('dataPoints')
+      // console.log(dataPoints)
         
       // Draw dots for each replicate data point
       this.svg.select('#dataPoints')
@@ -1041,10 +1037,11 @@ export default {
 
       this.svg.selectAll('.eye').attr('opacity', 1)
       this.svg.selectAll('.eye-off').attr('opacity', 0)
+      this.svg.select('#errorBars').selectAll('.error').attr('stroke-opacity', 1)
 
 
-      console.log('allPoints')
-      console.log(allPoints)
+      // console.log('allPoints')
+      // console.log(allPoints)
 
       // Voronoi cells to select nearest point
       var voronoi = d3.Delaunay
@@ -1069,14 +1066,7 @@ export default {
                 this.svg.append('g')
                   .attr('class', 'tooltip')
                   .attr("transform", `translate(${x(i.time_point)},${y(i.gene_expression_norm)})`)
-                  .call(popover, `Data Point Details
-                  Gene: ${i.gene_id}
-                  Group: ${i.group_name}
-                  Tissue: ${i.tissue}
-                  Age: ${i.age_months} months
-                  Species: ${i.species}
-                  Time: ZT${i.time_point}
-                  Expr: ${Math.round(i.gene_expression)}`, i.identifier)
+                  .call(popover, popover_text(i), i.identifier)
               }
             })
             .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
@@ -1088,14 +1078,7 @@ export default {
                 this.svg.append('g')
                   .attr('class', 'tooltip')
                   .attr("transform", `translate(${x(i.time_point)},${y(i.gene_expression_norm)})`)
-                  .call(popover, `Data Point Details
-                  Gene: ${i.gene_id}
-                  Group: ${i.group_name}
-                  Tissue: ${i.tissue}
-                  Age: ${i.age_months} months
-                  Species: ${i.species}
-                  Time: ZT${i.time_point}
-                  Expr: ${Math.round(i.gene_expression)}`, i.identifier)
+                  .call(popover, popover_text(i), i.identifier)
               }
             })
           },
@@ -1120,6 +1103,34 @@ export default {
 
         // console.log(hsl)
         return hsl
+      }
+
+      function transition_attributes(join_obj, in_out) {
+        // join_obj is enter, update, or exit
+        // in_out is integer, 1 or 0
+        return join_obj.transition()
+              .ease(Math.sqrt)
+              .duration(animationInterval)
+              .attr('fill-opacity', 0)
+              .remove()
+      }
+
+      function popover_text(d) {
+        let text = `Data Point Details
+        Gene: ${d.gene_id}
+        Group: ${d.group_name}
+        Tissue: ${d.tissue}
+        Age: ${d.age_months} months
+        Species: ${d.species}
+        Time: ZT${d.time_point}
+        Expr: ${Math.round(d.gene_expression*100)/100}`
+        if ('gene_expression_norm' in d) {
+          text += `\n Expr Norm: ${Math.round(d.gene_expression_norm*1000)/1000}`
+        }
+        if ('std_err' in d) {
+          text += `\n Std Err: ${Math.round(d.std_err*1000)/1000}`
+        }
+        return text
       }
            
       function popover(g, value, key) {
@@ -1169,35 +1180,29 @@ export default {
       }    
       
       function groupnameClick(d, i) {
+        // Toggle visibility of Tissue_Gene_Groupname data
         // console.log('groupnameClick')
         // console.log(d)
         // console.log(i)
         const id = i[1][0].identifier
-        // console.log('id', id)
-        // console.log(this)
-        
         const line = d3.selectAll(`#line_${id}`)
-        // console.log(line)
         const opacity = line.attr('stroke-opacity')
-        // console.log('opacity', opacity)
         const newOpacity = (opacity == 1) ? 0 : 1
+        line.attr('stroke-opacity', newOpacity)
+
+        // this refers to calling g element
+        // Only one element with class .eye and .eye-off
         const eye = this.getElementsByClassName('eye')[0]
         const eyeOff = this.getElementsByClassName('eye-off')[0]
-
-        // console.log(eye)
-
         eye.setAttribute('opacity', newOpacity)
-        // console.log(eye)
         eyeOff.setAttribute('opacity', opacity)
 
-        // console.log(newOpacity)
-        line.attr('stroke-opacity', newOpacity)
+        // Toggle associated data points
         const dots = d3.selectAll(`#dot_${id}`)
-        // console.log(dots)
-        // const dot_opacity = dots.attr('fill-opacity')
-        // const new_dot_opacity = (dot_opacity == 1) ? 0 : 1
         dots.attr('fill-opacity', newOpacity)
 
+        const errorBars = d3.selectAll(`#error_${id}`)
+        errorBars.attr('stroke-opacity', newOpacity)
 
       }
     },
