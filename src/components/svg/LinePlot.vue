@@ -445,7 +445,7 @@ export default {
       // var color = d3.scaleOrdinal(d3.schemeCategory10);
       // var color = d3.scaleSequential().domain([1,categories]).interpolator(d3.interpolateSinebow)
       
-      // TODO: More color schemes, color blind, etc.
+      // TODO: More color schemes, color blind, user customized colors, etc.
       var color2 = d3.scaleSequential(d3.interpolateWarm)
 
 
@@ -466,12 +466,32 @@ export default {
 
       // Custom function, reduces redundant code for transitions
       d3.selection.prototype.transition_attributes = function(attr_name, opacity, duration) {
-        // console.log('transition_attributes')
-        // console.log(this)
         this.transition()
-              .ease(Math.sqrt)
-              .duration(duration)
-              .attr(attr_name, opacity)
+            .ease(Math.sqrt)
+            .duration(duration)
+            .attr(attr_name, opacity)
+        return this
+      }
+
+      d3.selection.prototype.append_eyes = function() {
+        this.append('svg:image')
+          .attr('class', 'eye')
+          .attr("xlink:href", "/assets/eye.svg")
+          .attr('type', "image/svg+xml")
+          .attr('x', 0)
+          .attr('y', 0)
+          .attr('width', 10)
+          .attr('height', 10)
+          .attr('opacity', 1)
+        this.append('svg:image')
+          .attr('class', 'eye-off')
+          .attr("xlink:href", "/assets/eye-off.svg")
+          .attr('type', "image/svg+xml")
+          .attr('x', 0)
+          .attr('y', 0)
+          .attr('width', 10)
+          .attr('height', 10)
+          .attr('opacity', 0)
         return this
       }
 
@@ -538,12 +558,31 @@ export default {
                 .attr('transform', (d,i) => `translate(${legendX}, ${
                   legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
                   })`)
-                .append('text')
-                  .attr('class', 'legend_tissue_text')
-                  .text(d => d[0].replaceAll('-', ' '))
-                  .attr('text-anchor', 'left')
-                  .attr('font-size', '0.7em')
-                  .transition_attributes('opacity', 1, animationInterval)
+
+              tissue_root.append('g')
+                .attr('class', 'eyes')
+                .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                .on('click', tissueClick)
+                .append_eyes()
+              const text_info = tissue_root.append('g')
+                .attr('class', 'text_info')
+              text_info.append('text')
+                .attr('class', 'legend_tissue_text')
+                .text(d => d[0].replaceAll('-', ' '))
+                .attr('text-anchor', 'left')
+                .attr('font-size', '0.7em')
+                .transition_attributes('opacity', 1, animationInterval)
+              text_info.append('svg:image')
+                .attr('class', 'info')
+                .attr("xlink:href", "/assets/info.svg")
+                .attr('type', "image/svg+xml")
+                .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+                .attr('y', -9)
+                .attr('width', 10)
+                .attr('height', 10)
+                .attr('opacity', 1)
+                .on('mouseover', infoHover)
+
               tissue_root.selectAll('.legend_gene')
                 .data(d => d[1])
                 .join(
@@ -553,15 +592,33 @@ export default {
                     const gene_root = enter.append('g')
                       .attr('class', 'legend_gene')
                       .style('fill', d => getHSL(d[1][0][1][0].identifier, cat_map, color2, true))
-                      .attr('transform', (d,i) => `translate(${5}, ${
+                      .attr('transform', (d,i) => `translate(${13}, ${
                         legendY_spacing *(1 + i * (1 + num_groups))
                         })`)
                       .transition_attributes('opacity', 1, animationInterval)
-                    gene_root.append('text')
-                        .attr('class', 'legend_gene_text')
-                        .text(d => d[0])
-                        .attr('text-anchor', 'left')
-                        .attr('font-size', '0.7em')
+                    
+                    gene_root.append('g')
+                      .attr('class', 'eyes')
+                      .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                      .on('click', geneClick)
+                      .append_eyes()
+                    const text_info = gene_root.append('g')
+                      .attr('class', 'text_info')
+                    text_info.append('text')
+                      .attr('class', 'legend_gene_text')
+                      .text(d => d[0])
+                      .attr('text-anchor', 'left')
+                      .attr('font-size', '0.7em')
+                    text_info.append('svg:image')
+                      .attr('class', 'info')
+                      .attr("xlink:href", "/assets/info.svg")
+                      .attr('type', "image/svg+xml")
+                      .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+                      .attr('y', -9)
+                      .attr('width', 10)
+                      .attr('height', 10)
+                      .attr('opacity', 1)
+                      .on('mouseover', infoHover)
                       
                     gene_root.selectAll('.legend_groupname')
                       .data(d => d[1])
@@ -573,37 +630,35 @@ export default {
                             .transition_attributes('opacity', 1, animationInterval)
                             .attr('class', 'legend_groupname')
                             .style('fill', d => getHSL(d[1][0].identifier, cat_map, color2))
-                            .attr('transform', (d,i) => `translate(${5}, ${
+                            .attr('transform', (d,i) => `translate(${13}, ${
                               legendY_spacing * (i+1)
                               })`)
+                            
+                          groupname_root.append('g')
+                            .attr('class', 'eyes')
+                            .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
                             .on('click', groupnameClick)
-                          groupname_root.append('svg:image')
-                            .attr('class', 'eye')
-                            .attr("xlink:href", "/assets/eye.svg")
-                            .attr('type', "image/svg+xml")
-                            .attr('x', -13)
-                            .attr('y', -9)
-                            .attr('width', 10)
-                            .attr('height', 10)
-                            .attr('opacity', 1)
-                          groupname_root.append('svg:image')
-                            .attr('class', 'eye-off')
-                            .attr("xlink:href", "/assets/eye-off.svg")
-                            .attr('type', "image/svg+xml")
-                            .attr('x', -13)
-                            .attr('y', -9)
-                            .attr('width', 10)
-                            .attr('height', 10)
-                            .attr('opacity', 0)
-                          groupname_root.append('text')
+                            .append_eyes()
+
+                          const text_info = groupname_root.append('g')
+                            .attr('class', 'text_info')
+                          text_info.append('text')
                             .attr('class', 'legend_groupname_text')
                             .text(d => d[0])
                             .attr('text-anchor', 'left')
                             .attr('font-size', '0.7em')
                             .attr('opacity', 1)
-                          console.log(groupname_root.select('.legend_groupname_text'))
-                          
-            
+                          text_info.append('svg:image')
+                            .attr('class', 'info')
+                            .attr("xlink:href", "/assets/info.svg")
+                            .attr('type', "image/svg+xml")
+                            .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+                            .attr('y', -9)
+                            .attr('width', 10)
+                            .attr('height', 10)
+                            .attr('opacity', 1)
+                            .on('mouseover', infoHover)
+                            
                           return groupname_root
                         },
                       )
@@ -615,12 +670,13 @@ export default {
             (update) => {
               // console.log('tissue update')
               // console.log(update)
-              update.transition_attributes('opacity', 1, animationInterval)
+              const tissue_root = update.transition_attributes('opacity', 1, animationInterval)
                 .attr('transform', (d,i) => `translate(${legendX}, ${
                   legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
                   })`)
-                .select('.legend_tissue_text')
+              tissue_root.select('.legend_tissue_text')
                   .text(d => d[0])
+
               update.selectAll('.legend_gene')
                 .data(d => d[1])
                 .join(
@@ -634,13 +690,28 @@ export default {
                         legendY_spacing *(1 + i * (1 + num_groups))
                         })`)
                       .transition_attributes('opacity', 1, animationInterval)
-                    gene_root.append('text')
+                    gene_root.append('g')
+                      .attr('class', 'eyes')
+                      .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                      .on('click', geneClick)
+                      .append_eyes()
+                    const text_info = gene_root.append('g')
+                      .attr('class', 'text_info')
+                    text_info.append('text')
                       .attr('class', 'legend_gene_text')
                       .text(d => d[0])
                       .attr('text-anchor', 'left')
                       .attr('font-size', '0.7em')
+                    text_info.append('svg:image')
+                      .attr('class', 'info')
+                      .attr("xlink:href", "/assets/info.svg")
+                      .attr('type', "image/svg+xml")
+                      .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+                      .attr('y', -9)
+                      .attr('width', 10)
+                      .attr('height', 10)
                       .attr('opacity', 1)
-                      .style('margin-bottom', 5)
+                      .on('mouseover', infoHover)
                     gene_root.selectAll('.legend_groupname')
                       .data(d => d[1])
                       .join(
@@ -654,33 +725,30 @@ export default {
                             .attr('transform', (d,i) => `translate(${5}, ${
                               legendY_spacing * (i+1)
                               })`)
-                            .on('click', groupnameClick)
 
-                          groupname_root.append('text')
+                          groupname_root.append('g')
+                            .attr('class', 'eyes')
+                            .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                            .on('click', groupnameClick)
+                            .append_eyes()
+                          const text_info = groupname_root.append('g')
+                            .attr('class', 'text_info')
+                          text_info.append('text')
                             .attr('class', 'legend_groupname_text')
                             .text(d => d[0])
                             .attr('text-anchor', 'left')
                             .attr('font-size', '0.7em')
                             .attr('opacity', 1)
-                            .style('margin-bottom', 5)
-                          groupname_root.append('svg:image')
-                            .attr('class', 'eye')
-                            .attr("xlink:href", "/assets/eye.svg")
+                          text_info.append('svg:image')
+                            .attr('class', 'info')
+                            .attr("xlink:href", "/assets/info.svg")
                             .attr('type', "image/svg+xml")
-                            .attr('x', -13)
+                            .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
                             .attr('y', -9)
                             .attr('width', 10)
                             .attr('height', 10)
                             .attr('opacity', 1)
-                          groupname_root.append('svg:image')
-                            .attr('class', 'eye-off')
-                            .attr("xlink:href", "/assets/eye-off.svg")
-                            .attr('type', "image/svg+xml")
-                            .attr('x', -13)
-                            .attr('y', -9)
-                            .attr('width', 10)
-                            .attr('height', 10)
-                            .attr('opacity', 0)
+                            .on('mouseover', infoHover)
                           return groupname_root
                         },
                         (update) => {
@@ -689,10 +757,8 @@ export default {
                           update.attr('transform', (d,i) => `translate(${5}, ${
                             legendY_spacing * (i+1)
                             })`)
-                            .on('click', groupnameClick)
                             .style('fill', d => getHSL(d[1][0].identifier, cat_map, color2))
                             .transition_attributes('opacity', 1, animationInterval)
-                          
                         },
                         (exit) => exit.transition_attributes('opacity', 0, animationInterval).remove()
                       )
@@ -716,20 +782,29 @@ export default {
                           // console.log('tissue update > gene update > groupname enter')
                           // console.log(enter)
                           const groupname_root = enter.append('g')
-                          .attr('class', 'legend_groupname')
-                          .style('fill', d => getHSL(d[1][0].identifier, cat_map, color2))
-                          .attr('transform', (d,i) => `translate(${5}, ${
-                            legendY_spacing * (i+1)
-                            })`)
-                          .on('click', groupnameClick)
-                          .transition_attributes('opacity', 1, animationInterval)
-                          .append('text')
+                            .transition_attributes('opacity', 1, animationInterval)
+                            .attr('class', 'legend_groupname')
+                            .style('fill', d => getHSL(d[1][0].identifier, cat_map, color2))
+                            .attr('transform', (d,i) => `translate(${5}, ${
+                              legendY_spacing * (i+1)
+                              })`)
+                          groupname_root.append('g')
+                            .attr('class', 'eyes')
+                            .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                            .on('click', groupnameClick)
+                            .append_eyes()
+                          const text_info = groupname_root.append('g')
+                            .attr('class', 'text_info')
+                          text_info.append('text')
                             .attr('class', 'legend_groupname_text')
                             .text(d => d[0])
                             .attr('text-anchor', 'left')
                             .attr('font-size', '0.7em')
                             .attr('opacity', 1)
                             .style('margin-bottom', 5)
+
+                          // groupname_root.append
+                          
                           groupname_root.append('svg:image')
                             .attr('class', 'eye')
                             .attr("xlink:href", "/assets/eye.svg")
@@ -748,7 +823,6 @@ export default {
                             .attr('width', 10)
                             .attr('height', 10)
                             .attr('opacity', 0)
-
                           return groupname_root
                         },
                         (update) => {
@@ -761,8 +835,7 @@ export default {
                             .on('click', groupnameClick)
                             .transition_attributes('opacity', 1, animationInterval)
                             .select('.legend_groupname_text')
-                              .text(d => d[0])
-                        
+                              .text(d => d[0])   
                         },
                         (exit) => exit.transition_attributes('opacity', 0, animationInterval).remove()
                       )
@@ -804,7 +877,6 @@ export default {
           },
           (exit) => exit.transition_attributes('fill-opacity', 0, animationInterval).remove()
         )
-
       
       let errorBarsData = []
       if (this.showErrorBars) 
@@ -919,7 +991,6 @@ export default {
       this.svg.selectAll('.eye').attr('opacity', 1)
       this.svg.selectAll('.eye-off').attr('opacity', 0)
       this.svg.select('#errorBars').selectAll('.error').attr('opacity', 1)
-
 
       // console.log('allPoints')
       // console.log(allPoints)
@@ -1050,6 +1121,54 @@ export default {
         // tooltip container path
         path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
       }    
+      function infoHover(evt, i) {
+        console.log('infoHover')
+      }
+      function tissueClick(evt, i) {
+        // Toggle visibility of Tissue data for every child gene and group
+        console.log('tissueClick')
+        const tissue_root = evt.currentTarget.parentNode
+        const id = i[1][0][1][0][1][0].identifier.split('_')[0]
+        console.log('id', id)
+        const lines = d3.selectAll(`[id^='line_${id}']`)
+        const opacity = this.getElementsByClassName('eye')[0].getAttribute('opacity')
+        const newOpacity = (opacity == 1) ? 0 : 1
+        lines.transition_attributes('stroke-opacity', newOpacity, animationInterval)
+        const eyesOn = tissue_root.querySelectorAll('.eye')
+        const eyesOff = tissue_root.querySelectorAll('.eye-off')
+        eyesOn.forEach(e => e.setAttribute('opacity', newOpacity))
+        eyesOff.forEach(e => e.setAttribute('opacity', opacity))
+
+        const dots = d3.selectAll(`[id^='dot_${id}']`)
+        dots.transition_attributes('fill-opacity', newOpacity, animationInterval)
+
+        const errorBars = d3.selectAll(`[id^='error_${id}'`)
+        errorBars.transition_attributes('stroke-opacity', newOpacity, animationInterval)
+
+
+      }
+
+      function geneClick(evt, i) {
+        // Toggle visibility of Tissue_Gene data for both groups
+        // console.log('geneClick')
+        const gene_root = evt.currentTarget.parentNode
+        const id = i[1][0][1][0].identifier.split('_').slice(0,-1).join('_')
+        const lines = d3.selectAll(`[id^='line_${id}']`)
+        const opacity = this.getElementsByClassName('eye')[0].getAttribute('opacity')
+        const newOpacity = (opacity == 1) ? 0 : 1
+        lines.transition_attributes('stroke-opacity', newOpacity, animationInterval)
+        const eyesOn = gene_root.querySelectorAll('.eye')
+        const eyesOff = gene_root.querySelectorAll('.eye-off')
+        eyesOn.forEach(e => e.setAttribute('opacity', newOpacity))
+        eyesOff.forEach(e => e.setAttribute('opacity', opacity))
+
+        const dots = d3.selectAll(`[id^='dot_${id}']`)
+        dots.transition_attributes('fill-opacity', newOpacity, animationInterval)
+
+        const errorBars = d3.selectAll(`[id^='error_${id}'`)
+        errorBars.transition_attributes('stroke-opacity', newOpacity, animationInterval)
+
+      }
       
       function groupnameClick(d, i) {
         // Toggle visibility of Tissue_Gene_Groupname data
@@ -1072,7 +1191,6 @@ export default {
         // Toggle associated data points
         const dots = d3.selectAll(`#dot_${id}`)
         dots.transition_attributes('fill-opacity', newOpacity, animationInterval)
-
 
         const errorBars = d3.selectAll(`#error_${id}`)
         errorBars.transition_attributes('stroke-opacity', newOpacity, animationInterval)
