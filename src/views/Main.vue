@@ -1,154 +1,156 @@
 <template>
-<div id="main" class="w-11/12 p-3 mx-auto">
-  <div class="p-5 font-semibold text-3xl text-center">Temporal Gene Expression</div>
-  <div id="filters-ui" class="my-3 p-2 mx-auto bg-slate-100 rounded-2xl flex flex-wrap" v-if="this.speciesSelected.length || this.experimentSelected.length || this.tissueSelected.length"> 
-    <div id="filters-species" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.speciesSelected.length">
-      <div class="font-semibold text-sm pl-1">Species:</div>
-      <div v-for="(item, index) in this.speciesSelected" :key="item">
-        <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeSpeciesFilter(item.name)"/>
-        <span class="px-1 font-semibold" v-if="index < this.speciesSelected.length-1">or</span>
-      </div>
-    </div>
-    <div id="filters-experiment" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.experimentSelected.length">
-      <div class="font-semibold text-sm pl-1">Experiments:</div>
-      <div v-for="(item, index) in this.experimentSelected" :key="item" class="my-1">
-        <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeExperimentFilter(item.name)"/>
-        <span class="px-1 font-semibold text-sm" v-if="index < this.experimentSelected.length-1">or</span>
-      </div>
-    </div>
-    <div id="filters-tissue" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.tissueSelected.length">
-      <div class="font-semibold text-sm pl-1">Tissues:</div>
-      <div v-for="(item, index) in this.tissueSelected" :key="item">
-        <!-- content -->
-        <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeTissueFilter(item.name)"/>
-        <span class="px-1 font-semibold text-sm" v-if="index < this.tissueSelected.length-1">or</span>
-      </div>
-    </div>
-    <div id="clear-filters" class=" my-2 flex flex-wrap align-items-center mx-3" >
-      <Chip label="Clear All Filters" class="mx-1 text-sm font-semibold" removable @remove="clearAllFilters"/>
-    </div>
-  </div>
-  <div class="flex flex-wrap mx-auto " v-if="!this.filterWarning">
-    <div class="w-1/3 px-2 border">
-      <div class="font-semibold my-2">Species</div>
-      <DataTable :value="speciesFiltered" v-model:selection="speciesSelected" 
-        class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-        :loading="loading" @row-select="speciesRowChange('select')" 
-        @row-unselect="speciesRowChange('unselect')"
-        @row-select-all="speciesRowChange('select-all')"
-        @row-unselect-all="speciesRowChange('unselect-all')">
-      <Column selectionMode="multiple" style="width: 3rem" ></Column>
-      <Column field="name" header=""></Column>
-      <Column field="count" header="#">
-        <template #body="slotProps">
-          {{getCount('species', slotProps.data.name)}}
-        </template>
-      </Column>
-      <Column field="freq" header="Freq">
-        <template #body="slotProps">
-          {{getFreq('species', slotProps.data.name)}}
-        </template>
-      </Column>
-      </DataTable>
-    </div>
-    <div class="w-1/3 px-2 border" >
-      <div class="font-semibold my-2">Experiment</div>
-      <DataTable :value="experimentFiltered" v-model:selection="experimentSelected" 
-        class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-        :loading="loading" @row-select="experimentRowChange('select')"
-        @row-unselect="experimentRowChange('unselect')"
-        @row-select-all="experimentRowChange('select-all')"
-        @row-unselect-all="experimentRowChange('unselect-all')">
-      <Column selectionMode="multiple" style="width: 3rem"></Column>
-      <Column field="name" header=""></Column>
-      <Column field="count" header="#">
-        <template #body="slotProps">
-          {{getCount('experiment', slotProps.data.name)}}
-        </template>
-      </Column>
-      <Column field="freq" header="Freq">
-        <template #body="slotProps">
-          {{getFreq('experiment', slotProps.data.name)}}
-        </template>
-      </Column>
-
-      </DataTable>
-      
-    </div>
-    <div class="w-1/3 px-2 border">
-      <div class="font-semibold my-2">Tissue</div>
-      <DataTable :value="tissueFiltered" v-model:selection="tissueSelected" 
-        class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-        :loading="loading" @row-select="tissueRowChange('select')" 
-        @row-unselect="tissueRowChange('unselect')"
-        @row-select-all="tissueRowChange('select-all')"
-        @row-unselect-all="tissueRowChange('unselect-all')">
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
-      <Column field="name" header=""></Column>
-      <Column field="count" header="#">
-        <template #body="slotProps">
-          {{getCount('tissue', slotProps.data.name)}}
-        </template>
-      </Column>
-      <Column field="freq" header="Freq">
-        <template #body="slotProps">
-          {{getFreq('tissue', slotProps.data.name)}}
-        </template>
-      </Column>
-      </DataTable>
-      
-    </div>
-  </div>
-  <div v-else class="text-center font-semibold text-lg">
-    Warning: No datasets in filtered selection.  Clear filters to regain datasets for selection.
-  </div>
-
-
-  <div id="fetch-datasets" class="mx-auto my-5 text-center" >
-    <Button label="Get Datasets" class="p-button-lg" @click="fetchDatasets" v-if="!this.fetching"/>
-    <ProgressSpinner class="mx-auto w-1/2" v-else/>
-  </div>
-  <!-- <div v-else class="my-3 mx-auto text-center">
-    
-
-  </div> -->
+<div id="main" class="w-full p-3 mx-auto">
   
+  <div id="selection-ui" class="w-11/12 p-3 mx-auto">
+    <Toast />
+    <div class="p-5 font-semibold text-3xl text-center">Temporal Gene Expression</div>
+    <div id="filters-ui" class="my-3 p-2 mx-auto bg-slate-100 rounded-2xl flex flex-wrap" v-if="this.speciesSelected.length || this.experimentSelected.length || this.tissueSelected.length"> 
+      <div id="filters-species" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.speciesSelected.length">
+        <div class="font-semibold text-sm pl-1">Species:</div>
+        <div v-for="(item, index) in this.speciesSelected" :key="item">
+          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeSpeciesFilter(item.name)"/>
+          <span class="px-1 font-semibold" v-if="index < this.speciesSelected.length-1">or</span>
+        </div>
+      </div>
+      <div id="filters-experiment" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.experimentSelected.length">
+        <div class="font-semibold text-sm pl-1">Experiments:</div>
+        <div v-for="(item, index) in this.experimentSelected" :key="item" class="my-1">
+          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeExperimentFilter(item.name)"/>
+          <span class="px-1 font-semibold text-sm" v-if="index < this.experimentSelected.length-1">or</span>
+        </div>
+      </div>
+      <div id="filters-tissue" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.tissueSelected.length">
+        <div class="font-semibold text-sm pl-1">Tissues:</div>
+        <div v-for="(item, index) in this.tissueSelected" :key="item">
+          <!-- content -->
+          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeTissueFilter(item.name)"/>
+          <span class="px-1 font-semibold text-sm" v-if="index < this.tissueSelected.length-1">or</span>
+        </div>
+      </div>
+      <div id="clear-filters" class=" my-2 flex flex-wrap align-items-center mx-3" >
+        <Chip label="Clear All Filters" class="mx-1 text-sm font-semibold" removable @remove="clearAllFilters"/>
+      </div>
+    </div>
+    <div class="flex flex-wrap mx-auto " v-if="!this.filterWarning">
+      <div class="w-1/3 px-2 border">
+        <div class="font-semibold my-2">Species</div>
+        <DataTable :value="speciesFiltered" v-model:selection="speciesSelected" 
+          class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+          :loading="loading" @row-select="speciesRowChange('select')" 
+          @row-unselect="speciesRowChange('unselect')"
+          @row-select-all="speciesRowChange('select-all')"
+          @row-unselect-all="speciesRowChange('unselect-all')">
+        <Column selectionMode="multiple" style="width: 3rem" ></Column>
+        <Column field="name" header=""></Column>
+        <Column field="count" header="#">
+          <template #body="slotProps">
+            {{getCount('species', slotProps.data.name)}}
+          </template>
+        </Column>
+        <Column field="freq" header="Freq">
+          <template #body="slotProps">
+            {{getFreq('species', slotProps.data.name)}}
+          </template>
+        </Column>
+        </DataTable>
+      </div>
+      <div class="w-1/3 px-2 border" >
+        <div class="font-semibold my-2">Experiment</div>
+        <DataTable :value="experimentFiltered" v-model:selection="experimentSelected" 
+          class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+          :loading="loading" @row-select="experimentRowChange('select')"
+          @row-unselect="experimentRowChange('unselect')"
+          @row-select-all="experimentRowChange('select-all')"
+          @row-unselect-all="experimentRowChange('unselect-all')">
+        <Column selectionMode="multiple" style="width: 3rem"></Column>
+        <Column field="name" header=""></Column>
+        <Column field="count" header="#">
+          <template #body="slotProps">
+            {{getCount('experiment', slotProps.data.name)}}
+          </template>
+        </Column>
+        <Column field="freq" header="Freq">
+          <template #body="slotProps">
+            {{getFreq('experiment', slotProps.data.name)}}
+          </template>
+        </Column>
 
-  <div id="selected-metadata-view" class="mx-auto" v-if="this.fetched">
-    <div id="genes-view" class="my-3 w-3/4 mx-auto" >
-      <div class="font-semibold m-2">Genes</div>
-      <div v-if="this.loadingGenes">
-        <ProgressBar mode="indeterminate" />
+        </DataTable>
+        
       </div>
-      <div class="flex flex-row" v-else>
-        <div class="p-fluid w-3/4" v-show="!this.loadingGenes">
-          <AutoComplete :multiple="true" v-model="this.genesSelected" 
-          :suggestions="this.genesFiltered" @complete="searchGenes($event)" field="name" />
-        </div>
-        <div>
-          <Button label="Get Gene Data" class="ml-3" @click="fetchData"/>
-        </div>
+      <div class="w-1/3 px-2 border">
+        <div class="font-semibold my-2">Tissue</div>
+        <DataTable :value="tissueFiltered" v-model:selection="tissueSelected" 
+          class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+          :loading="loading" @row-select="tissueRowChange('select')" 
+          @row-unselect="tissueRowChange('unselect')"
+          @row-select-all="tissueRowChange('select-all')"
+          @row-unselect-all="tissueRowChange('unselect-all')">
+        <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
+        <Column field="name" header=""></Column>
+        <Column field="count" header="#">
+          <template #body="slotProps">
+            {{getCount('tissue', slotProps.data.name)}}
+          </template>
+        </Column>
+        <Column field="freq" header="Freq">
+          <template #body="slotProps">
+            {{getFreq('tissue', slotProps.data.name)}}
+          </template>
+        </Column>
+        </DataTable>
+        
       </div>
-      
+    </div>
+    <div v-else class="text-center font-semibold text-lg">
+      Warning: No datasets in filtered selection.  Clear filters to regain datasets for selection.
     </div>
 
-    <div id="graphs-view">
-      <div class="card mt-2">
-        <div class="mx-auto w-3/4">
-          <TabMenu :model="items"/>
+    <div id="fetch-datasets" class="mx-auto my-5 text-center" >
+      <Button label="Get Datasets" class="p-button-lg" @click="fetchDatasets" v-if="!this.fetching"/>
+      <ProgressSpinner class="mx-auto w-1/2" v-else/>
+    </div>
+
+    <div id="selected-metadata-view" class="mx-auto" v-if="this.fetched">
+      <div id="genes-view" class="my-3 w-3/4 mx-auto" >
+        <div class="font-semibold m-2">Genes</div>
+        <div v-if="this.loadingGenes">
+          <ProgressBar mode="indeterminate" />
+        </div>
+        <div class="flex flex-row" v-else>
+          <div class="p-fluid w-3/4" v-show="!this.loadingGenes">
+            <AutoComplete :multiple="true" v-model="this.genesSelected" 
+            :suggestions="this.genesFiltered" @complete="searchGenes($event)" field="name" />
+          </div>
+          <div>
+            <Button label="Get Gene Data" class="ml-3" @click="fetchData"/>
+          </div>
         </div>
         
-        <router-view :genes="this.genesSelected" :datasets="this.datasets"/>
       </div>
+
+      
+
     </div>
 
   </div>
+  <div id="graphs-view">
+    <div class="card mt-2">
+      <div class="mx-auto w-3/4">
+        <TabMenu :model="items"/>
+      </div>
+      
+      <router-view :genes="this.genesSelected" :datasets="this.datasets"/>
+    </div>
+  </div>
+  
 
 </div>
 
 </template>
 
 <script>
+import Toast from 'primevue/toast'
 import ProgressBar from 'primevue/progressbar'
 import ProgressSpinner from 'primevue/progressspinner'
 import AutoComplete from "primevue/autocomplete"
@@ -168,6 +170,7 @@ import DataService from "@/services/DataService.js"
 export default {
   name: "Main",
   components: {
+    Toast, 
     ProgressBar,
     ProgressSpinner,
     AutoComplete,
@@ -316,12 +319,12 @@ export default {
       // this.loadGenes()
     ])
 
-    // Testing - Remove later
-    this.tissueSelected = [{name:'BAT'}, {name:'DG'}]
-    this.tissueRowChange('select')
-    await this.fetchDatasets()
-    this.genesSelected = [{name:'Alb'}]
-    // this.$router.push('/main/line')
+    // // Testing - Remove later
+    // this.tissueSelected = [{name:'BAT'}, {name:'DG'}]
+    // this.tissueRowChange('select')
+    // await this.fetchDatasets()
+    // this.genesSelected = [{name:'Alb'}]
+    // // this.$router.push('/main/line')
     
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
@@ -340,6 +343,12 @@ export default {
       this.gene_metadata_table_names = []
       this.sample_metadata_table_names = []
       this.gene_expression_data_table_names = []
+
+      if (!this.selected_metadata.length) {
+        this.fetching = false
+        this.$toast.add({severity: 'error', summary: 'Error', detail: 'No datasets selected', life: 5000});
+        return
+      }
 
       this.selected_metadata.forEach((e) => {
         // Build list of gene_metadata_tables
@@ -465,6 +474,10 @@ export default {
     async fetchData() {
       console.log('fetchData')
       const start = Date.now()
+      if (!this.genesSelected.length) {
+        this.$toast.add({severity: 'error', summary: 'Error', detail: 'No genes selected', life: 5000});
+        return
+      }
       await Promise.all([
         this.fetchGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names),
         this.fetchSelectedGeneMetadata(this.genesSelected, this.gene_metadata_table_names)

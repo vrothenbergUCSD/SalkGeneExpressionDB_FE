@@ -88,7 +88,40 @@ export default {
   watch: {
     datasets() {
       console.log('%%%%%%%%%%%%%%%%')
-      console.log('datasets updated')
+      console.log('watch: datasets')
+      this.update_datasets()
+      console.log('%%%%%%%%%%%%%%%%')
+    }
+
+  },
+  created() {
+  },
+  async mounted() {
+    console.log('LinePlot mounted')
+    this.initialize_line_plot()
+    this.complete = true
+    if (this.datasets) {
+      console.log(this.$watch)
+      this.update_datasets()
+    }
+  },
+  async updated () {
+    // console.log('-----------------')
+    // console.log('LinePlot updated')
+    // const start = Date.now()
+    // if (this.datasets) {
+    //   console.log(this.datasets)
+    //   // console.log('this.datasets exists')
+    //   // console.log('showReplicatePoints:', this.showReplicatePoints)
+    //   this.update_line_plot()
+    // }
+    // const elapsed = Date.now() - start
+    // console.log('LinePlot updated ', elapsed)
+    // console.log('-----------------')
+  },
+  methods: {
+    update_datasets() {
+      console.log('update_datasets')
       const start = Date.now()
       this.genes_str_arr = this.genes.map((d) => d.name)
       // console.log('this.genes_str_arr')
@@ -186,15 +219,15 @@ export default {
         // });
 
         const grouped_tissue = _.groupBy(this.expression_merged, e => `${e.tissue.replaceAll(' ', '-')}`)
-        console.log('grouped_tissue')
-        console.log(grouped_tissue)
+        // console.log('grouped_tissue')
+        // console.log(grouped_tissue)
 
         const grouped_tissue_gene = Object.keys(grouped_tissue).map((key) => {
           return [key, _.groupBy(grouped_tissue[key], e => `${e.gene_id}`)]
         })
 
-        console.log('grouped_tissue_gene')
-        console.log(grouped_tissue_gene)
+        // console.log('grouped_tissue_gene')
+        // console.log(grouped_tissue_gene)
 
         const grouped_tissue_gene_groupname = grouped_tissue_gene.map((tissue) => {
           // console.log(tissue)
@@ -245,15 +278,15 @@ export default {
         })
 
         this.expression_normalized = grouped_tissue_gene_groupname
-        console.log('this.expression_normalized')
-        console.log(this.expression_normalized)
+        // console.log('this.expression_normalized')
+        // console.log(this.expression_normalized)
 
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
 
-        console.log('this.expression_normalized_flattened')
-        console.log(this.expression_normalized_flattened)
+        // console.log('this.expression_normalized_flattened')
+        // console.log(this.expression_normalized_flattened)
 
         const grouped_norm = _.groupBy(this.expression_normalized_flattened, e => 
           `${e.gene_id}_${e.tissue.replaceAll(' ', '-')}_${e.group_name}_ZT${e.time_point}`)
@@ -321,8 +354,8 @@ export default {
         this.sumstat_visibility = Object.fromEntries(
           new Map([...this.sumstat.keys()].map(e => [e, 1])))
 
-        console.log('this.sumstat_visibility')
-        console.log(this.sumstat_visibility)
+        // console.log('this.sumstat_visibility')
+        // console.log(this.sumstat_visibility)
 
         // this.sumstat_dots = d3
         //   .group(this.expression_normalized_flattened, 
@@ -337,45 +370,19 @@ export default {
           d, i/this.categories.length
         ]))
 
-
+        this.update_line_plot()
       }
-      this.update_line_plot()
-
+      
       const elapsed = Date.now() - start
-      console.log('datasets updated time elapsed', elapsed)
-      console.log('%%%%%%%%%%%%%%%%')
-    }
-
-  },
-  created() {
-  },
-  async mounted() {
-    // console.log('LinePlot mounting')
-    this.initialize_line_plot()
-    this.complete = true
-
-  },
-  async updated () {
-    // console.log('-----------------')
-    // console.log('LinePlot updated')
-    // const start = Date.now()
-    // if (this.datasets ) {
-    //   console.log('this.datasets exists')
-    //   console.log('showReplicatePoints:', this.showReplicatePoints)
-    //   // this.update_line_plot()
-    // }
-    // const elapsed = Date.now() - start
-    // console.log('LinePlot updated ', elapsed)
-    // console.log('-----------------')
-  },
-  methods: {
+      console.log('update_datasets time elapsed', elapsed)
+    },
     initialize_line_plot() {
       console.log('initialize_line_plot')
       // set the dimensions and margins of the graph
       this.margin = {top: 30, right: 30, bottom: 140, left: 80}
-      this.width = 700 - this.margin.left - this.margin.right,
+      this.width = 800 - this.margin.left - this.margin.right,
       this.height = 500 - this.margin.top - this.margin.bottom;
-      this.drawable_width_scale = 4/5
+      this.drawable_width_scale = 0.75
       this.drawable_height_scale = 1
       this.svg = d3.select("#plot-area")
           .append("svg")
@@ -710,7 +717,7 @@ export default {
                   legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
                   })`)
               tissue_root.select('.legend_tissue_text')
-                  .text(d => d[0])
+                  .text(d => d[0].replaceAll('-', ' '))
 
               update.selectAll('.legend_gene')
                 .data(d => d[1])
@@ -1246,13 +1253,15 @@ export default {
       const tissue = data[0].replaceAll('-', ' ')
       // console.log(tissue)
       const table_metadata_list = this.gene_expression_datasets.filter(e => e.tissue == tissue)
+      // TODO: Possible future bug when there's more than 1 dataset for tissue
       if (table_metadata_list.length > 1) {
         console.error('WARNING: More than 1 matching table for tissue', tissue)
       }
       const table_metadata = table_metadata_list[0]
 
       // console.log(table_metadata)
-      let text = `Experiment: ${table_metadata.experiment}\n`
+      let text = `Tissue: ${tissue}\n`
+      text += `Experiment: ${table_metadata.experiment}\n`
       text += `Year: ${table_metadata.year}\n`
       text += `Species: ${table_metadata.species}\n`
       text += `Gender: ${table_metadata.gender}\n`
@@ -1282,7 +1291,7 @@ export default {
       }
       gene = gene_metadata_entries[0].data[0]
       // console.log(gene)
-      let text = `Gene Name: ${gene.gene_name}\n`
+      let text = `Gene: ${gene.gene_name}\n`
       text += `Gene ID: ${gene.gene_id}\n`
       text += `External Gene Name: ${gene.external_gene_name}\n`
       text += `Description: ${gene.description}\n`
@@ -1306,6 +1315,8 @@ export default {
       const groupname = data[0]
       const sample = data[1][0]
       const stats = data[2]
+
+      // console.log(sample)
 
       let text = `Group: ${groupname}\n`
       text += `Age (months): ${sample.age_months}\n`
