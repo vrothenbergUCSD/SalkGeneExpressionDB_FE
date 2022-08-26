@@ -236,6 +236,7 @@ export default {
       gene_expression_data_table_names: [],
 
       gene_metadata_tables: [],
+      selected_gene_metadata: [],
       sample_metadata_tables: [],
       gene_expression_data_tables: [],
 
@@ -363,7 +364,7 @@ export default {
       console.log('fetchDatasets time elapsed: ', elapsed)
     },
     async fetchGeneMetadataTables(tables) {
-      console.log('fetchGeneMetadataTables')
+      // console.log('fetchGeneMetadataTables')
       const start = Date.now()
       this.loadingGenes = true
       const results = await Promise.all(tables.map(async (t) => {
@@ -388,7 +389,7 @@ export default {
       return results
     },
     async fetchSampleMetadataTables(tables) {
-      console.log('fetchSampleMetadataTables')
+      // console.log('fetchSampleMetadataTables')
       const start = Date.now()
       const results = await Promise.all(tables.map(async (t) => {
         const result = await DataService.getSampleMetadata(t)
@@ -405,20 +406,18 @@ export default {
 
       this.sample_metadata_tables = results
 
-
       const elapsed = Date.now() - start
       console.log('fetchSampleMetadataTables time elapsed: ', elapsed)
-
       return results
-
     },
     async fetchGeneExpressionDataTables(genes, tables) {
-      console.log('fetchGeneExpressionDataTables')
+      // console.log('fetchGeneExpressionDataTables')
+      const start = Date.now()
       // console.log(genes)
       let genesStr = genes.map((d) => d.name).toString()
-      console.log('genesStr')
-      console.log(genesStr)
-      const start = Date.now()
+      // console.log('genesStr')
+      // console.log(genesStr)
+      
       const results = await Promise.all(tables.map(async (t) => {
         // const result = []
         // if (this.gene_expression_data_tables)
@@ -437,22 +436,45 @@ export default {
       }))
 
       this.gene_expression_data_tables = results
-      console.log('gene_expression_data_tables')
-      console.log(this.gene_expression_data_tables)
+      // console.log('gene_expression_data_tables')
+      // console.log(this.gene_expression_data_tables)
 
       const elapsed = Date.now() - start
       console.log('fetchGeneExpressionDataTables time elapsed: ', elapsed)
 
       return results
     },
+    async fetchSelectedGeneMetadata(genes, tables) {
+      console.log('fetchSelectedGeneMetadata')
+      const start = Date.now()
+      let genesStr = genes.map((d) => d.name).toString()
+      const results = await Promise.all(tables.map(async (t) => {
+        const result = await DataService.getGeneMetadata(genesStr, t)     
+        return {
+          table_name: t,
+          data: result.data
+        }
+      }))
+      this.selected_gene_metadata = results
+
+      const elapsed = Date.now() - start
+      console.log('fetchSelectedGeneMetadata time elapsed: ', elapsed)
+
+      return results
+    },
     async fetchData() {
       console.log('fetchData')
       const start = Date.now()
-      await this.fetchGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names)
+      await Promise.all([
+        this.fetchGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names),
+        this.fetchSelectedGeneMetadata(this.genesSelected, this.gene_metadata_table_names)
+      ])
+      // await this.fetchGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names)
       this.datasets = {
         // gene_metadata_tables: this.gene_metadata_tables,
         sample_metadata_tables: this.sample_metadata_tables,
         gene_expression_data_tables: this.gene_expression_data_tables,
+        gene_metadata: this.selected_gene_metadata,
       }
       const elapsed = Date.now() - start
       console.log('fetchData time elapsed ', elapsed)
@@ -507,7 +529,7 @@ export default {
     removeSpeciesFilter(text) {
       // console.log('removeSpeciesFilter')
       this.speciesSelected = this.speciesSelected.filter((obj) => 
-         obj.name != text
+        obj.name != text
       );
       let reset = false
       if (!this.speciesSelected.length) reset = true

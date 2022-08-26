@@ -26,7 +26,11 @@ class DataService {
     return http.get(`gene_expression/gene_names?gene_names=${genes}&table=${table}`)
   }
   async getGenes(table = "Mouse_TRF_2018_Liver_gene_metadata") {
-    return http.get(`gene_metadata/names?table=${table}`)
+    return http.get(`gene_metadata/all_names?table=${table}`)
+  }
+  async getGeneMetadata(genes, table) {
+    ///gene_metadata/gene_name
+    return http.get(`gene_metadata/gene_name?gene_name=${genes}&table=${table}`)
   }
   async getSampleMetadata(table) {
     return http.get(`sample_metadata/data?table=${table}`)

@@ -9,7 +9,7 @@
       <div class="flex flex-row">
         <div class="flex flex-col align-items-center mx-2">
           <div class="font-semibold">Data Points</div>
-          <InputSwitch v-model="showDataPoints" @change="this.update_line_plot" />
+          <InputSwitch v-model="showReplicatePoints" @change="this.update_line_plot" />
         </div>
         <div class="flex flex-col align-items-center mx-2">
           <div class="font-semibold">Error Bars</div>
@@ -81,7 +81,7 @@ export default {
       color: null,
 
       complete: false,
-      showDataPoints: false,
+      showReplicatePoints: false,
       showErrorBars: true,
     }
   },
@@ -90,10 +90,6 @@ export default {
       console.log('%%%%%%%%%%%%%%%%')
       console.log('datasets updated')
       const start = Date.now()
-      // console.log('this.genes', this.genes)
-      // console.log(this.genes)
-      // console.log('this.datasets')
-      // console.log(this.datasets)
       this.genes_str_arr = this.genes.map((d) => d.name)
       // console.log('this.genes_str_arr')
       // console.log(this.genes_str_arr)
@@ -105,7 +101,12 @@ export default {
         this.gene_expression_datasets.forEach((e) => {
           // console.log('this.gene_expression_datasets.forEach')
           // console.log(e)
-          let table = e.table_name
+          const table = e.table_name
+          const table_split = table.split('_')
+          e.owner = table_split.at(-1)
+          e.experiment = table_split.at(0)
+          e.year = table_split.at(1)          
+          
           // "TRF_2018_Mouse_Adrenal_gene_expression_data_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"
           // console.log('table ', table)
           let sample_table = table.replace('gene_expression_data', 'sample_metadata')
@@ -124,6 +125,43 @@ export default {
           // console.log('merged_data')
           // console.log(merged_data)
           e.data = merged_data
+          e.data.forEach(itm => itm.table = table)
+
+          const species = [...new Set(e.data.map(item => item.species))];
+          if (species.length > 1) {
+            // More than 1 species in a dataset, shouldn't happen!
+            console.error('WARNING: More than 1 species in ', table)
+          }
+          e.species = species[0]
+
+          const age_months = [...new Set(e.data.map(item => item.age_months))];
+          if (age_months.length > 1) {
+            // Samples vary in age
+            console.error('WARNING: More than 1 age in ', table)
+          }
+          e.age_months = age_months[0]
+
+          const data_type = [...new Set(e.data.map(item => item.data_type))];
+          if (data_type.length > 1) {
+            // More than 1 data type
+            console.error('WARNING: More than 1 data type in ', table)
+          }
+          e.data_type = data_type[0]
+
+          const gender = [...new Set(e.data.map(item => item.gender))];
+          if (gender.length > 1) {
+            // More than 1 gender
+            console.error('WARNING: More than 1 gender in ', table)
+          }
+          e.gender = gender[0]
+
+          const tissue = [...new Set(e.data.map(item => item.tissue))];
+          if (tissue.length > 1) {
+            // More than 1 gender
+            console.error('WARNING: More than 1 tissue in ', table)
+          }
+          e.tissue = tissue[0]
+          
           this.expression_merged = this.expression_merged.concat(merged_data)
         })
 
@@ -133,9 +171,9 @@ export default {
           e.identifier = `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}`
         })
 
-        const grouped = _.groupBy(this.expression_merged, function(e){
-          return `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}_ZT${e.time_point}`
-        })
+        // const grouped = _.groupBy(this.expression_merged, function(e){
+        //   return `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}_ZT${e.time_point}`
+        // })
         // console.log('grouped')
         // console.log(grouped)
        
@@ -144,31 +182,19 @@ export default {
         //   o.avg = _.reduce(val, function(memo, v) { 
         //     return memo + v.gene_expression; 
         //   }, 0) / val.length
-          
         //   return o
         // });
 
-        // console.log('expression_averaged')
-        // console.log(this.expression_averaged)
-        // console.log(Object.entries(this.expression_averaged))
-        // this.expression_averaged = Object.entries(this.expression_averaged).map(e => e[1])
-        // console.log(this.expression_averaged)
-
-        // this.expression_normalized
-
         const grouped_tissue = _.groupBy(this.expression_merged, e => `${e.tissue.replaceAll(' ', '-')}`)
-        // console.log('grouped_tissue')
-        // console.log(grouped_tissue)
+        console.log('grouped_tissue')
+        console.log(grouped_tissue)
 
         const grouped_tissue_gene = Object.keys(grouped_tissue).map((key) => {
-          // console.log(key)
-          // console.log(grouped_tissue)
-          // console.log(grouped_tissue[key])
           return [key, _.groupBy(grouped_tissue[key], e => `${e.gene_id}`)]
         })
 
-        // console.log('grouped_tissue_gene')
-        // console.log(grouped_tissue_gene)
+        console.log('grouped_tissue_gene')
+        console.log(grouped_tissue_gene)
 
         const grouped_tissue_gene_groupname = grouped_tissue_gene.map((tissue) => {
           // console.log(tissue)
@@ -187,21 +213,28 @@ export default {
         grouped_tissue_gene_groupname.forEach((tissue) => {
           // console.log(tissue[0])
           tissue[1].forEach((gene) => {
-            // console.log('gene', gene[0])
-            // console.log(gene)
-            // console.log(Object.entries(gene[1]))
             gene[1] = Object.entries(gene[1])
             gene[1].forEach((groupname) => {
               // console.log('groupname', groupname)
               const max = Math.max.apply(Math, groupname[1].map(
                 function(o) { return o.gene_expression; }))
-              // console.log('max', max)
               const min = Math.min.apply(Math, groupname[1].map(
                 function(o) { return o.gene_expression; }))
-              // console.log('min', min)
               groupname[1].forEach((sample) => {
                 sample.gene_expression_norm = (sample.gene_expression - min) / (max - min)
               })
+
+              const mean = _.reduce(groupname[1], function(memo, v) { 
+                return memo + v.gene_expression; 
+              }, 0) / groupname[1].length
+
+              const groupname_stats = {
+                min: min,
+                max: max, 
+                amplitude: max-min,
+                mean: mean,
+              }
+              groupname.push(groupname_stats)
             })
           })
         })
@@ -265,6 +298,13 @@ export default {
         // console.log(Object.entries(this.expression_averaged))
         this.expression_normalized_averaged = Object.entries(this.expression_normalized_averaged).map(e => e[1])
         // console.log(this.expression_normalized_averaged)
+        this.avgPoints = [...this.expression_normalized_averaged]
+        this.avgPoints.forEach(e => e.visible = 1)
+        this.errorBarsData = [...this.expression_normalized_averaged]
+        this.errorBarsData.forEach(e => e.visible = (this.showErrorBars ? 1 : 0))
+        this.replicatePoints = this.expression_normalized_flattened
+        this.replicatePoints.forEach(e => e.visible = (this.showReplicatePoints ? 1 : 0))
+        this.allPoints = this.avgPoints.concat(this.replicatePoints)
 
         // console.log('After mutation')
         // console.log(this.gene_expression_datasets)
@@ -273,10 +313,16 @@ export default {
           .group(this.expression_normalized_averaged, 
           d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
 
-        this.sumstat_dots = d3
-          .group(this.expression_normalized_flattened, 
-          d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
+        this.sumstat_visibility = Object.fromEntries(
+          new Map([...this.sumstat.keys()].map(e => [e, 1])))
 
+        console.log('this.sumstat_visibility')
+        console.log(this.sumstat_visibility)
+
+        // this.sumstat_dots = d3
+        //   .group(this.expression_normalized_flattened, 
+        //   d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
+    
         this.categories = [...new Set(
           [...this.sumstat.keys()] 
           .map(e => e.split('_').slice(0,-1).join('_'))
@@ -285,6 +331,8 @@ export default {
         this.cat_map = new Map(this.categories.map((d,i) => [
           d, i/this.categories.length
         ]))
+
+
       }
       this.update_line_plot()
 
@@ -308,7 +356,7 @@ export default {
     // const start = Date.now()
     // if (this.datasets ) {
     //   console.log('this.datasets exists')
-    //   console.log('showDataPoints:', this.showDataPoints)
+    //   console.log('showReplicatePoints:', this.showReplicatePoints)
     //   // this.update_line_plot()
     // }
     // const elapsed = Date.now() - start
@@ -317,6 +365,7 @@ export default {
   },
   methods: {
     initialize_line_plot() {
+      console.log('initialize_line_plot')
       // set the dimensions and margins of the graph
       this.margin = {top: 30, right: 30, bottom: 140, left: 80}
       this.width = 700 - this.margin.left - this.margin.right,
@@ -376,13 +425,20 @@ export default {
       this.svg.append("g")
         .attr("id", "errorBars")
 
-      // dataPoints grouping element
+      // replicatePoints grouping element
       this.svg.append("g")
-        .attr("id", "dataPoints")
+        .attr("id", "replicatePoints")
 
       // Voronoi wrapper
       this.svg.append("g")
         .attr("id", "voronoiWrapper")
+      
+      var legendX = this.width*this.drawable_width_scale + 5
+      // Legend 
+      this.svg.append('g')
+        .attr('id', 'legend')
+        .attr('transform', `translate(${legendX}, 0)`)
+        
 
       // Visibility icons
       this.showIcon = d3.create('svg')
@@ -395,11 +451,11 @@ export default {
 
     },
     update_line_plot() {
+      console.log('===================')
       console.log('update_line_plot')
 
       // Animation transition time in ms
-      var animationInterval = 250
-
+      var animationInterval = this.animationInterval
 
       // var color = d3.scaleOrdinal(d3.schemeCategory10);
       // var color = d3.scaleSequential().domain([1,categories]).interpolator(d3.interpolateSinebow)
@@ -428,7 +484,7 @@ export default {
       // Custom function, reduces redundant code for transitions
       // Opacity transition, fade in / out
       d3.selection.prototype.transition_attributes = function(
-        attr_name, opacity, duration=this.animationInterval) {
+        attr_name, opacity, duration=animationInterval) {
         this.transition()
             .ease(Math.sqrt)
             .duration(duration)
@@ -478,7 +534,8 @@ export default {
                 .attr("fill", "none")
                 .attr("stroke-width", 1.5)
                 .attr("stroke", d => this.getHSL(d[0]))
-                .transition_attributes('stroke-opacity', 1)
+                .transition_attributes('stroke-opacity', d => 
+                  this.sumstat_visibility[d[0]])
                 
             },
             (update) => {
@@ -492,14 +549,15 @@ export default {
                   .y((d) => y(d.gene_expression_norm))
                   (d[1]))
                 .attr('stroke', d => this.getHSL(d[0]))
-                .transition_attributes('stroke-opacity', 1)
+                .transition_attributes('stroke-opacity', d => 
+                  this.sumstat_visibility[d[0]])
                 
             },
             (exit) => exit.transition_attributes('stroke-opacity', 0).remove()
           )
       // Tissue > Gene > Group 
       const num_tissues = this.expression_normalized.length
-      const num_genes = this.genes.length
+      const num_genes = this.expression_normalized[0][1].length
       const num_groups = this.expression_normalized[0][1][0][1].length
 
       // console.log('num_genes', num_genes)
@@ -509,7 +567,12 @@ export default {
 
       // Legend nested text
       var legendX = this.width*this.drawable_width_scale + 5
-      this.svg.selectAll(".legend_tissue")
+      // this.svg.select('.legend')
+      //   // .attr('transform', )
+      //   .attr('transform', `translate(${legendX}, 0)`)
+
+      this.svg.select('#legend')
+          .selectAll(".legend_tissue")
           .data(this.expression_normalized)
           .join(
             (enter) => {
@@ -519,7 +582,7 @@ export default {
               const tissue_root = enter.append('g')
               tissue_root.attr('class', 'legend_tissue')
                 .style('fill', d3.rgb("#222"))
-                .attr('transform', (d,i) => `translate(${legendX}, ${
+                .attr('transform', (d,i) => `translate(${13}, ${
                   legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
                   })`)
 
@@ -545,7 +608,8 @@ export default {
                 .attr('width', 10)
                 .attr('height', 10)
                 .attr('opacity', 1)
-                .on('mouseover', infoHover)
+                .on('mouseover', this.infoHover)
+                .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
 
               tissue_root.selectAll('.legend_gene')
                 .data(d => d[1])
@@ -582,13 +646,14 @@ export default {
                       .attr('width', 10)
                       .attr('height', 10)
                       .attr('opacity', 1)
-                      .on('mouseover', infoHover)
+                      .on('mouseover', this.infoHover)
+                      .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
                       
                     gene_root.selectAll('.legend_groupname')
                       .data(d => d[1])
                       .join(
                         (enter) => {
-                          console.log('groupname enter')
+                          // console.log('groupname enter')
                           // console.log(enter)
                           const groupname_root = enter.append('g')
                             .transition_attributes('opacity', 1)
@@ -621,7 +686,8 @@ export default {
                             .attr('width', 10)
                             .attr('height', 10)
                             .attr('opacity', 1)
-                            .on('mouseover', infoHover)
+                            .on('mouseover', this.infoHover)
+                            .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
                             
                           return groupname_root
                         },
@@ -635,7 +701,7 @@ export default {
               // console.log('tissue update')
               // console.log(update)
               const tissue_root = update.transition_attributes('opacity', 1)
-                .attr('transform', (d,i) => `translate(${legendX}, ${
+                .attr('transform', (d,i) => `translate(${13}, ${
                   legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
                   })`)
               tissue_root.select('.legend_tissue_text')
@@ -675,7 +741,8 @@ export default {
                       .attr('width', 10)
                       .attr('height', 10)
                       .attr('opacity', 1)
-                      .on('mouseover', infoHover)
+                      .on('mouseover', this.infoHover)
+                      .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
                     gene_root.selectAll('.legend_groupname')
                       .data(d => d[1])
                       .join(
@@ -712,7 +779,8 @@ export default {
                             .attr('width', 10)
                             .attr('height', 10)
                             .attr('opacity', 1)
-                            .on('mouseover', infoHover)
+                            .on('mouseover', this.infoHover)
+                            .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
                           return groupname_root
                         },
                         (update) => {
@@ -775,7 +843,8 @@ export default {
                             .attr('width', 10)
                             .attr('height', 10)
                             .attr('opacity', 1)
-                            .on('mouseover', infoHover)
+                            .on('mouseover', this.infoHover)
+                            .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
                           return groupname_root
                         },
                         (update) => {
@@ -805,7 +874,7 @@ export default {
       this.svg.select('#avgPoints')
         .selectAll(".dot")
         // Flattened array
-        .data(this.expression_normalized_averaged)
+        .data(this.avgPoints)
         .join(
           (enter) => {
             // console.log('dot enter')
@@ -817,7 +886,8 @@ export default {
               .attr("cx", d => x(d.time_point))
               .attr("cy", d => y(d.gene_expression_norm_avg))
               .attr("r", 2)
-              .transition_attributes('fill-opacity', 1)
+              .transition_attributes('fill-opacity', d => 
+                this.sumstat_visibility[d.identifier])
           },
           (update) => {
             // console.log('dot update')
@@ -825,20 +895,22 @@ export default {
             update.attr('cx', d => x(d.time_point))
               .attr('cy', d => y(d.gene_expression_norm_avg))
               .style('fill', d => this.getHSL(d.identifier))
-              .transition_attributes('fill-opacity', 1)
+              .transition_attributes('fill-opacity', d =>
+                this.sumstat_visibility[d.identifier])
               .attr('id', d => `dot_${d.identifier}`)
           },
           (exit) => exit.transition_attributes('fill-opacity', 0).remove()
         )
       
-      let errorBarsData = []
-      if (this.showErrorBars) 
-        errorBarsData = this.expression_normalized_averaged
+      // let errorBarsData = [...this.expression_normalized_averaged]
+      // errorBarsData.forEach(e => e.visible = (this.showErrorBars ? 1 : 0))
+      // if (this.showErrorBars) 
+      //   errorBarsData = this.expression_normalized_averaged
       // Draw error bars
       this.svg.select('#errorBars')
         .selectAll(".error")
         // Flattened array
-        .data(errorBarsData)
+        .data(this.errorBarsData)
         .join(
           (enter) => {
             // console.log('error enter')
@@ -861,7 +933,8 @@ export default {
               })
               .attr('stroke', d => this.getHSL(d.identifier))
               .attr('stroke-width', 1.5)
-              .transition_attributes('stroke-opacity', 1)
+              .transition_attributes('stroke-opacity', d => 
+                (d.visible && this.showErrorBars) ? 1 : 0)
           },
           (update) => {
             // console.log('error update')
@@ -882,7 +955,8 @@ export default {
                 return p.toString()
               })
               .attr('stroke', d => this.getHSL(d.identifier))
-              .transition_attributes('stroke-opacity', 1)
+              .transition_attributes('stroke-opacity', d => 
+                (d.visible && this.showErrorBars) ? 1 : 0)
             
           },
           (exit) => exit.transition_attributes('stroke-opacity', 0).remove()
@@ -891,21 +965,15 @@ export default {
       // console.log('this.expression_normalized_flattened')
       // console.log(this.expression_normalized_flattened)
 
-      this.replicatePoints = []
-      this.allPoints = this.expression_normalized_averaged
-      if (this.showDataPoints) {
-        dataPoints = this.expression_normalized_flattened
-        this.allPoints = [...this.allPoints, ...this.expression_normalized_flattened]
-      } 
-      this.allPoints.forEach(e => e.visible = true)
-      // const allPoints_lookup = allPoints.map((e,index) => e.index = index)
-      // console.log('allPoints')
-      // console.log(allPoints)
-      // console.log('dataPoints')
-      // console.log(dataPoints)
+      // this.replicatePoints = this.expression_normalized_flattened
+      // console.log('this.showReplicatePoints', this.showReplicatePoints)
+      // this.replicatePoints.forEach(e => e.visible = this.showReplicatePoints)
+      // console.log(this.replicatePoints)
+      // this.expression_normalized_averaged.forEach(e => e.visible = true)
+      // this.allPoints = [...this.expression_normalized_averaged, ...this.expression_normalized_flattened]
         
       // Draw dots for each replicate data point
-      this.svg.select('#dataPoints')
+      this.svg.select('#replicatePoints')
         .selectAll(".dot")
         // Flattened array
         .data(this.replicatePoints)
@@ -921,7 +989,7 @@ export default {
               .attr("cx", d => x(d.time_point))
               .attr("cy", d => y(d.gene_expression_norm))
               .attr("r", 2)
-              .transition_attributes('fill-opacity', 1)
+              .transition_attributes('fill-opacity', d => d.visible ? 1 : 0)
           },
           (update) => {
             // console.log('dot update')
@@ -929,52 +997,50 @@ export default {
             update.attr('cx', d => x(d.time_point))
               .attr('cy', d => y(d.gene_expression_norm))
               .style('fill', d => this.getHSL(d.identifier))
-              .transition_attributes('fill-opacity', 1)
+              .transition_attributes('fill-opacity', d => d.visible ? 1 : 0)
               .attr('id', d => `dot_${d.identifier}`)
           },
           (exit) => exit.transition_attributes('fill-opacity', 0)
         )
       
       // // Only show tooltips for the averaged data points
-      // dataPoints = this.expression_normalized_averaged
+      // replicatePoints = this.expression_normalized_averaged
       
-      // Select all lines and dots and set to visible, prevents bug on update where if
-      // some lines are hidden then the associated dots will be out of sync
-      this.svg.select('#lines').selectAll('.line').attr('opacity', 1)
-      this.svg.select('#avgPoints').selectAll('.dot').attr('opacity', 1)
-      // Reset opacity if show data points are toggled on
-      this.svg.select('#dataPoints').selectAll('.dot').attr('opacity', 1)
+      // // Select all lines and dots and set to visible, prevents bug on update where if
+      // // some lines are hidden then the associated dots will be out of sync
+      // this.svg.select('#lines').selectAll('.line').attr('opacity', 1)
+      // this.svg.select('#avgPoints').selectAll('.dot').attr('opacity', 1)
+      // // Reset opacity if show data points are toggled on
+      // this.svg.select('#replicatePoints').selectAll('.dot').attr('opacity', 1)
 
-      this.svg.selectAll('.eye').attr('opacity', 1)
-      this.svg.selectAll('.eye-off').attr('opacity', 0)
-      this.svg.select('#errorBars').selectAll('.error').attr('opacity', 1)
+      // this.svg.selectAll('.eye').attr('opacity', 1)
+      // this.svg.selectAll('.eye-off').attr('opacity', 0)
+      // this.svg.select('#errorBars').selectAll('.error').attr('opacity', 1)
 
       // console.log('allPoints')
       // console.log(allPoints)
       
-
       this.voronoi_grid()
-     
-      function infoHover(evt, i) {
-        console.log('infoHover')
-      }
+
+      console.log('===================')
     },
     voronoi_grid() {
       // Initialize voronoi object, calculates cell polygons for visible cells
+      const filtered_points = this.allPoints.filter(d => d.visible)
       this.voronoi = d3.Delaunay
-        .from(this.allPoints.filter(d => d.visible), d => this.x(d.time_point), d => this.y(d.gene_expression_norm))
+        .from(filtered_points, d => this.x(d.time_point), d => this.y(d.gene_expression_norm))
         .voronoi([0, 0, this.width * this.drawable_width_scale, this.height])
       
       // Add voronoi cells to SVG for tooltip popover
       this.svg.select('#voronoiWrapper')
         .selectAll("path")
-        .data(this.allPoints)
+        .data(filtered_points)
         .join(
           (enter) => {
             enter.append("path")
             .attr("fill", "none")
-            .attr('stroke', '#ff0')
-            .attr('stroke-opacity', 0.5)
+            // .attr('stroke', '#ff0')
+            // .attr('stroke-opacity', 0.5)
             .style("pointer-events", "all")
             .attr("d", (d, i) => this.voronoi.renderCell(i))
             .on("mouseover", (d,i) => {
@@ -1084,86 +1150,240 @@ export default {
       // tooltip container path
       path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
     },
+    toggleVisibility(newOpacity, id) {
+      // TODO: Toggle eye one level up if all child eyes are set to on or off
+      console.log('toggleVisibility', newOpacity, id)
+      console.log(this.allPoints)
+      const lines = d3.selectAll(`[id^='line_${id}']`)
+      lines.transition_attributes('stroke-opacity', newOpacity)
+      const matching_keys = Object.keys(this.sumstat_visibility).filter(e => e.includes(id))
+      matching_keys.forEach(e => this.sumstat_visibility[e] = newOpacity)
+      // console.log('matching_keys')
+      // console.log(matching_keys)
+      const avgPoints = d3.select('#avgPoints').selectAll(`[id^='dot_${id}']`)
+      avgPoints.transition_attributes('fill-opacity', newOpacity)
+      avgPoints._groups[0].forEach(e => e.__data__.visible = newOpacity)
+
+      if (this.showReplicatePoints) {
+        const replicatePoints = d3.select('#replicatePoints').selectAll(`[id^='dot_${id}']`)
+        replicatePoints.transition_attributes('fill-opacity', newOpacity)
+        replicatePoints._groups[0].forEach(e => e.__data__.visible = newOpacity)
+      }
+      
+      if (this.showErrorBars) {
+        const errorBars = d3.selectAll(`[id^='error_${id}'`)
+        errorBars.transition_attributes('stroke-opacity', newOpacity)
+      }
+
+      console.log(this.allPoints)
+
+      // Update voronoi cells
+      this.voronoi_grid()
+    },
     tissueClick(evt, i) {
       // Toggle visibility of Tissue data for every child gene and group
       // console.log('tissueClick')
       const tissue_root = evt.currentTarget.parentNode
       const id = i[1][0][1][0][1][0].identifier.split('_')[0]
       // console.log('id', id)
-      const lines = d3.selectAll(`[id^='line_${id}']`)
       const opacity = tissue_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
-      lines.transition_attributes('stroke-opacity', newOpacity)
 
       const eyesOn = tissue_root.querySelectorAll('.eye')
       const eyesOff = tissue_root.querySelectorAll('.eye-off')
       eyesOn.forEach(e => e.setAttribute('opacity', newOpacity))
       eyesOff.forEach(e => e.setAttribute('opacity', opacity))
 
-      const dots = d3.selectAll(`[id^='dot_${id}']`)
-      dots.transition_attributes('fill-opacity', newOpacity)
-      dots._groups[0].forEach(e => e.__data__.visible = newOpacity)
-
-      const errorBars = d3.selectAll(`[id^='error_${id}'`)
-      errorBars.transition_attributes('stroke-opacity', newOpacity)
-
-      // Update voronoi cells
-      this.voronoi_grid()
+      this.toggleVisibility(newOpacity, id)
     },
     geneClick(evt, i) {
       // Toggle visibility of Tissue_Gene data for both groups
       // console.log('geneClick')
       const gene_root = evt.currentTarget.parentNode
       const id = i[1][0][1][0].identifier.split('_').slice(0,-1).join('_')
-      const lines = d3.selectAll(`[id^='line_${id}']`)
+      
       const opacity = gene_root.querySelector('.eye').getAttribute('opacity')
+      const newOpacity = (opacity == 1) ? 0 : 1
       const eyesOn = gene_root.querySelectorAll('.eye')
       const eyesOff = gene_root.querySelectorAll('.eye-off')
-      
-      const newOpacity = (opacity == 1) ? 0 : 1
-      lines.transition_attributes('stroke-opacity', newOpacity)
-      
       eyesOn.forEach(e => e.setAttribute('opacity', newOpacity))
       eyesOff.forEach(e => e.setAttribute('opacity', opacity))
-
-      const dots = d3.selectAll(`[id^='dot_${id}']`)
-      dots.transition_attributes('fill-opacity', newOpacity)
-      dots._groups[0].forEach(e => e.__data__.visible = newOpacity)
-
-      const errorBars = d3.selectAll(`[id^='error_${id}'`)
-      errorBars.transition_attributes('stroke-opacity', newOpacity)
-
-      // Update voronoi cells
-      this.voronoi_grid()
+      
+      this.toggleVisibility(newOpacity, id)
     },
     groupnameClick(evt, i) {
       // Toggle visibility of Tissue_Gene_Groupname data
       // console.log('groupnameClick')
       const groupname_root = evt.currentTarget.parentNode
       const id = i[1][0].identifier
-      const line = d3.selectAll(`#line_${id}`)
+      
       const opacity = groupname_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
-      line.transition_attributes('stroke-opacity', newOpacity)
-
-      // this refers to calling g element
-      // Only one element with class .eye and .eye-off
-      const eyeOn = groupname_root.querySelectorAll('.eye')
-      const eyeOff = groupname_root.querySelectorAll('.eye-off')
+      const eyeOn = groupname_root.querySelector('.eye')
+      const eyeOff = groupname_root.querySelector('.eye-off')
       eyeOn.setAttribute('opacity', newOpacity)
       eyeOff.setAttribute('opacity', opacity)
 
-      // Toggle associated data points
-      const dots = d3.selectAll(`#dot_${id}`)
-      dots._groups[0].forEach(e => e.__data__.visible = newOpacity)
-      dots.transition_attributes('fill-opacity', newOpacity)
-
-      const errorBars = d3.selectAll(`#error_${id}`)
-      errorBars.transition_attributes('stroke-opacity', newOpacity)
-
-      // Update voronoi cells
-      this.voronoi_grid()
+      this.toggleVisibility(newOpacity, id)
     },   
+    infoTissueText(tissue) {
+      // TODO: Add more metadata when new fields created for dataset upload page
+      console.log('infoTissueText', tissue)
+      const table_metadata_list = this.gene_expression_datasets.filter(e => e.tissue == tissue)
+      if (table_metadata_list.length > 1) {
+        console.error('WARNING: More than 1 matching table for tissue', tissue)
+      }
+      const table_metadata = table_metadata_list[0]
+
+      console.log(table_metadata)
+      let text = `Experiment: ${table_metadata.experiment}\n`
+      text += `Year: ${table_metadata.year}\n`
+      text += `Species: ${table_metadata.species}\n`
+      text += `Gender: ${table_metadata.gender}\n`
+      text += `Number of Samples: ${table_metadata.data.length}\n`
+      text += `Data Type: ${table_metadata.data_type}\n`
+      text += `Age (months): ${table_metadata.age_months}\n`
+      
+      return text
+    },
+    infoGeneText(gene_name, tissue, table) {
+      // TODO: Bugfix
+      console.log('infoGeneText', gene_name, tissue, table)
+      const gene_metadata_table = table.replace('gene_expression_data', 'gene_metadata')
+      // console.log(gene_metadata_table)
+      const gene_metadata_entries = this.datasets.gene_metadata.filter(e => e.table_name == gene_metadata_table)
+      console.log(gene_metadata_entries)
+      let gene
+      if (gene_metadata_entries.length > 1 ) {
+        gene = gene_metadata_entries.filter(e => e.gene_name == gene_name)[0]
+      }
+      gene = gene_metadata_entries[0]
+      let text = `Gene Name: ${gene.gene_name}\n`
+      text += `Gene ID: ${gene.gene_id}\n`
+      text += `External Gene Name: ${gene.external_gene_name}\n`
+      text += `Description: ${gene.description}\n`
+      text += `Gene Biotype: ${gene.gene_biotype}\n`
+      text += `Ensembl Gene ID: ${gene.ensembl_gene_id}\n`
+      text += `Ensembl Peptide ID: ${gene.ensembl_peptide_id}\n`
+      text += `Chr: ${gene.chr}\n`
+      text += `Start: ${gene.start}\n`
+      text += `End: ${gene.end}\n`
+      text += `Length: ${gene.length}\n`
+      text += `Strand: ${gene.strand}\n`
+      text += `Annotation Divergence: ${gene.annotation_divergence}\n`
+      text += `Copies: ${gene.copies}\n`
+      text += `Refseq: ${gene.refseq}\n`
+      
+      
+      return text
+    },
+    infoGroupnameText(groupname, data) {
+      console.log('infoGroupnameText', groupname)
+      // const table_metadata_list = this.gene_expression_datasets.filter(e => e.tissue == tissue)
+      // if (table_metadata_list.length > 1) {
+      //   console.error('WARNING: More than 1 matching table for tissue', tissue)
+      // }
+      // const table_metadata = table_metadata_list[0]
+      // console.log(data)
+      const sample = data[0]
+      // console.log(sample)
+      const stats = data[2]
+
+      let text = `Age (months): ${sample.age_months}\n`
+      text += `Gender: ${sample.gender}\n`
+      text += `Species: ${sample.species}\n`
+      text += `Tissue: ${sample.tissue}\n`
+      text += `Expression Stats\n`
+      text += `Amplitude: ${Math.round(stats.amplitude*1000)/1000}\n`
+      text += `Min: ${Math.round(stats.min*1000)/1000}\n`
+      text += `Max: ${Math.round(stats.max*1000)/1000}\n`
+      text += `Mean: ${Math.round(stats.mean*1000)/1000}\n`
+      
+      return text
+    },
+    infoHover(evt, d) {
+      console.log('infoHover')
+      // console.log(evt)
+      // console.log(d)
+      const self = evt.currentTarget
+      const self_dims = self.getBoundingClientRect()
+      
+      const root = evt.currentTarget.parentNode
+      const g = this.svg.append('g')
+        .attr('class', 'info-tooltip')
+        .attr('fill', d3.rgb('#222'))
+        
+      // Get relative position of self element within SVG
+      const svg = document.querySelector('#plot-svg')
+      const inverse = svg.getScreenCTM().inverse()
+      // TODO: WARNING, createSVGPoint may be deprecated
+      const pt = svg.createSVGPoint()
+      pt.x  = self_dims.x 
+      pt.y = self_dims.y
+      const p = pt.matrixTransform(inverse)
+      // console.log(p)
+      const pad = 3
+      const pos_x = p.x - this.margin.left - pad
+      const pos_y = p.y - this.margin.top + 22 + pad
+      
+      g.attr("transform", `translate(${pos_x},${pos_y})`);
+
+      const currType = root.querySelector('text').getAttribute('class').split('_')[1]
+      // console.log('currType', currType)
+      let info_text, tissue, sample, table
+      if (currType == 'tissue') {
+        tissue = d[0].replaceAll('-', ' ')
+        info_text = this.infoTissueText(tissue)
+      } else if (currType == 'gene') {
+        const gene = d[0]
+        sample = d[1][0][1][0]
+        tissue = sample.tissue
+        table = sample.table
+        info_text = this.infoGeneText(gene, tissue, table)
+      } else if (currType == 'groupname') {
+        const groupname = d[0]
+        const data = d[1]
+        info_text = this.infoGroupnameText(groupname, data)
+      }
+
+      if (!info_text) g.style('display', 'none')
+      
+      // tooltip group
+      g.style("display", "flex")
+        .style("pointer-events", "none")
+        .style("font", "10px sans-serif");
+
+      // tooltip content
+      const text_selection = g.selectAll("text")
+        .data([null])
+        .join("text")
+        .call(text => text
+          .selectAll("tspan")
+          .data((info_text + "").split(/\n/))
+          .join("tspan")
+            .attr("x", 0)
+            .attr("y", (d, i) => `${i * 1.1}em`)
+            .style("text-align", "left")
+            .style("font-weight", (_, i) => i ? null : "bold")
+            .text(d => d));
+      
+      // tooltip positioning
+      const {x, y, width: w, height: h} = text_selection.node().getBBox();
+      text_selection.attr("transform", `translate(${-w},${0})`);
+
+      // Background and border
+      const rect = g.append('rect')
+        .attr('fill', 'white')
+        .attr('stroke', d3.rgb('#222'))
+        .attr('stroke-width', 1) 
+        .attr('x', -w-pad)
+        .attr('y', y-pad)
+        .attr('width', w+2*pad)
+        .attr('height', h+2*pad)
+
+      // console.log('this.gene_expression_datasets')
+      // console.log(this.gene_expression_datasets)
+    }
   },
 }
 </script>
