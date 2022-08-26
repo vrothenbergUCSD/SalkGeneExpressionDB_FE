@@ -215,6 +215,7 @@ export default {
           tissue[1].forEach((gene) => {
             gene[1] = Object.entries(gene[1])
             gene[1].forEach((groupname) => {
+              // console.log('STATS')
               // console.log('groupname', groupname)
               const max = Math.max.apply(Math, groupname[1].map(
                 function(o) { return o.gene_expression; }))
@@ -228,27 +229,31 @@ export default {
                 return memo + v.gene_expression; 
               }, 0) / groupname[1].length
 
+              // console.log('mean', mean)
+
               const groupname_stats = {
                 min: min,
                 max: max, 
                 amplitude: max-min,
                 mean: mean,
               }
+              // console.log(groupname_stats)
               groupname.push(groupname_stats)
+              console.log(groupname)
             })
           })
         })
 
         this.expression_normalized = grouped_tissue_gene_groupname
-        // console.log('this.expression_normalized')
-        // console.log(this.expression_normalized)
+        console.log('this.expression_normalized')
+        console.log(this.expression_normalized)
 
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
 
-        // console.log('this.expression_normalized_flattened')
-        // console.log(this.expression_normalized_flattened)
+        console.log('this.expression_normalized_flattened')
+        console.log(this.expression_normalized_flattened)
 
         const grouped_norm = _.groupBy(this.expression_normalized_flattened, e => 
           `${e.gene_id}_${e.tissue.replaceAll(' ', '-')}_${e.group_name}_ZT${e.time_point}`)
@@ -934,7 +939,7 @@ export default {
               .attr('stroke', d => this.getHSL(d.identifier))
               .attr('stroke-width', 1.5)
               .transition_attributes('stroke-opacity', d => 
-                (d.visible && this.showErrorBars) ? 1 : 0)
+                (this.sumstat_visibility[d.identifier] && this.showErrorBars) ? 1 : 0)
           },
           (update) => {
             // console.log('error update')
@@ -956,7 +961,7 @@ export default {
               })
               .attr('stroke', d => this.getHSL(d.identifier))
               .transition_attributes('stroke-opacity', d => 
-                (d.visible && this.showErrorBars) ? 1 : 0)
+                (this.sumstat_visibility[d.identifier] && this.showErrorBars) ? 1 : 0)
             
           },
           (exit) => exit.transition_attributes('stroke-opacity', 0).remove()
@@ -989,7 +994,8 @@ export default {
               .attr("cx", d => x(d.time_point))
               .attr("cy", d => y(d.gene_expression_norm))
               .attr("r", 2)
-              .transition_attributes('fill-opacity', d => d.visible ? 1 : 0)
+              .transition_attributes('fill-opacity', d => 
+                (this.sumstat_visibility[d.identifier] && this.showReplicatePoints) ? 1 : 0)
           },
           (update) => {
             // console.log('dot update')
@@ -997,7 +1003,8 @@ export default {
             update.attr('cx', d => x(d.time_point))
               .attr('cy', d => y(d.gene_expression_norm))
               .style('fill', d => this.getHSL(d.identifier))
-              .transition_attributes('fill-opacity', d => d.visible ? 1 : 0)
+              .transition_attributes('fill-opacity', d => 
+                (this.sumstat_visibility[d.identifier] && this.showReplicatePoints) ? 1 : 0)
               .attr('id', d => `dot_${d.identifier}`)
           },
           (exit) => exit.transition_attributes('fill-opacity', 0)
@@ -1024,8 +1031,14 @@ export default {
 
       console.log('===================')
     },
+
+
     voronoi_grid() {
       // Initialize voronoi object, calculates cell polygons for visible cells
+      this.replicatePoints.forEach(d => 
+        d.visible = (this.sumstat_visibility[d.identifier] && this.showReplicatePoints) ? 1 : 0)
+      this.avgPoints.forEach(d => 
+        d.visible = (this.sumstat_visibility[d.identifier]) ? 1 : 0)
       const filtered_points = this.allPoints.filter(d => d.visible)
       this.voronoi = d3.Delaunay
         .from(filtered_points, d => this.x(d.time_point), d => this.y(d.gene_expression_norm))
@@ -1152,8 +1165,8 @@ export default {
     },
     toggleVisibility(newOpacity, id) {
       // TODO: Toggle eye one level up if all child eyes are set to on or off
-      console.log('toggleVisibility', newOpacity, id)
-      console.log(this.allPoints)
+      // console.log('toggleVisibility', newOpacity, id)
+      // console.log(this.allPoints)
       const lines = d3.selectAll(`[id^='line_${id}']`)
       lines.transition_attributes('stroke-opacity', newOpacity)
       const matching_keys = Object.keys(this.sumstat_visibility).filter(e => e.includes(id))
@@ -1175,7 +1188,7 @@ export default {
         errorBars.transition_attributes('stroke-opacity', newOpacity)
       }
 
-      console.log(this.allPoints)
+      // console.log(this.allPoints)
 
       // Update voronoi cells
       this.voronoi_grid()
@@ -1226,16 +1239,19 @@ export default {
 
       this.toggleVisibility(newOpacity, id)
     },   
-    infoTissueText(tissue) {
+    infoTissueText(data) {
       // TODO: Add more metadata when new fields created for dataset upload page
-      console.log('infoTissueText', tissue)
+      // console.log('infoTissueText')
+      // console.log(data)
+      const tissue = data[0].replaceAll('-', ' ')
+      // console.log(tissue)
       const table_metadata_list = this.gene_expression_datasets.filter(e => e.tissue == tissue)
       if (table_metadata_list.length > 1) {
         console.error('WARNING: More than 1 matching table for tissue', tissue)
       }
       const table_metadata = table_metadata_list[0]
 
-      console.log(table_metadata)
+      // console.log(table_metadata)
       let text = `Experiment: ${table_metadata.experiment}\n`
       text += `Year: ${table_metadata.year}\n`
       text += `Species: ${table_metadata.species}\n`
@@ -1246,18 +1262,26 @@ export default {
       
       return text
     },
-    infoGeneText(gene_name, tissue, table) {
-      // TODO: Bugfix
-      console.log('infoGeneText', gene_name, tissue, table)
+    infoGeneText(data) {
+      // console.log('infoGeneText')
+      let gene = data[0]
+      // console.log('gene', gene)
+      const sample = data[1][0][1][0]
+      // console.log(sample)
+      const table = sample.table
+      // const tissue = sample.tissue
+
       const gene_metadata_table = table.replace('gene_expression_data', 'gene_metadata')
       // console.log(gene_metadata_table)
       const gene_metadata_entries = this.datasets.gene_metadata.filter(e => e.table_name == gene_metadata_table)
-      console.log(gene_metadata_entries)
-      let gene
+      // console.log(gene_metadata_entries)
+      // let gene
       if (gene_metadata_entries.length > 1 ) {
+        console.error('WARNING: Multiple entries in this.datasets.gene_metadata')
         gene = gene_metadata_entries.filter(e => e.gene_name == gene_name)[0]
       }
-      gene = gene_metadata_entries[0]
+      gene = gene_metadata_entries[0].data[0]
+      // console.log(gene)
       let text = `Gene Name: ${gene.gene_name}\n`
       text += `Gene ID: ${gene.gene_id}\n`
       text += `External Gene Name: ${gene.external_gene_name}\n`
@@ -1277,23 +1301,18 @@ export default {
       
       return text
     },
-    infoGroupnameText(groupname, data) {
-      console.log('infoGroupnameText', groupname)
-      // const table_metadata_list = this.gene_expression_datasets.filter(e => e.tissue == tissue)
-      // if (table_metadata_list.length > 1) {
-      //   console.error('WARNING: More than 1 matching table for tissue', tissue)
-      // }
-      // const table_metadata = table_metadata_list[0]
-      // console.log(data)
-      const sample = data[0]
-      // console.log(sample)
+    infoGroupnameText(data) {
+      // console.log('infoGroupnameText')
+      const groupname = data[0]
+      const sample = data[1][0]
       const stats = data[2]
 
-      let text = `Age (months): ${sample.age_months}\n`
+      let text = `Group: ${groupname}\n`
+      text += `Age (months): ${sample.age_months}\n`
       text += `Gender: ${sample.gender}\n`
       text += `Species: ${sample.species}\n`
       text += `Tissue: ${sample.tissue}\n`
-      text += `Expression Stats\n`
+      text += `\nExpression Stats\n`
       text += `Amplitude: ${Math.round(stats.amplitude*1000)/1000}\n`
       text += `Min: ${Math.round(stats.min*1000)/1000}\n`
       text += `Max: ${Math.round(stats.max*1000)/1000}\n`
@@ -1302,7 +1321,7 @@ export default {
       return text
     },
     infoHover(evt, d) {
-      console.log('infoHover')
+      // console.log('infoHover')
       // console.log(evt)
       // console.log(d)
       const self = evt.currentTarget
@@ -1330,28 +1349,26 @@ export default {
 
       const currType = root.querySelector('text').getAttribute('class').split('_')[1]
       // console.log('currType', currType)
-      let info_text, tissue, sample, table
+      let info_text
       if (currType == 'tissue') {
-        tissue = d[0].replaceAll('-', ' ')
-        info_text = this.infoTissueText(tissue)
+        info_text = this.infoTissueText(d)
       } else if (currType == 'gene') {
-        const gene = d[0]
-        sample = d[1][0][1][0]
-        tissue = sample.tissue
-        table = sample.table
-        info_text = this.infoGeneText(gene, tissue, table)
+        info_text = this.infoGeneText(d)
       } else if (currType == 'groupname') {
-        const groupname = d[0]
-        const data = d[1]
-        info_text = this.infoGroupnameText(groupname, data)
+        info_text = this.infoGroupnameText(d)
       }
-
-      if (!info_text) g.style('display', 'none')
+      if (!info_text) return g.style('display', 'none')
       
       // tooltip group
       g.style("display", "flex")
         .style("pointer-events", "none")
         .style("font", "10px sans-serif");
+
+      // Rect must be appended first to act as background
+      const rect = g.append('rect')
+        .attr('fill', 'white')
+        .attr('stroke', d3.rgb('#222'))
+        .attr('stroke-width', 1) 
 
       // tooltip content
       const text_selection = g.selectAll("text")
@@ -1371,12 +1388,8 @@ export default {
       const {x, y, width: w, height: h} = text_selection.node().getBBox();
       text_selection.attr("transform", `translate(${-w},${0})`);
 
-      // Background and border
-      const rect = g.append('rect')
-        .attr('fill', 'white')
-        .attr('stroke', d3.rgb('#222'))
-        .attr('stroke-width', 1) 
-        .attr('x', -w-pad)
+      // Background dimensions relative to text size
+      rect.attr('x', -w-pad)
         .attr('y', y-pad)
         .attr('width', w+2*pad)
         .attr('height', h+2*pad)
