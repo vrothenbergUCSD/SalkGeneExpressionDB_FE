@@ -18,22 +18,64 @@
       </div>
       
     </div>
-    <div id="plot-area" class="mt-10" v-show="this.complete">
+    <!-- <div id="plot-area" class="mt-10" v-show="this.complete"> -->
+    <div id="plot-area" class="mt-10">
     </div>
   </div>
 </template>
 
 <script>
-import * as d3 from "d3";
-//import {Delaunay} from "d3-delaunay";
-import DataService from "@/services/DataService.js";
+import * as d3 from "d3"
+import DataService from "@/services/DataService.js"
 
-import ProgressSpinner from 'primevue/progressspinner';
+import ProgressSpinner from 'primevue/progressspinner'
 import InputSwitch from 'primevue/inputswitch'
 import _ from 'underscore';
 
 // import eye from '@/assets/eye.svg'
 // import eye
+function sleep(milliseconds) {
+  const date = Date.now();
+  let currentDate = null;
+  do {
+    currentDate = Date.now();
+  } while (currentDate - date < milliseconds);
+}
+
+const animationInterval = 250
+// Custom function, reduces redundant code for transitions
+// Opacity transition, fade in / out
+d3.selection.prototype.transition_attributes = function(
+  attr_name, opacity, duration=animationInterval) {
+  this.transition()
+      .ease(Math.sqrt)
+      .duration(duration)
+      .attr(attr_name, opacity)
+  return this
+}
+
+// Add toggle visibility SVG icons
+d3.selection.prototype.append_eyes = function() {
+  this.append('svg:image')
+    .attr('class', 'eye')
+    .attr("xlink:href", "/assets/eye.svg")
+    .attr('type', "image/svg+xml")
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('width', 10)
+    .attr('height', 10)
+    .attr('opacity', 1)
+  this.append('svg:image')
+    .attr('class', 'eye-off')
+    .attr("xlink:href", "/assets/eye-off.svg")
+    .attr('type', "image/svg+xml")
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('width', 10)
+    .attr('height', 10)
+    .attr('opacity', 0)
+  return this
+}
 
 export default {
   name: "LinePlot",
@@ -50,7 +92,13 @@ export default {
     return {
       // Datasets
       genes_str_arr: null,
-      gene_expression_datasets: [],
+      // gene_expression_datasets: [],
+
+      // Deep copy datasets (Needed?)
+      gene_expression_data_tables: [],
+      gene_metadata: [],
+      sample_metadata_tables: [],
+
       expression_merged: [],
       expression_averaged: [],
       expression_normalized: [],
@@ -72,6 +120,7 @@ export default {
       height: null,
       drawable_width_scale: null,
       drawable_height_scale: null,
+      legendX: null, 
       x: null,
       xAxis: null,
       y: null,
@@ -98,27 +147,24 @@ export default {
   },
   async mounted() {
     console.log('LinePlot mounted')
+    const start = Date.now()
+
     this.initialize_line_plot()
+    console.log('Initialized line plot')
+
     this.complete = true
     if (this.datasets) {
-      console.log(this.$watch)
       this.update_datasets()
     }
+    // Wait for SVG to load before calling legend
+    // Fixes bug where info icons don't yet have BBox dimensions to position after text
+    const svgElem = document.getElementById('plot-svg')
+    svgElem.addEventListener('load', this.legend())
+    
+    const elapsed = Date.now() - start
+    console.log('LinePlot mounted, time elapsed', elapsed)
   },
-  async updated () {
-    // console.log('-----------------')
-    // console.log('LinePlot updated')
-    // const start = Date.now()
-    // if (this.datasets) {
-    //   console.log(this.datasets)
-    //   // console.log('this.datasets exists')
-    //   // console.log('showReplicatePoints:', this.showReplicatePoints)
-    //   this.update_line_plot()
-    // }
-    // const elapsed = Date.now() - start
-    // console.log('LinePlot updated ', elapsed)
-    // console.log('-----------------')
-  },
+
   methods: {
     update_datasets() {
       console.log('update_datasets')
@@ -127,12 +173,17 @@ export default {
       // console.log('this.genes_str_arr')
       // console.log(this.genes_str_arr)
       if (this.datasets) {
+        console.log('this.datasets')
+        console.log(this.datasets)
+
         this.expression_merged = []
-        this.gene_expression_datasets = this.datasets.gene_expression_data_tables
-        // console.log('gene_expression_datasets')
-        // console.log(this.gene_expression_datasets)
-        this.gene_expression_datasets.forEach((e) => {
-          // console.log('this.gene_expression_datasets.forEach')
+        // Deep copy!
+        this.gene_expression_data_tables = JSON.parse(JSON.stringify(this.datasets.gene_expression_data_tables))
+        this.gene_metadata = JSON.parse(JSON.stringify(this.datasets.gene_metadata))
+        this.sample_metadata_tables = JSON.parse(JSON.stringify(this.datasets.sample_metadata_tables))
+
+        this.gene_expression_data_tables.forEach((e) => {
+          // console.log('this.gene_expression_data_tables.forEach')
           // console.log(e)
           const table = e.table_name
           const table_split = table.split('_')
@@ -145,7 +196,7 @@ export default {
           let sample_table = table.replace('gene_expression_data', 'sample_metadata')
           // console.log('sample_table', sample_table)
           let expression_data = e.data
-          let sample_data = this.datasets.sample_metadata_tables.find(obj => {
+          let sample_data = this.sample_metadata_tables.find(obj => {
             return obj.table == sample_table
           }).data
           // console.log('sample_data')
@@ -203,7 +254,7 @@ export default {
           e.replicate = e.sample_name.split('-').at(-1)
           e.identifier = `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}`
         })
-
+      
         // const grouped = _.groupBy(this.expression_merged, function(e){
         //   return `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}_ZT${e.time_point}`
         // })
@@ -272,14 +323,14 @@ export default {
               }
               // console.log(groupname_stats)
               groupname.push(groupname_stats)
-              console.log(groupname)
+              // console.log(groupname)
             })
           })
         })
 
         this.expression_normalized = grouped_tissue_gene_groupname
-        // console.log('this.expression_normalized')
-        // console.log(this.expression_normalized)
+        console.log('this.expression_normalized')
+        console.log(this.expression_normalized)
 
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
@@ -345,7 +396,7 @@ export default {
         this.allPoints = this.avgPoints.concat(this.replicatePoints)
 
         // console.log('After mutation')
-        // console.log(this.gene_expression_datasets)
+        // console.log(this.gene_expression_data_tables)
 
         this.sumstat = d3
           .group(this.expression_normalized_averaged, 
@@ -370,13 +421,14 @@ export default {
           d, i/this.categories.length
         ]))
 
+
         this.update_line_plot()
       }
       
       const elapsed = Date.now() - start
       console.log('update_datasets time elapsed', elapsed)
     },
-    initialize_line_plot() {
+    async initialize_line_plot() {
       console.log('initialize_line_plot')
       // set the dimensions and margins of the graph
       this.margin = {top: 30, right: 30, bottom: 140, left: 80}
@@ -445,21 +497,24 @@ export default {
       this.svg.append("g")
         .attr("id", "voronoiWrapper")
       
-      var legendX = this.width*this.drawable_width_scale + 5
+      this.legendX = this.width*this.drawable_width_scale + 5
+      this.legendY_spacing = 15
       // Legend 
       this.svg.append('g')
         .attr('id', 'legend')
-        .attr('transform', `translate(${legendX}, 0)`)
+        .attr('transform', `translate(${this.legendX}, 0)`)
         
 
-      // Visibility icons
-      this.showIcon = d3.create('svg')
-        .attr('xlmns', 'http://www.w3.org/2000/svg')
-        .attr('viewBox', '0 0 24 24')
-        .append('path')
-          .attr('d', 'M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z')
+      // // Visibility icons
+      // this.showIcon = d3.create('svg')
+      //   .attr('xlmns', 'http://www.w3.org/2000/svg')
+      //   .attr('viewBox', '0 0 24 24')
+      //   .append('path')
+      //     .attr('d', 'M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z')
 
       // this.hideIcon
+
+      return 
 
     },
     update_line_plot() {
@@ -476,14 +531,13 @@ export default {
       var color2 = d3.scaleSequential(d3.interpolateWarm)
       this.color = color2
 
-
       // Create the X axis
       this.x.domain([0, d3.max(this.expression_merged, (d) => d.time_point )])
       var x = this.x
       // x.domain([0, d3.max(this.expression_merged, (d) => d.time_point )])
       this.svg.selectAll(".myXaxis").transition()
         .duration(this.animationInterval)
-        .call(this.xAxis);
+        .call(this.xAxis)
 
       // Create the Y axis
       this.y.domain([0, 1])
@@ -492,40 +546,6 @@ export default {
           .transition()
           .duration(this.animationInterval)
           .call(this.yAxis)
-
-      // Custom function, reduces redundant code for transitions
-      // Opacity transition, fade in / out
-      d3.selection.prototype.transition_attributes = function(
-        attr_name, opacity, duration=animationInterval) {
-        this.transition()
-            .ease(Math.sqrt)
-            .duration(duration)
-            .attr(attr_name, opacity)
-        return this
-      }
-
-      // Add toggle visibility SVG icons
-      d3.selection.prototype.append_eyes = function() {
-        this.append('svg:image')
-          .attr('class', 'eye')
-          .attr("xlink:href", "/assets/eye.svg")
-          .attr('type', "image/svg+xml")
-          .attr('x', 0)
-          .attr('y', 0)
-          .attr('width', 10)
-          .attr('height', 10)
-          .attr('opacity', 1)
-        this.append('svg:image')
-          .attr('class', 'eye-off')
-          .attr("xlink:href", "/assets/eye-off.svg")
-          .attr('type', "image/svg+xml")
-          .attr('x', 0)
-          .attr('y', 0)
-          .attr('width', 10)
-          .attr('height', 10)
-          .attr('opacity', 0)
-        return this
-      }
 
       // Logic for plotting lines
       this.svg.select("#lines")
@@ -568,317 +588,331 @@ export default {
             (exit) => exit.transition_attributes('stroke-opacity', 0).remove()
           )
       // Tissue > Gene > Group 
-      const num_tissues = this.expression_normalized.length
-      const num_genes = this.expression_normalized[0][1].length
-      const num_groups = this.expression_normalized[0][1][0][1].length
+      // const num_tissues = this.expression_normalized.length
+      // const num_genes = this.expression_normalized[0][1].length
+      // const num_groups = this.expression_normalized[0][1][0][1].length
 
       // console.log('num_genes', num_genes)
       // console.log('num_groups', num_groups)
 
-      const legendY_spacing = 15
+      // const legendY_spacing = 15
 
       // Legend nested text
-      var legendX = this.width*this.drawable_width_scale + 5
+      // var legendX = this.width*this.drawable_width_scale + 5
       // this.svg.select('.legend')
       //   // .attr('transform', )
       //   .attr('transform', `translate(${legendX}, 0)`)
 
-      this.svg.select('#legend')
-          .selectAll(".legend_tissue")
-          .data(this.expression_normalized)
-          .join(
-            (enter) => {
-              // Create root g element to position child text elements
-              // console.log('tissue enter')
-              // console.log(enter)
-              const tissue_root = enter.append('g')
-              tissue_root.attr('class', 'legend_tissue')
-                .style('fill', d3.rgb("#222"))
-                .attr('transform', (d,i) => `translate(${13}, ${
-                  legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
-                  })`)
+      // this.svg.select('#legend')
+      //     .selectAll(".legend_tissue")
+      //     .data(this.expression_normalized)
+      //     .join(
+      //       (enter) => {
+      //         // Create root g element to position child text elements
+      //         // console.log('tissue enter')
+      //         // console.log(enter)
+      //         const tissue_root = enter.append('g')
+      //         tissue_root.attr('class', 'legend_tissue')
+      //           .style('fill', d3.rgb("#222"))
+      //           .attr('transform', (d,i) => `translate(${13}, ${
+      //             this.legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
+      //             })`)
 
-              tissue_root.append('g')
-                .attr('class', 'eyes')
-                .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
-                .on('click', this.tissueClick)
-                .append_eyes()
-              const text_info = tissue_root.append('g')
-                .attr('class', 'text_info')
-              text_info.append('text')
-                .attr('class', 'legend_tissue_text')
-                .text(d => d[0].replaceAll('-', ' '))
-                .attr('text-anchor', 'left')
-                .attr('font-size', '0.7em')
-                .transition_attributes('opacity', 1)
-              text_info.append('svg:image')
-                .attr('class', 'info')
-                .attr("xlink:href", "/assets/info.svg")
-                .attr('type', "image/svg+xml")
-                .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-                .attr('y', -9)
-                .attr('width', 10)
-                .attr('height', 10)
-                .attr('opacity', 1)
-                .on('mouseover', this.infoHover)
-                .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+      //         tissue_root.append('g')
+      //           .attr('class', 'eyes')
+      //           .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+      //           .on('click', this.tissueClick)
+      //           .append_eyes()
+      //         const text_info = tissue_root.append('g')
+      //           .attr('class', 'text_info')
+      //         text_info.append('text')
+      //           .attr('class', 'legend_tissue_text')
+      //           .text(d => d[0].replaceAll('-', ' '))
+      //           .attr('text-anchor', 'left')
+      //           .attr('font-size', '0.7em')
+      //           .transition_attributes('opacity', 1)
+      //         text_info.append('svg:image')
+      //           .attr('class', 'info')
+      //           .attr("xlink:href", "/assets/info.svg")
+      //           .attr('type', "image/svg+xml")
+      //           .attr('x', (d,i) => {
+      //             const text_select = text_info.select('text')
+      //             console.log('text_select')
+      //             console.log(text_select)
+      //             const groups = text_select._groups[0]
+      //             console.log('groups')
+      //             console.log(groups)
+      //             console.log(`groups[${i}]`)
+      //             console.log(groups[i])
+      //             console.log(groups[i].getBBox())
+      //             console.log(groups[i].getBoundingClientRect())
 
-              tissue_root.selectAll('.legend_gene')
-                .data(d => d[1])
-                .join(
-                  (enter) => {
-                    // console.log('gene enter')
-                    // console.log(enter)
-                    const gene_root = enter.append('g')
-                      .attr('class', 'legend_gene')
-                      .style('fill', d => this.getHSL(d[1][0][1][0].identifier, true))
-                      .attr('transform', (d,i) => `translate(${13}, ${
-                        legendY_spacing *(1 + i * (1 + num_groups))
-                        })`)
-                      .transition_attributes('opacity', 1)
+      //             const width = groups[i].getBBox().width
+      //             console.log('width', width)
+      //             return text_info.select('text')._groups[0][i].getBBox().width+5})
+      //           .attr('y', -9)
+      //           .attr('width', 10)
+      //           .attr('height', 10)
+      //           .attr('opacity', 1)
+      //           .on('mouseover', this.infoHover)
+      //           .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+
+      //         tissue_root.selectAll('.legend_gene')
+      //           .data(d => d[1])
+      //           .join(
+      //             (enter) => {
+      //               // console.log('gene enter')
+      //               // console.log(enter)
+      //               const gene_root = enter.append('g')
+      //                 .attr('class', 'legend_gene')
+      //                 .style('fill', d => this.getHSL(d[1][0][1][0].identifier, true))
+      //                 .attr('transform', (d,i) => `translate(${13}, ${
+      //                   this.legendY_spacing *(1 + i * (1 + num_groups))
+      //                   })`)
+      //                 .transition_attributes('opacity', 1)
                     
-                    gene_root.append('g')
-                      .attr('class', 'eyes')
-                      .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
-                      .on('click', this.geneClick)
-                      .append_eyes()
-                    const text_info = gene_root.append('g')
-                      .attr('class', 'text_info')
-                    text_info.append('text')
-                      .attr('class', 'legend_gene_text')
-                      .text(d => d[0])
-                      .attr('text-anchor', 'left')
-                      .attr('font-size', '0.7em')
-                    text_info.append('svg:image')
-                      .attr('class', 'info')
-                      .attr("xlink:href", "/assets/info.svg")
-                      .attr('type', "image/svg+xml")
-                      .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-                      .attr('y', -9)
-                      .attr('width', 10)
-                      .attr('height', 10)
-                      .attr('opacity', 1)
-                      .on('mouseover', this.infoHover)
-                      .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+      //               gene_root.append('g')
+      //                 .attr('class', 'eyes')
+      //                 .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+      //                 .on('click', this.geneClick)
+      //                 .append_eyes()
+      //               const text_info = gene_root.append('g')
+      //                 .attr('class', 'text_info')
+      //               text_info.append('text')
+      //                 .attr('class', 'legend_gene_text')
+      //                 .text(d => d[0])
+      //                 .attr('text-anchor', 'left')
+      //                 .attr('font-size', '0.7em')
+      //               text_info.append('svg:image')
+      //                 .attr('class', 'info')
+      //                 .attr("xlink:href", "/assets/info.svg")
+      //                 .attr('type', "image/svg+xml")
+      //                 .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+      //                 .attr('y', -9)
+      //                 .attr('width', 10)
+      //                 .attr('height', 10)
+      //                 .attr('opacity', 1)
+      //                 .on('mouseover', this.infoHover)
+      //                 .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
                       
-                    gene_root.selectAll('.legend_groupname')
-                      .data(d => d[1])
-                      .join(
-                        (enter) => {
-                          // console.log('groupname enter')
-                          // console.log(enter)
-                          const groupname_root = enter.append('g')
-                            .transition_attributes('opacity', 1)
-                            .attr('class', 'legend_groupname')
-                            .style('fill', d => this.getHSL(d[1][0].identifier))
-                            .attr('transform', (d,i) => `translate(${13}, ${
-                              legendY_spacing * (i+1)
-                              })`)
+      //               gene_root.selectAll('.legend_groupname')
+      //                 .data(d => d[1])
+      //                 .join(
+      //                   (enter) => {
+      //                     // console.log('groupname enter')
+      //                     // console.log(enter)
+      //                     const groupname_root = enter.append('g')
+      //                       .transition_attributes('opacity', 1)
+      //                       .attr('class', 'legend_groupname')
+      //                       .style('fill', d => this.getHSL(d[1][0].identifier))
+      //                       .attr('transform', (d,i) => `translate(${13}, ${
+      //                         this.legendY_spacing * (i+1)
+      //                         })`)
                             
-                          groupname_root.append('g')
-                            .attr('class', 'eyes')
-                            .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
-                            .on('click', this.groupnameClick)
-                            .append_eyes()
+      //                     groupname_root.append('g')
+      //                       .attr('class', 'eyes')
+      //                       .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+      //                       .on('click', this.groupnameClick)
+      //                       .append_eyes()
 
-                          const text_info = groupname_root.append('g')
-                            .attr('class', 'text_info')
-                          text_info.append('text')
-                            .attr('class', 'legend_groupname_text')
-                            .text(d => d[0])
-                            .attr('text-anchor', 'left')
-                            .attr('font-size', '0.7em')
-                            .attr('opacity', 1)
-                          text_info.append('svg:image')
-                            .attr('class', 'info')
-                            .attr("xlink:href", "/assets/info.svg")
-                            .attr('type', "image/svg+xml")
-                            .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-                            .attr('y', -9)
-                            .attr('width', 10)
-                            .attr('height', 10)
-                            .attr('opacity', 1)
-                            .on('mouseover', this.infoHover)
-                            .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+      //                     const text_info = groupname_root.append('g')
+      //                       .attr('class', 'text_info')
+      //                     text_info.append('text')
+      //                       .attr('class', 'legend_groupname_text')
+      //                       .text(d => d[0])
+      //                       .attr('text-anchor', 'left')
+      //                       .attr('font-size', '0.7em')
+      //                       .attr('opacity', 1)
+      //                     text_info.append('svg:image')
+      //                       .attr('class', 'info')
+      //                       .attr("xlink:href", "/assets/info.svg")
+      //                       .attr('type', "image/svg+xml")
+      //                       .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+      //                       .attr('y', -9)
+      //                       .attr('width', 10)
+      //                       .attr('height', 10)
+      //                       .attr('opacity', 1)
+      //                       .on('mouseover', this.infoHover)
+      //                       .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
                             
-                          return groupname_root
-                        },
-                      )
-                    return gene_root
-                  }
-                )
-              return tissue_root
-            },
-            (update) => {
-              // console.log('tissue update')
-              // console.log(update)
-              const tissue_root = update.transition_attributes('opacity', 1)
-                .attr('transform', (d,i) => `translate(${13}, ${
-                  legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
-                  })`)
-              tissue_root.select('.legend_tissue_text')
-                  .text(d => d[0].replaceAll('-', ' '))
+      //                     return groupname_root
+      //                   },
+      //                 )
+      //               return gene_root
+      //             }
+      //           )
+      //         return tissue_root
+      //       },
+      //       (update) => {
+      //         // console.log('tissue update')
+      //         // console.log(update)
+      //         const tissue_root = update.transition_attributes('opacity', 1)
+      //           .attr('transform', (d,i) => `translate(${13}, ${
+      //             this.legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
+      //             })`)
+      //         tissue_root.select('.legend_tissue_text')
+      //             .text(d => d[0].replaceAll('-', ' '))
 
-              update.selectAll('.legend_gene')
-                .data(d => d[1])
-                .join(
-                  (enter) => {
-                    // console.log('tissue update > gene enter')
-                    // console.log(enter)
-                    const gene_root = enter.append('g')
-                      .attr('class', 'legend_gene')
-                      .style('fill', d => this.getHSL(d[1][0][1][0].identifier, true))
-                      .attr('transform', (d,i) => `translate(${5}, ${
-                        legendY_spacing *(1 + i * (1 + num_groups))
-                        })`)
-                      .transition_attributes('opacity', 1)
-                    gene_root.append('g')
-                      .attr('class', 'eyes')
-                      .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
-                      .on('click', this.geneClick)
-                      .append_eyes()
-                    const text_info = gene_root.append('g')
-                      .attr('class', 'text_info')
-                    text_info.append('text')
-                      .attr('class', 'legend_gene_text')
-                      .text(d => d[0])
-                      .attr('text-anchor', 'left')
-                      .attr('font-size', '0.7em')
-                    text_info.append('svg:image')
-                      .attr('class', 'info')
-                      .attr("xlink:href", "/assets/info.svg")
-                      .attr('type', "image/svg+xml")
-                      .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-                      .attr('y', -9)
-                      .attr('width', 10)
-                      .attr('height', 10)
-                      .attr('opacity', 1)
-                      .on('mouseover', this.infoHover)
-                      .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
-                    gene_root.selectAll('.legend_groupname')
-                      .data(d => d[1])
-                      .join(
-                        (enter) => {
-                          // console.log('groupname enter')
-                          // console.log(enter)
-                          const groupname_root = enter.append('g')
-                            .transition_attributes('opacity', 1)
-                            .attr('class', 'legend_groupname')
-                            .style('fill', d => this.getHSL(d[1][0].identifier))
-                            .attr('transform', (d,i) => `translate(${5}, ${
-                              legendY_spacing * (i+1)
-                              })`)
+      //         update.selectAll('.legend_gene')
+      //           .data(d => d[1])
+      //           .join(
+      //             (enter) => {
+      //               // console.log('tissue update > gene enter')
+      //               // console.log(enter)
+      //               const gene_root = enter.append('g')
+      //                 .attr('class', 'legend_gene')
+      //                 .style('fill', d => this.getHSL(d[1][0][1][0].identifier, true))
+      //                 .attr('transform', (d,i) => `translate(${5}, ${
+      //                   this.legendY_spacing *(1 + i * (1 + num_groups))
+      //                   })`)
+      //                 .transition_attributes('opacity', 1)
+      //               gene_root.append('g')
+      //                 .attr('class', 'eyes')
+      //                 .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+      //                 .on('click', this.geneClick)
+      //                 .append_eyes()
+      //               const text_info = gene_root.append('g')
+      //                 .attr('class', 'text_info')
+      //               text_info.append('text')
+      //                 .attr('class', 'legend_gene_text')
+      //                 .text(d => d[0])
+      //                 .attr('text-anchor', 'left')
+      //                 .attr('font-size', '0.7em')
+      //               text_info.append('svg:image')
+      //                 .attr('class', 'info')
+      //                 .attr("xlink:href", "/assets/info.svg")
+      //                 .attr('type', "image/svg+xml")
+      //                 .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+      //                 .attr('y', -9)
+      //                 .attr('width', 10)
+      //                 .attr('height', 10)
+      //                 .attr('opacity', 1)
+      //                 .on('mouseover', this.infoHover)
+      //                 .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+      //               gene_root.selectAll('.legend_groupname')
+      //                 .data(d => d[1])
+      //                 .join(
+      //                   (enter) => {
+      //                     // console.log('groupname enter')
+      //                     // console.log(enter)
+      //                     const groupname_root = enter.append('g')
+      //                       .transition_attributes('opacity', 1)
+      //                       .attr('class', 'legend_groupname')
+      //                       .style('fill', d => this.getHSL(d[1][0].identifier))
+      //                       .attr('transform', (d,i) => `translate(${5}, ${
+      //                         this.legendY_spacing * (i+1)
+      //                         })`)
 
-                          groupname_root.append('g')
-                            .attr('class', 'eyes')
-                            .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
-                            .on('click', this.groupnameClick)
-                            .append_eyes()
-                          const text_info = groupname_root.append('g')
-                            .attr('class', 'text_info')
-                          text_info.append('text')
-                            .attr('class', 'legend_groupname_text')
-                            .text(d => d[0])
-                            .attr('text-anchor', 'left')
-                            .attr('font-size', '0.7em')
-                            .attr('opacity', 1)
-                          text_info.append('svg:image')
-                            .attr('class', 'info')
-                            .attr("xlink:href", "/assets/info.svg")
-                            .attr('type', "image/svg+xml")
-                            .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-                            .attr('y', -9)
-                            .attr('width', 10)
-                            .attr('height', 10)
-                            .attr('opacity', 1)
-                            .on('mouseover', this.infoHover)
-                            .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
-                          return groupname_root
-                        },
-                        (update) => {
-                          // console.log('groupname update')
-                          // console.log(update)
-                          update.attr('transform', (d,i) => `translate(${5}, ${
-                            legendY_spacing * (i+1)
-                            })`)
-                            .style('fill', d => this.getHSL(d[1][0].identifier))
-                            .transition_attributes('opacity', 1)
-                        },
-                        (exit) => exit.transition_attributes('opacity', 0).remove()
-                      )
-                    return gene_root
-                  },
-                  (update) => {
-                    // console.log('tissue update > gene update')
-                    // console.log(update)
-                    update.attr('transform', (d,i) => `translate(${5}, ${
-                      legendY_spacing *(1 + i * (1 + num_groups))
-                      })`)
-                      .style('fill', d => 
-                        this.getHSL(d[1][0][1][0].identifier, true))
-                      .transition_attributes('opacity', 1)
-                      .select('.legend_gene_text')
-                        .text(d => d[0])
-                    update.selectAll('.legend_groupname')
-                      .data(d => d[1])
-                      .join(
-                        (enter) => {
-                          // console.log('tissue update > gene update > groupname enter')
-                          // console.log(enter)
-                          const groupname_root = enter.append('g')
-                            .transition_attributes('opacity', 1)
-                            .attr('class', 'legend_groupname')
-                            .style('fill', d => this.getHSL(d[1][0].identifier))
-                            .attr('transform', (d,i) => `translate(${5}, ${
-                              legendY_spacing * (i+1)
-                              })`)
-                          groupname_root.append('g')
-                            .attr('class', 'eyes')
-                            .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
-                            .on('click', this.groupnameClick)
-                            .append_eyes()
-                          const text_info = groupname_root.append('g')
-                            .attr('class', 'text_info')
-                          text_info.append('text')
-                            .attr('class', 'legend_groupname_text')
-                            .text(d => d[0])
-                            .attr('text-anchor', 'left')
-                            .attr('font-size', '0.7em')
-                            .attr('opacity', 1)
-                            .style('margin-bottom', 5)
-                          text_info.append('svg:image')
-                            .attr('class', 'info')
-                            .attr("xlink:href", "/assets/info.svg")
-                            .attr('type', "image/svg+xml")
-                            .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-                            .attr('y', -9)
-                            .attr('width', 10)
-                            .attr('height', 10)
-                            .attr('opacity', 1)
-                            .on('mouseover', this.infoHover)
-                            .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
-                          return groupname_root
-                        },
-                        (update) => {
-                          // console.log('tissue update > gene update > groupname update')
-                          // console.log(update)
-                          // TODO: Possible bug when updating and associated event is not updated?
-                          update.attr('transform', (d,i) => `translate(${5}, ${
-                            legendY_spacing * (i+1)
-                            })`)
-                            .style('fill', d => this.getHSL(d[1][0].identifier))
-                            .transition_attributes('opacity', 1)
-                            .select('.legend_groupname_text')
-                              .text(d => d[0])   
-                        },
-                        (exit) => exit.transition_attributes('opacity', 0).remove()
-                      )
-                  },
-                  (exit) => exit.transition_attributes('opacity', 0).remove()
-                )
-            },
-            (exit) => exit.transition_attributes('opacity', 0).remove()
-          )
+      //                     groupname_root.append('g')
+      //                       .attr('class', 'eyes')
+      //                       .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+      //                       .on('click', this.groupnameClick)
+      //                       .append_eyes()
+      //                     const text_info = groupname_root.append('g')
+      //                       .attr('class', 'text_info')
+      //                     text_info.append('text')
+      //                       .attr('class', 'legend_groupname_text')
+      //                       .text(d => d[0])
+      //                       .attr('text-anchor', 'left')
+      //                       .attr('font-size', '0.7em')
+      //                       .attr('opacity', 1)
+      //                     text_info.append('svg:image')
+      //                       .attr('class', 'info')
+      //                       .attr("xlink:href", "/assets/info.svg")
+      //                       .attr('type', "image/svg+xml")
+      //                       .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+      //                       .attr('y', -9)
+      //                       .attr('width', 10)
+      //                       .attr('height', 10)
+      //                       .attr('opacity', 1)
+      //                       .on('mouseover', this.infoHover)
+      //                       .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+      //                     return groupname_root
+      //                   },
+      //                   (update) => {
+      //                     // console.log('groupname update')
+      //                     // console.log(update)
+      //                     update.attr('transform', (d,i) => `translate(${5}, ${
+      //                       this.legendY_spacing * (i+1)
+      //                       })`)
+      //                       .style('fill', d => this.getHSL(d[1][0].identifier))
+      //                       .transition_attributes('opacity', 1)
+      //                   },
+      //                   (exit) => exit.transition_attributes('opacity', 0).remove()
+      //                 )
+      //               return gene_root
+      //             },
+      //             (update) => {
+      //               // console.log('tissue update > gene update')
+      //               // console.log(update)
+      //               update.attr('transform', (d,i) => `translate(${5}, ${
+      //                 this.legendY_spacing *(1 + i * (1 + num_groups))
+      //                 })`)
+      //                 .style('fill', d => 
+      //                   this.getHSL(d[1][0][1][0].identifier, true))
+      //                 .transition_attributes('opacity', 1)
+      //                 .select('.legend_gene_text')
+      //                   .text(d => d[0])
+      //               update.selectAll('.legend_groupname')
+      //                 .data(d => d[1])
+      //                 .join(
+      //                   (enter) => {
+      //                     // console.log('tissue update > gene update > groupname enter')
+      //                     // console.log(enter)
+      //                     const groupname_root = enter.append('g')
+      //                       .transition_attributes('opacity', 1)
+      //                       .attr('class', 'legend_groupname')
+      //                       .style('fill', d => this.getHSL(d[1][0].identifier))
+      //                       .attr('transform', (d,i) => `translate(${5}, ${
+      //                         this.legendY_spacing * (i+1)
+      //                         })`)
+      //                     groupname_root.append('g')
+      //                       .attr('class', 'eyes')
+      //                       .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+      //                       .on('click', this.groupnameClick)
+      //                       .append_eyes()
+      //                     const text_info = groupname_root.append('g')
+      //                       .attr('class', 'text_info')
+      //                     text_info.append('text')
+      //                       .attr('class', 'legend_groupname_text')
+      //                       .text(d => d[0])
+      //                       .attr('text-anchor', 'left')
+      //                       .attr('font-size', '0.7em')
+      //                       .attr('opacity', 1)
+      //                       .style('margin-bottom', 5)
+      //                     text_info.append('svg:image')
+      //                       .attr('class', 'info')
+      //                       .attr("xlink:href", "/assets/info.svg")
+      //                       .attr('type', "image/svg+xml")
+      //                       .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+      //                       .attr('y', -9)
+      //                       .attr('width', 10)
+      //                       .attr('height', 10)
+      //                       .attr('opacity', 1)
+      //                       .on('mouseover', this.infoHover)
+      //                       .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+      //                     return groupname_root
+      //                   },
+      //                   (update) => {
+      //                     // console.log('tissue update > gene update > groupname update')
+      //                     // console.log(update)
+      //                     // TODO: Possible bug when updating and associated event is not updated?
+      //                     update.attr('transform', (d,i) => `translate(${5}, ${
+      //                       this.legendY_spacing * (i+1)
+      //                       })`)
+      //                       .style('fill', d => this.getHSL(d[1][0].identifier))
+      //                       .transition_attributes('opacity', 1)
+      //                       .select('.legend_groupname_text')
+      //                         .text(d => d[0])   
+      //                   },
+      //                   (exit) => exit.transition_attributes('opacity', 0).remove()
+      //                 )
+      //             },
+      //             (exit) => exit.transition_attributes('opacity', 0).remove()
+      //           )
+      //       },
+      //       (exit) => exit.transition_attributes('opacity', 0).remove()
+      //     )
       // console.log('this.expression_normalized_averaged')
       // console.log(this.expression_normalized_averaged)
 
@@ -1037,6 +1071,332 @@ export default {
       this.voronoi_grid()
 
       console.log('===================')
+    },
+
+    legend() {
+      console.log('legend')
+      console.log(this.expression_normalized)
+      const num_tissues = this.expression_normalized.length
+      const num_genes = this.expression_normalized[0][1].length
+      const num_groups = this.expression_normalized[0][1][0][1].length
+
+      this.svg.select('#legend')
+      .selectAll(".legend_tissue")
+      .data(this.expression_normalized)
+      .join(
+        (enter) => {
+          // Create root g element to position child text elements
+          // console.log('tissue enter')
+          // console.log(enter)
+          const tissue_root = enter.append('g')
+          tissue_root.attr('class', 'legend_tissue')
+            .style('fill', d3.rgb("#222"))
+            .attr('transform', (d,i) => `translate(${13}, ${
+              this.legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
+              })`)
+
+          tissue_root.append('g')
+            .attr('class', 'eyes')
+            .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+            .on('click', this.tissueClick)
+            .append_eyes()
+          const text_info = tissue_root.append('g')
+            .attr('class', 'text_info')
+          text_info.append('text')
+            .attr('class', 'legend_tissue_text')
+            // .text(d => d[0].replaceAll('-', ' '))
+            .text(d => d[0])
+            .attr('text-anchor', 'left')
+            .attr('font-size', '0.7em')
+            .attr('opacity', 1)
+            // .transition_attributes('opacity', 1)
+          text_info.append('svg:image')
+            .attr('class', 'info')
+            .attr("xlink:href", "/assets/info.svg")
+            .attr('type', "image/svg+xml")
+            .attr('x', (d,i) => {
+              const text_select = text_info.select('text')
+              console.log('text_select')
+              console.log(text_select)
+              const groups = text_select._groups[0]
+              console.log('groups')
+              console.log(groups)
+              console.log(`groups[${i}]`)
+              console.log(groups[i])
+              console.log(groups[i].getBBox())
+              console.log(groups[i].getBoundingClientRect())
+              console.log('text_info')
+              console.log(text_info.node().getBBox())
+              console.log('this.svg')
+              console.log(this.svg.node().getBBox())
+
+              const width = groups[i].getBBox().width
+              console.log('width', width)
+              return text_info.select('text')._groups[0][i].getBBox().width+5})
+            .attr('y', -9)
+            .attr('width', 10)
+            .attr('height', 10)
+            .attr('opacity', 1)
+            .on('mouseover', this.infoHover)
+            .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+
+          tissue_root.selectAll('.legend_gene')
+            .data(d => d[1])
+            .join(
+              (enter) => {
+                // console.log('gene enter')
+                // console.log(enter)
+                const gene_root = enter.append('g')
+                  .attr('class', 'legend_gene')
+                  .style('fill', d => this.getHSL(d[1][0][1][0].identifier, true))
+                  .attr('transform', (d,i) => `translate(${13}, ${
+                    this.legendY_spacing *(1 + i * (1 + num_groups))
+                    })`)
+                  .transition_attributes('opacity', 1)
+                
+                gene_root.append('g')
+                  .attr('class', 'eyes')
+                  .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                  .on('click', this.geneClick)
+                  .append_eyes()
+                const text_info = gene_root.append('g')
+                  .attr('class', 'text_info')
+                text_info.append('text')
+                  .attr('class', 'legend_gene_text')
+                  .text(d => d[0])
+                  .attr('text-anchor', 'left')
+                  .attr('font-size', '0.7em')
+                text_info.append('svg:image')
+                  .attr('class', 'info')
+                  .attr("xlink:href", "/assets/info.svg")
+                  .attr('type', "image/svg+xml")
+                  .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+                  .attr('y', -9)
+                  .attr('width', 10)
+                  .attr('height', 10)
+                  .attr('opacity', 1)
+                  .on('mouseover', this.infoHover)
+                  .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                  
+                gene_root.selectAll('.legend_groupname')
+                  .data(d => d[1])
+                  .join(
+                    (enter) => {
+                      // console.log('groupname enter')
+                      // console.log(enter)
+                      const groupname_root = enter.append('g')
+                        .transition_attributes('opacity', 1)
+                        .attr('class', 'legend_groupname')
+                        .style('fill', d => this.getHSL(d[1][0].identifier))
+                        .attr('transform', (d,i) => `translate(${13}, ${
+                          this.legendY_spacing * (i+1)
+                          })`)
+                        
+                      groupname_root.append('g')
+                        .attr('class', 'eyes')
+                        .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                        .on('click', this.groupnameClick)
+                        .append_eyes()
+
+                      const text_info = groupname_root.append('g')
+                        .attr('class', 'text_info')
+                      text_info.append('text')
+                        .attr('class', 'legend_groupname_text')
+                        .text(d => d[0])
+                        .attr('text-anchor', 'left')
+                        .attr('font-size', '0.7em')
+                        .attr('opacity', 1)
+                      text_info.append('svg:image')
+                        .attr('class', 'info')
+                        .attr("xlink:href", "/assets/info.svg")
+                        .attr('type', "image/svg+xml")
+                        .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+                        .attr('y', -9)
+                        .attr('width', 10)
+                        .attr('height', 10)
+                        .attr('opacity', 1)
+                        .on('mouseover', this.infoHover)
+                        .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                        
+                      return groupname_root
+                    },
+                  )
+                return gene_root
+              }
+            )
+          return tissue_root
+        },
+        (update) => {
+          // console.log('tissue update')
+          // console.log(update)
+          const tissue_root = update.transition_attributes('opacity', 1)
+            .attr('transform', (d,i) => `translate(${13}, ${
+              this.legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
+              })`)
+          tissue_root.select('.legend_tissue_text')
+              .text(d => d[0].replaceAll('-', ' '))
+
+          update.selectAll('.legend_gene')
+            .data(d => d[1])
+            .join(
+              (enter) => {
+                // console.log('tissue update > gene enter')
+                // console.log(enter)
+                const gene_root = enter.append('g')
+                  .attr('class', 'legend_gene')
+                  .style('fill', d => this.getHSL(d[1][0][1][0].identifier, true))
+                  .attr('transform', (d,i) => `translate(${5}, ${
+                    this.legendY_spacing *(1 + i * (1 + num_groups))
+                    })`)
+                  .transition_attributes('opacity', 1)
+                gene_root.append('g')
+                  .attr('class', 'eyes')
+                  .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                  .on('click', this.geneClick)
+                  .append_eyes()
+                const text_info = gene_root.append('g')
+                  .attr('class', 'text_info')
+                text_info.append('text')
+                  .attr('class', 'legend_gene_text')
+                  .text(d => d[0])
+                  .attr('text-anchor', 'left')
+                  .attr('font-size', '0.7em')
+                text_info.append('svg:image')
+                  .attr('class', 'info')
+                  .attr("xlink:href", "/assets/info.svg")
+                  .attr('type', "image/svg+xml")
+                  .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+                  .attr('y', -9)
+                  .attr('width', 10)
+                  .attr('height', 10)
+                  .attr('opacity', 1)
+                  .on('mouseover', this.infoHover)
+                  .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                gene_root.selectAll('.legend_groupname')
+                  .data(d => d[1])
+                  .join(
+                    (enter) => {
+                      // console.log('groupname enter')
+                      // console.log(enter)
+                      const groupname_root = enter.append('g')
+                        .transition_attributes('opacity', 1)
+                        .attr('class', 'legend_groupname')
+                        .style('fill', d => this.getHSL(d[1][0].identifier))
+                        .attr('transform', (d,i) => `translate(${5}, ${
+                          this.legendY_spacing * (i+1)
+                          })`)
+
+                      groupname_root.append('g')
+                        .attr('class', 'eyes')
+                        .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                        .on('click', this.groupnameClick)
+                        .append_eyes()
+                      const text_info = groupname_root.append('g')
+                        .attr('class', 'text_info')
+                      text_info.append('text')
+                        .attr('class', 'legend_groupname_text')
+                        .text(d => d[0])
+                        .attr('text-anchor', 'left')
+                        .attr('font-size', '0.7em')
+                        .attr('opacity', 1)
+                      text_info.append('svg:image')
+                        .attr('class', 'info')
+                        .attr("xlink:href", "/assets/info.svg")
+                        .attr('type', "image/svg+xml")
+                        .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+                        .attr('y', -9)
+                        .attr('width', 10)
+                        .attr('height', 10)
+                        .attr('opacity', 1)
+                        .on('mouseover', this.infoHover)
+                        .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                      return groupname_root
+                    },
+                    (update) => {
+                      // console.log('groupname update')
+                      // console.log(update)
+                      update.attr('transform', (d,i) => `translate(${5}, ${
+                        this.legendY_spacing * (i+1)
+                        })`)
+                        .style('fill', d => this.getHSL(d[1][0].identifier))
+                        .transition_attributes('opacity', 1)
+                    },
+                    (exit) => exit.transition_attributes('opacity', 0).remove()
+                  )
+                return gene_root
+              },
+              (update) => {
+                // console.log('tissue update > gene update')
+                // console.log(update)
+                update.attr('transform', (d,i) => `translate(${5}, ${
+                  this.legendY_spacing *(1 + i * (1 + num_groups))
+                  })`)
+                  .style('fill', d => 
+                    this.getHSL(d[1][0][1][0].identifier, true))
+                  .transition_attributes('opacity', 1)
+                  .select('.legend_gene_text')
+                    .text(d => d[0])
+                update.selectAll('.legend_groupname')
+                  .data(d => d[1])
+                  .join(
+                    (enter) => {
+                      // console.log('tissue update > gene update > groupname enter')
+                      // console.log(enter)
+                      const groupname_root = enter.append('g')
+                        .transition_attributes('opacity', 1)
+                        .attr('class', 'legend_groupname')
+                        .style('fill', d => this.getHSL(d[1][0].identifier))
+                        .attr('transform', (d,i) => `translate(${5}, ${
+                          this.legendY_spacing * (i+1)
+                          })`)
+                      groupname_root.append('g')
+                        .attr('class', 'eyes')
+                        .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                        .on('click', this.groupnameClick)
+                        .append_eyes()
+                      const text_info = groupname_root.append('g')
+                        .attr('class', 'text_info')
+                      text_info.append('text')
+                        .attr('class', 'legend_groupname_text')
+                        .text(d => d[0])
+                        .attr('text-anchor', 'left')
+                        .attr('font-size', '0.7em')
+                        .attr('opacity', 1)
+                        .style('margin-bottom', 5)
+                      text_info.append('svg:image')
+                        .attr('class', 'info')
+                        .attr("xlink:href", "/assets/info.svg")
+                        .attr('type', "image/svg+xml")
+                        .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+                        .attr('y', -9)
+                        .attr('width', 10)
+                        .attr('height', 10)
+                        .attr('opacity', 1)
+                        .on('mouseover', this.infoHover)
+                        .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                      return groupname_root
+                    },
+                    (update) => {
+                      // console.log('tissue update > gene update > groupname update')
+                      // console.log(update)
+                      // TODO: Possible bug when updating and associated event is not updated?
+                      update.attr('transform', (d,i) => `translate(${5}, ${
+                        this.legendY_spacing * (i+1)
+                        })`)
+                        .style('fill', d => this.getHSL(d[1][0].identifier))
+                        .transition_attributes('opacity', 1)
+                        .select('.legend_groupname_text')
+                          .text(d => d[0])   
+                    },
+                    (exit) => exit.transition_attributes('opacity', 0).remove()
+                  )
+              },
+              (exit) => exit.transition_attributes('opacity', 0).remove()
+            )
+        },
+        (exit) => exit.transition_attributes('opacity', 0).remove()
+      )
+
     },
 
 
@@ -1252,7 +1612,7 @@ export default {
       // console.log(data)
       const tissue = data[0].replaceAll('-', ' ')
       // console.log(tissue)
-      const table_metadata_list = this.gene_expression_datasets.filter(e => e.tissue == tissue)
+      const table_metadata_list = this.gene_expression_data_tables.filter(e => e.tissue == tissue)
       // TODO: Possible future bug when there's more than 1 dataset for tissue
       if (table_metadata_list.length > 1) {
         console.error('WARNING: More than 1 matching table for tissue', tissue)
@@ -1282,11 +1642,11 @@ export default {
 
       const gene_metadata_table = table.replace('gene_expression_data', 'gene_metadata')
       // console.log(gene_metadata_table)
-      const gene_metadata_entries = this.datasets.gene_metadata.filter(e => e.table_name == gene_metadata_table)
+      const gene_metadata_entries = this.gene_metadata.filter(e => e.table_name == gene_metadata_table)
       // console.log(gene_metadata_entries)
       // let gene
       if (gene_metadata_entries.length > 1 ) {
-        console.error('WARNING: Multiple entries in this.datasets.gene_metadata')
+        console.error('WARNING: Multiple entries in this.gene_metadata')
         gene = gene_metadata_entries.filter(e => e.gene_name == gene_name)[0]
       }
       gene = gene_metadata_entries[0].data[0]
@@ -1405,8 +1765,8 @@ export default {
         .attr('width', w+2*pad)
         .attr('height', h+2*pad)
 
-      // console.log('this.gene_expression_datasets')
-      // console.log(this.gene_expression_datasets)
+      // console.log('this.gene_expression_data_tables')
+      // console.log(this.gene_expression_data_tables)
     }
   },
 }

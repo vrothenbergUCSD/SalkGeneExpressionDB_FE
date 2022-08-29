@@ -106,12 +106,12 @@
       Warning: No datasets in filtered selection.  Clear filters to regain datasets for selection.
     </div>
 
-    <div id="fetch-datasets" class="mx-auto my-5 text-center" >
-      <Button label="Get Datasets" class="p-button-lg" @click="fetchDatasets" v-if="!this.fetching"/>
+    <div id="get-datasets" class="mx-auto my-5 text-center" >
+      <Button label="Get Datasets" class="p-button-lg" @click="getDatasets" v-if="!this.gettingDatasets"/>
       <ProgressSpinner class="mx-auto w-1/2" v-else/>
     </div>
 
-    <div id="selected-metadata-view" class="mx-auto" v-if="this.fetched">
+    <div id="selected-metadata-view" class="mx-auto" v-if="this.gotDatasets">
       <div id="genes-view" class="my-3 w-3/4 mx-auto" >
         <div class="font-semibold m-2">Genes</div>
         <div v-if="this.loadingGenes">
@@ -123,7 +123,7 @@
             :suggestions="this.genesFiltered" @complete="searchGenes($event)" field="name" />
           </div>
           <div>
-            <Button label="Get Gene Data" class="ml-3" @click="fetchData"/>
+            <Button label="Get Gene Data" class="ml-3" @click="getGeneData"/>
           </div>
         </div>
         
@@ -134,13 +134,22 @@
     </div>
 
   </div>
-  <div id="graphs-view">
+  <div id="graphs-view" v-show="this.gotDatasets && this.gotGeneData">
     <div class="card mt-2">
       <div class="mx-auto w-3/4">
-        <TabMenu :model="items"/>
+        <TabMenu :model="items" v-model:activeIndex="index"/>
+        <!-- <TabMenu :model="items"/> -->
       </div>
-      
-      <router-view :genes="this.genesSelected" :datasets="this.datasets"/>
+      <div v-if="index">
+        <KeepAlive >
+          <component :is="items[index].currentComponent" :genes="this.genesSelected" :datasets="this.datasets"/>
+        </KeepAlive>
+      </div>
+
+      <!-- <LinePlot :genes="this.genesSelected" :datasets="this.datasets"/> -->
+
+
+      <!-- <router-view :genes="this.genesSelected" :datasets="this.datasets"/> -->
     </div>
   </div>
   
@@ -166,11 +175,12 @@ import LinePlot from "@/components/svg/LinePlot.vue"
 import BarPlot from "@/components/svg/BarPlot.vue"
 
 import DataService from "@/services/DataService.js"
+// import LinePlot from "@/components/svg/LinePlot.vue"
 
 export default {
   name: "Main",
   components: {
-    Toast, 
+    Toast,
     ProgressBar,
     ProgressSpinner,
     AutoComplete,
@@ -179,13 +189,12 @@ export default {
     DataTable,
     Column,
     Chip,
-
     Selection,
     Prime,
-    
     LinePlot,
     BarPlot,
-  },
+    LinePlot
+},
   DataService: null,
   data() {
     return {
@@ -193,18 +202,21 @@ export default {
         {
           label: 'Bar',
           icon: 'pi pi-fw pi-chart-bar',
-          to: '/main/bar'
+          currentComponent: 'BarPlot',
+          // to: '/main/bar',
         },
         {
           label: 'Line',
           icon: 'pi pi-fw pi-chart-line',
-          to: '/main/line',
+          currentComponent: 'LinePlot',
+          // to: '/main/line',
         }
       ],
       loading: true,
       loadingGenes: true,
-      fetched: false,
-      fetching: false,
+      gotDatasets: false,
+      gettingDatasets: false,
+      gotGeneData: false,
       filterWarning: false,
 
       db_metadata: null,
@@ -244,6 +256,8 @@ export default {
       gene_expression_data_tables: [],
 
       datasets: null,
+      index: null,
+      currentComponent: null,
       
     }
   },
@@ -277,11 +291,11 @@ export default {
   //       console.log('No change')
   //     } else {
   //       console.log('Change')
-  //       if (this.fetched) {
-  //         console.log('Fetched. Ready for get gene expression data')
+  //       if (this.gotDatasets) {
+  //         console.log('Got Datasets. Ready for get gene expression data')
   //         // console.log(this.genesSelected)
   //         // console.log(this.gene_expression_data_table_names)
-  //         this.fetchGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names)
+  //         this.getGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names)
 
   //       }
   //     }
@@ -322,7 +336,7 @@ export default {
     // // Testing - Remove later
     // this.tissueSelected = [{name:'BAT'}, {name:'DG'}]
     // this.tissueRowChange('select')
-    // await this.fetchDatasets()
+    // await this.getDatasets()
     // this.genesSelected = [{name:'Alb'}]
     // // this.$router.push('/main/line')
     
@@ -336,16 +350,17 @@ export default {
     // console.log('=============')
   },
   methods: {
-    async fetchDatasets() {
-      console.log('fetchDatasets')
+    async getDatasets() {
+      console.log('getDatasets')
       const start = Date.now()
-      this.fetching = true
+      this.gettingDatasets = true
       this.gene_metadata_table_names = []
       this.sample_metadata_table_names = []
       this.gene_expression_data_table_names = []
 
       if (!this.selected_metadata.length) {
-        this.fetching = false
+        this.gettingDatasets = false
+        this.gotDatasets = false
         this.$toast.add({severity: 'error', summary: 'Error', detail: 'No datasets selected', life: 5000});
         return
       }
@@ -358,22 +373,22 @@ export default {
       })
 
       await Promise.all([
-        this.fetchGeneMetadataTables(this.gene_metadata_table_names), 
-        this.fetchSampleMetadataTables(this.sample_metadata_table_names),
+        this.getGeneMetadataTables(this.gene_metadata_table_names), 
+        this.getSampleMetadataTables(this.sample_metadata_table_names),
       ])
 
       // this.genes = await DataService.getGenes()
       // this.genes = this.genes.data.map((d) => ({name: d.gene_name}))
       // this.loadingGenes = false
       // this.datasets = await DataService.getDatasets
-      this.fetched = true
-      this.fetching = false
+      this.gotDatasets = true
+      this.gettingDatasets = false
 
       const elapsed = Date.now() - start
-      console.log('fetchDatasets time elapsed: ', elapsed)
+      console.log('getDatasets time elapsed: ', elapsed)
     },
-    async fetchGeneMetadataTables(tables) {
-      // console.log('fetchGeneMetadataTables')
+    async getGeneMetadataTables(tables) {
+      // console.log('getGeneMetadataTables')
       const start = Date.now()
       this.loadingGenes = true
       const results = await Promise.all(tables.map(async (t) => {
@@ -394,11 +409,11 @@ export default {
 
       this.loadingGenes = false
       const elapsed = Date.now() - start
-      console.log('fetchGeneMetadataTables time elapsed: ', elapsed)
+      console.log('getGeneMetadataTables time elapsed: ', elapsed)
       return results
     },
-    async fetchSampleMetadataTables(tables) {
-      // console.log('fetchSampleMetadataTables')
+    async getSampleMetadataTables(tables) {
+      // console.log('getSampleMetadataTables')
       const start = Date.now()
       const results = await Promise.all(tables.map(async (t) => {
         const result = await DataService.getSampleMetadata(t)
@@ -416,11 +431,11 @@ export default {
       this.sample_metadata_tables = results
 
       const elapsed = Date.now() - start
-      console.log('fetchSampleMetadataTables time elapsed: ', elapsed)
+      console.log('getSampleMetadataTables time elapsed: ', elapsed)
       return results
     },
-    async fetchGeneExpressionDataTables(genes, tables) {
-      // console.log('fetchGeneExpressionDataTables')
+    async getGeneExpressionDataTables(genes, tables) {
+      // console.log('getGeneExpressionDataTables')
       const start = Date.now()
       // console.log(genes)
       let genesStr = genes.map((d) => d.name).toString()
@@ -449,12 +464,12 @@ export default {
       // console.log(this.gene_expression_data_tables)
 
       const elapsed = Date.now() - start
-      console.log('fetchGeneExpressionDataTables time elapsed: ', elapsed)
+      console.log('getGeneExpressionDataTables time elapsed: ', elapsed)
 
       return results
     },
-    async fetchSelectedGeneMetadata(genes, tables) {
-      console.log('fetchSelectedGeneMetadata')
+    async getSelectedGeneMetadata(genes, tables) {
+      console.log('getSelectedGeneMetadata')
       const start = Date.now()
       let genesStr = genes.map((d) => d.name).toString()
       const results = await Promise.all(tables.map(async (t) => {
@@ -467,30 +482,32 @@ export default {
       this.selected_gene_metadata = results
 
       const elapsed = Date.now() - start
-      console.log('fetchSelectedGeneMetadata time elapsed: ', elapsed)
+      console.log('getSelectedGeneMetadata time elapsed: ', elapsed)
 
       return results
     },
-    async fetchData() {
-      console.log('fetchData')
+    async getGeneData() {
+      console.log('getGeneData')
       const start = Date.now()
       if (!this.genesSelected.length) {
         this.$toast.add({severity: 'error', summary: 'Error', detail: 'No genes selected', life: 5000});
+        this.gotGeneData = false
         return
       }
       await Promise.all([
-        this.fetchGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names),
-        this.fetchSelectedGeneMetadata(this.genesSelected, this.gene_metadata_table_names)
+        this.getGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names),
+        this.getSelectedGeneMetadata(this.genesSelected, this.gene_metadata_table_names)
       ])
-      // await this.fetchGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names)
+      // await this.getGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names)
       this.datasets = {
         // gene_metadata_tables: this.gene_metadata_tables,
         sample_metadata_tables: this.sample_metadata_tables,
         gene_expression_data_tables: this.gene_expression_data_tables,
         gene_metadata: this.selected_gene_metadata,
       }
+      this.gotGeneData = true
       const elapsed = Date.now() - start
-      console.log('fetchData time elapsed ', elapsed)
+      console.log('getGeneData time elapsed ', elapsed)
     },
     async loadGenes() {
       // Defunct?
