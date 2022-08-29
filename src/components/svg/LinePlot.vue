@@ -152,17 +152,23 @@ export default {
     this.initialize_line_plot()
     console.log('Initialized line plot')
 
-    this.complete = true
     if (this.datasets) {
       this.update_datasets()
     }
+    console.log('mounted: After this.update_datasets')
     // Wait for SVG to load before calling legend
     // Fixes bug where info icons don't yet have BBox dimensions to position after text
     const svgElem = document.getElementById('plot-svg')
     svgElem.addEventListener('load', this.legend())
+    // svgElem.addEventListener('onchange', this.legend())
     
     const elapsed = Date.now() - start
     console.log('LinePlot mounted, time elapsed', elapsed)
+  },
+  updated() {
+    // console.log('LinePlot updated')
+    // if (this.complete) this.legend()
+
   },
 
   methods: {
@@ -173,8 +179,8 @@ export default {
       // console.log('this.genes_str_arr')
       // console.log(this.genes_str_arr)
       if (this.datasets) {
-        console.log('this.datasets')
-        console.log(this.datasets)
+        // console.log('this.datasets')
+        // console.log(this.datasets)
 
         this.expression_merged = []
         // Deep copy!
@@ -329,8 +335,8 @@ export default {
         })
 
         this.expression_normalized = grouped_tissue_gene_groupname
-        console.log('this.expression_normalized')
-        console.log(this.expression_normalized)
+        // console.log('this.expression_normalized')
+        // console.log(this.expression_normalized)
 
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
@@ -421,8 +427,8 @@ export default {
           d, i/this.categories.length
         ]))
 
-
         this.update_line_plot()
+        this.legend()
       }
       
       const elapsed = Date.now() - start
@@ -712,6 +718,14 @@ export default {
       
       
       this.voronoi_grid()
+
+      // if (this.svg) {
+      //   console.log('this.svg exists!')
+      // }
+
+      // const svgElem = document.getElementById('plot-svg')
+      // console.log('svgElem')
+      // console.log(svgElem)
 
       console.log('===================')
     },
@@ -1026,8 +1040,9 @@ export default {
         (exit) => exit.transition_attributes('opacity', 0).remove()
       )
 
+      // Set flag that SVG has been fully generated at least once
+      this.complete = true
     },
-
 
     voronoi_grid() {
       // Initialize voronoi object, calculates cell polygons for visible cells
