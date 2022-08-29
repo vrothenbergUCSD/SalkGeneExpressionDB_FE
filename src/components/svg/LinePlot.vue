@@ -32,7 +32,10 @@ import ProgressSpinner from 'primevue/progressspinner'
 import InputSwitch from 'primevue/inputswitch'
 import _ from 'underscore';
 
-// import eye from '@/assets/eye.svg'
+import eyeUrl from '@/assets/eye.svg'
+import eyeOffUrl from '@/assets/eye-off.svg'
+import infoUrl from '@/assets/info.svg'
+
 // import eye
 function sleep(milliseconds) {
   const date = Date.now();
@@ -58,7 +61,7 @@ d3.selection.prototype.transition_attributes = function(
 d3.selection.prototype.append_eyes = function() {
   this.append('svg:image')
     .attr('class', 'eye')
-    .attr("xlink:href", "/assets/eye.svg")
+    .attr("xlink:href", eyeUrl)
     .attr('type', "image/svg+xml")
     .attr('x', 0)
     .attr('y', 0)
@@ -67,7 +70,7 @@ d3.selection.prototype.append_eyes = function() {
     .attr('opacity', 1)
   this.append('svg:image')
     .attr('class', 'eye-off')
-    .attr("xlink:href", "/assets/eye-off.svg")
+    .attr("xlink:href", eyeOffUrl)
     .attr('type', "image/svg+xml")
     .attr('x', 0)
     .attr('y', 0)
@@ -92,7 +95,6 @@ export default {
     return {
       // Datasets
       genes_str_arr: null,
-      // gene_expression_datasets: [],
 
       // Deep copy datasets (Needed?)
       gene_expression_data_tables: [],
@@ -150,17 +152,15 @@ export default {
     const start = Date.now()
 
     this.initialize_line_plot()
-    console.log('Initialized line plot')
+    // console.log('Initialized line plot')
 
     if (this.datasets) {
       this.update_datasets()
     }
-    console.log('mounted: After this.update_datasets')
     // Wait for SVG to load before calling legend
     // Fixes bug where info icons don't yet have BBox dimensions to position after text
     const svgElem = document.getElementById('plot-svg')
     svgElem.addEventListener('load', this.legend())
-    // svgElem.addEventListener('onchange', this.legend())
     
     const elapsed = Date.now() - start
     console.log('LinePlot mounted, time elapsed', elapsed)
@@ -434,7 +434,7 @@ export default {
       const elapsed = Date.now() - start
       console.log('update_datasets time elapsed', elapsed)
     },
-    async initialize_line_plot() {
+    initialize_line_plot() {
       console.log('initialize_line_plot')
       // set the dimensions and margins of the graph
       this.margin = {top: 30, right: 30, bottom: 140, left: 80}
@@ -509,18 +509,6 @@ export default {
       this.svg.append('g')
         .attr('id', 'legend')
         .attr('transform', `translate(${this.legendX}, 0)`)
-        
-
-      // // Visibility icons
-      // this.showIcon = d3.create('svg')
-      //   .attr('xlmns', 'http://www.w3.org/2000/svg')
-      //   .attr('viewBox', '0 0 24 24')
-      //   .append('path')
-      //     .attr('d', 'M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z')
-
-      // this.hideIcon
-
-      return 
 
     },
     update_line_plot() {
@@ -769,7 +757,7 @@ export default {
             // .transition_attributes('opacity', 1)
           text_info.append('svg:image')
             .attr('class', 'info')
-            .attr("xlink:href", "/assets/info.svg")
+            .attr("xlink:href", infoUrl)
             .attr('type', "image/svg+xml")
             .attr('x', (d,i) => {
               const text_select = text_info.select('text')
@@ -811,7 +799,7 @@ export default {
                   .attr('font-size', '0.7em')
                 text_info.append('svg:image')
                   .attr('class', 'info')
-                  .attr("xlink:href", "/assets/info.svg")
+                  .attr("xlink:href", infoUrl)
                   .attr('type', "image/svg+xml")
                   .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
                   .attr('y', -9)
@@ -851,7 +839,7 @@ export default {
                         .attr('opacity', 1)
                       text_info.append('svg:image')
                         .attr('class', 'info')
-                        .attr("xlink:href", "/assets/info.svg")
+                        .attr("xlink:href", infoUrl)
                         .attr('type', "image/svg+xml")
                         .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
                         .attr('y', -9)
@@ -906,7 +894,7 @@ export default {
                   .attr('font-size', '0.7em')
                 text_info.append('svg:image')
                   .attr('class', 'info')
-                  .attr("xlink:href", "/assets/info.svg")
+                  .attr("xlink:href", infoUrl)
                   .attr('type', "image/svg+xml")
                   .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
                   .attr('y', -9)
@@ -944,7 +932,7 @@ export default {
                         .attr('opacity', 1)
                       text_info.append('svg:image')
                         .attr('class', 'info')
-                        .attr("xlink:href", "/assets/info.svg")
+                        .attr("xlink:href", infoUrl)
                         .attr('type', "image/svg+xml")
                         .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
                         .attr('y', -9)
@@ -1008,7 +996,7 @@ export default {
                         .style('margin-bottom', 5)
                       text_info.append('svg:image')
                         .attr('class', 'info')
-                        .attr("xlink:href", "/assets/info.svg")
+                        .attr("xlink:href", infoUrl)
                         .attr('type', "image/svg+xml")
                         .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
                         .attr('y', -9)
