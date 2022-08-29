@@ -147,7 +147,7 @@
                 <Column field="species" header="species"></Column>
                 <Column field="time_point" header="time_point"></Column>
                 <Column field="group_name" header="group_name"></Column>
-                <Column field="age_years" header="age"></Column>
+                <Column field="age_months" header="age_months"></Column>
                 <Column field="gender" header="gender"></Column>
                 <Column field="tissue" header="tissue"></Column>
                 <Column field="number_of_replicates" header="number_of_replicates"></Column>
@@ -389,7 +389,7 @@ export default {
         'species': '<REQUIRED>', 
         'time_point' : '<REQUIRED>', 
         'group_name' : '<REQUIRED>',
-        'age' : '<REQUIRED>',
+        'age_months' : '<REQUIRED>',
         'gender' : '<REQUIRED>',
         'tissue' : '<REQUIRED>',
         'number_of_replicates' : '<REQUIRED>',
@@ -399,7 +399,7 @@ export default {
         'species': '<String>', 
         'time_point' : '<String>', 
         'group_name' : '<String>',
-        'age' : '<Float>',
+        'age_months' : '<Integer>',
         'gender' : '<String>',
         'tissue' : '<String>',
         'number_of_replicates' : '<Integer>',
@@ -506,7 +506,6 @@ export default {
         let cols = rows[i].split(',')
         // if (i % 100 == 0) console.log(i)
         
-        
         // Column by column
         for (var j = 0; j < col_types.length; j++) {
           let value = cols[j]
@@ -589,8 +588,8 @@ export default {
       const files = e.files
       const file = files[0]
       const col_names = ['sample_name',	'species',	'time_point',	'group_name',
-      	'age_years',	'gender',	'tissue',	'number_of_replicates',	'data_type']
-      const col_types = ['string', 'string', 'string', 'string', 'float', 
+      	'age_months',	'gender',	'tissue',	'number_of_replicates',	'data_type']
+      const col_types = ['string', 'string', 'string', 'string', 'integer', 
         'string', 'string', 'integer', 'string']
 
       let error_log = []
@@ -619,7 +618,6 @@ export default {
           this.upload_sample_metadata_file = null
         }
       }
-
     },
     upload_gene_expression_data(e) {
       // console.log('upload_gene_expression_data')
@@ -640,7 +638,6 @@ export default {
 
         this.upload_gene_expression_data_error_log = error_log
         this.upload_gene_expression_data_error = error_log.length
-        
         
         if (!this.upload_gene_expression_data_error) {
           this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 5000});
@@ -665,7 +662,6 @@ export default {
       }).catch((error) => {
         console.log('Error on download: ', error.code)
       })
-      
     },
     save() {
       this.saveMsg = null
@@ -683,7 +679,6 @@ export default {
         this.experimentInvalid = false
       }
       
-
       // Validate year
       this.year = Number.parseInt(this.year)
       if (!this.year) {
@@ -700,7 +695,6 @@ export default {
         this.yearInvalid = false
       }
       
-
       // Validate institution
       if (this.institution && this.institution.length > 100) {
         console.log('ERROR: Institution name too long')

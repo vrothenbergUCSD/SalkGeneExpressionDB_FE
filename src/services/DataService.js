@@ -17,12 +17,23 @@ class DataService {
     //http://127.0.0.1:8000/expression_data_by_gene_expression/?hi=30000&lo=20000&limit=5
     return http.get(`gene_expression/range?hi=${hi}&lo=${lo}&limit=${limit}`)
   }
+  async getExpressionDataByGeneId(gene_id, table) {
+    //http://127.0.0.1:8000/expression_data/gene_name/0610009B22Rik,Agrn
+    return http.get(`gene_expression/gene_id?gene_id=${gene_id}&table=${table}`)
+  }
   async getExpressionDataByGenes(genes, table) {
     //http://127.0.0.1:8000/expression_data/gene_name/0610009B22Rik,Agrn
-    return http.get(`gene_expression/gene_names?gene_names=${genes}`)
+    return http.get(`gene_expression/gene_names?gene_names=${genes}&table=${table}`)
   }
   async getGenes(table = "Mouse_TRF_2018_Liver_gene_metadata") {
-    return http.get(`gene_metadata/names?table=${table}`)
+    return http.get(`gene_metadata/all_names?table=${table}`)
+  }
+  async getGeneMetadata(genes, table) {
+    ///gene_metadata/gene_name
+    return http.get(`gene_metadata/gene_name?gene_name=${genes}&table=${table}`)
+  }
+  async getSampleMetadata(table) {
+    return http.get(`sample_metadata/data?table=${table}`)
   }
   async getDatabaseMetadata() {
     return http.get('database_metadata/data')
