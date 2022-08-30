@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto">
+  <div id="line" class="mx-auto">
     <!--<div class="text-center mb-5">Line Plot component</div>-->
 
     <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
@@ -87,7 +87,6 @@ export default {
     InputSwitch,
   },
   props: { 
-    msg: String,
     genes: Array,
     datasets: Object,
   },
@@ -145,8 +144,6 @@ export default {
     }
 
   },
-  created() {
-  },
   async mounted() {
     console.log('LinePlot mounted')
     const start = Date.now()
@@ -165,19 +162,13 @@ export default {
     const elapsed = Date.now() - start
     console.log('LinePlot mounted, time elapsed', elapsed)
   },
-  updated() {
-    // console.log('LinePlot updated')
-    // if (this.complete) this.legend()
-
-  },
 
   methods: {
+
     update_datasets() {
       console.log('update_datasets')
       const start = Date.now()
       this.genes_str_arr = this.genes.map((d) => d.name)
-      // console.log('this.genes_str_arr')
-      // console.log(this.genes_str_arr)
       if (this.datasets) {
         // console.log('this.datasets')
         // console.log(this.datasets)
@@ -260,20 +251,6 @@ export default {
           e.replicate = e.sample_name.split('-').at(-1)
           e.identifier = `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}`
         })
-      
-        // const grouped = _.groupBy(this.expression_merged, function(e){
-        //   return `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}_ZT${e.time_point}`
-        // })
-        // console.log('grouped')
-        // console.log(grouped)
-       
-        // this.expression_averaged = _.mapObject(grouped, function(val, key) {
-        //   let o = JSON.parse(JSON.stringify(val[0]))
-        //   o.avg = _.reduce(val, function(memo, v) { 
-        //     return memo + v.gene_expression; 
-        //   }, 0) / val.length
-        //   return o
-        // });
 
         const grouped_tissue = _.groupBy(this.expression_merged, e => `${e.tissue.replaceAll(' ', '-')}`)
         // console.log('grouped_tissue')
@@ -382,15 +359,6 @@ export default {
           return o
         });
 
-        // console.log('this.expression_normalized_averaged')
-        // console.log(this.expression_normalized_averaged)
-
-        // console.log('average_expressions')
-        // console.log(average_expressions)
-
-        // console.log('this.expression_normalized_averaged')
-        // console.log(this.expression_averaged)
-        // console.log(Object.entries(this.expression_averaged))
         this.expression_normalized_averaged = Object.entries(this.expression_normalized_averaged).map(e => e[1])
         // console.log(this.expression_normalized_averaged)
         this.avgPoints = [...this.expression_normalized_averaged]
@@ -414,10 +382,6 @@ export default {
         // console.log('this.sumstat_visibility')
         // console.log(this.sumstat_visibility)
 
-        // this.sumstat_dots = d3
-        //   .group(this.expression_normalized_flattened, 
-        //   d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
-    
         this.categories = [...new Set(
           [...this.sumstat.keys()] 
           .map(e => e.split('_').slice(0,-1).join('_'))
@@ -429,6 +393,7 @@ export default {
 
         this.update_line_plot()
         this.legend()
+
       }
       
       const elapsed = Date.now() - start
@@ -763,6 +728,7 @@ export default {
               const text_select = text_info.select('text')
               const groups = text_select._groups[0]
               const width = groups[i].getBBox().width
+              // console.log('width', width)
               return text_info.select('text')._groups[0][i].getBBox().width+5})
             .attr('y', -9)
             .attr('width', 10)
@@ -959,7 +925,7 @@ export default {
               (update) => {
                 // console.log('tissue update > gene update')
                 // console.log(update)
-                update.attr('transform', (d,i) => `translate(${5}, ${
+                update.attr('transform', (d,i) => `translate(${13}, ${
                   this.legendY_spacing *(1 + i * (1 + num_groups))
                   })`)
                   .style('fill', d => 
@@ -1011,7 +977,7 @@ export default {
                       // console.log('tissue update > gene update > groupname update')
                       // console.log(update)
                       // TODO: Possible bug when updating and associated event is not updated?
-                      update.attr('transform', (d,i) => `translate(${5}, ${
+                      update.attr('transform', (d,i) => `translate(${13}, ${
                         this.legendY_spacing * (i+1)
                         })`)
                         .style('fill', d => this.getHSL(d[1][0].identifier))
