@@ -48,9 +48,9 @@ export default {
   },
   methods: {
     updateTimePointsSelected(evt) {
-      console.log('TimeSelection.vue > updateTimePointsSelected')
-      console.log(evt)
-      console.log(evt.value)
+      // console.log('TimeSelection.vue > updateTimePointsSelected')
+      // console.log(evt)
+      // console.log(evt.value)
       this.$emit("updateTimePointsSelected", this.time_points_selected)
     }
   }

@@ -1,25 +1,28 @@
 <template>
   <div id="bar" class="mx-auto">
     <!-- <div class="text-center mb-5">Bar Plot component</div> -->
-    <div class="flex flex-wrap p-5 mx-auto w-full">
-      <div id="group-by" class="px-5 mx-auto">
+    <div id="bar-options" class="!grid grid-cols-12 mt-5">
+      <div id="group-by" class="col-start-1 col-span-3 mx-auto">
         <div class="font-semibold pb-2">Group by:</div>
         <SelectButton v-model="grouped_by" :options="grouped_by_options"/>
       </div>
-      <div v-if="grouped_by === 'Time'" class="">
-        <div class="font-semibold pb-2">Time Points (ZT)</div>
-        <div class="time-points"></div>
-        <SelectButton v-model="time_points_selected" 
-          :options="time_points" optionLabel="name" 
-          multiple/>
+      <div v-show="grouped_by === 'Time'" class="mx-auto col-start-6 col-span-7">
+        <TimeSelection @updateTimePointsSelected="getTimePointsSelected"/>
       </div>
 
-
-      <!-- <div id="chart-type" class="px-5 mx-auto">
-        <div class="font-semibold pb-2">Bar chart type:</div>
-        <SelectButton v-model="chart_type" :options="chart_type_options"/>
-      </div> -->
     </div>
+    <!-- <div id="grid-test" class="!grid grid-cols-4 gap-4 mt-5">
+      <div class="col-span-1">
+        Something
+      </div>
+      <div class="col-span-1">
+        Another
+      </div>
+      <div class="col-span-1">Aok</div>
+      <div class="col-span-1">Ha</div>
+      <div>test</div>
+
+    </div> -->
 
     <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
       <ProgressSpinner class="w-full mt-10" />
@@ -42,6 +45,8 @@ import _ from 'underscore';
 import eyeUrl from '@/assets/eye.svg'
 import eyeOffUrl from '@/assets/eye-off.svg'
 import infoUrl from '@/assets/info.svg'
+
+import TimeSelection from "@/components/svg/TimeSelection.vue";
 
 
 const animationInterval = 250
@@ -85,6 +90,7 @@ export default {
     ProgressSpinner,
     SelectButton,
     InputSwitch,
+    TimeSelection,
   },
   props: {
     genes: Array,
@@ -109,7 +115,10 @@ export default {
 
       groups: [],
       subgroups: [],
-      sumstat_visibility: null, 
+      group_visibility: null,
+      subgroup_visibility: null,  
+      time_visibility: null, 
+      gene_visibility: null, 
 
       // Plot variables
       margin: null,
@@ -127,8 +136,6 @@ export default {
       animationInterval: 250,
       color: null,
 
-      // genesArr: null,
-
       complete: false,
       showReplicatePoints: false,
       showErrorBars: true,
@@ -140,6 +147,7 @@ export default {
       grouped_by_options: ['Gene', 'Time'],
 
       time_points_selected: null,
+
       time_points: null,
     }
   },
@@ -148,41 +156,15 @@ export default {
     const start = Date.now()
 
     this.grouped_by = 'Time'
-    this.time_points = [
-      {name: '0', value: 0},
-      {name: '2', value: 2},
-      {name: '4', value: 4},
-      {name: '6', value: 6},
-      {name: '8', value: 8},
-      {name: '10', value: 10},
-      {name: '12', value: 12},
-      {name: '14', value: 14},
-      {name: '16', value: 16},
-      {name: '18', value: 18},
-      {name: '20', value: 20},
-      {name: '22', value: 22},
-    ]
-    this.time_points_selected = this.time_points
 
     this.initialize_bar_plot()
 
     if (this.datasets) {
       this.update_datasets()
     }
-    // await this.get_dataset()
-    // this.load_chart()
+
     const svgElem = document.getElementById('bar-plot-svg')
-    // console.log('svgElem')
-    // console.log(svgElem)
-    // console.log(svgElem.offsetHeight)
-    
-    // const dims = d3.select('#bar-plot-svg').node().getBBox()
-    // console.log(dims)
-    // svgElem.addEventListener('load', console.log('svgElem loaded'))
     svgElem.addEventListener('load', this.legend())
-    // svgElem.addEventListener('load', console.log(svgElem.offsetHeight))
-    // svgElem.addEventListener('load', this.legend())
-    
     
     console.log('BarPlot mounted, time elapsed:')
     console.log(Date.now() - start)
@@ -197,6 +179,34 @@ export default {
     }
   },
   methods: {
+    getTimePointsSelected(time_points_selected) {
+      // TODO: Make more efficient by only toggling changed values?
+      // console.log('getTimePointsSelected')
+      // console.log(time_points_selected)
+      this.time_points_selected = time_points_selected
+      // console.log(this.time_points_selected)
+      for (const key of Object.keys(this.time_visibility)) {
+        this.time_visibility[key] = 0
+      }
+      this.time_points_selected.forEach(e => this.time_visibility[e.name] = 1)
+      // console.log(this.time_points_selected)
+      // console.log(this.time_visibility)
+      if (this.grouped_by == 'Time') {
+        // d3.select
+        Object.keys(this.time_visibility).forEach(key => {
+          const opacity = this.time_visibility[key]
+          const id = `#group_${key}`
+          // console.log(id)
+          const bar = d3.select('#bars').selectAll(id)
+          // console.log(bar)
+          bar.transition_attributes('opacity', opacity)
+        })
+      }
+      console.log('this.time_visibility')
+      console.log(this.time_visibility)
+
+      // Change selection
+    },
     toggleComplete() {
       this.complete = true
     },
@@ -231,8 +241,6 @@ export default {
           let sample_data = this.sample_metadata_tables.find(obj => {
             return obj.table == sample_table
           }).data
-          // console.log('sample_data')
-          // console.log(sample_data)
 
           const merged_data = expression_data.map(itm => ({
               ...sample_data.find((item) => (item.sample_name == itm.sample_name) && item),
@@ -305,12 +313,9 @@ export default {
         })
 
         grouped_tissue_gene_groupname.forEach((tissue) => {
-          // console.log(tissue[0])
           tissue[1].forEach((gene) => {
             gene[1] = Object.entries(gene[1])
             gene[1].forEach((groupname) => {
-              // console.log('STATS')
-              // console.log('groupname', groupname)
               const max = Math.max.apply(Math, groupname[1].map(
                 function(o) { return o.gene_expression; }))
               const min = Math.min.apply(Math, groupname[1].map(
@@ -323,36 +328,25 @@ export default {
                 return memo + v.gene_expression; 
               }, 0) / groupname[1].length
 
-              // console.log('mean', mean)
-
               const groupname_stats = {
                 min: min,
                 max: max, 
                 amplitude: max-min,
                 mean: mean,
               }
-              // console.log(groupname_stats)
               groupname.push(groupname_stats)
-              // console.log(groupname)
             })
           })
         })
 
         this.expression_normalized = grouped_tissue_gene_groupname
-        // console.log('this.expression_normalized')
-        // console.log(this.expression_normalized)
 
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
 
-        // console.log('this.expression_normalized_flattened')
-        // console.log(this.expression_normalized_flattened)
-
         const grouped_norm = _.groupBy(this.expression_normalized_flattened, e => 
           `${e.gene_id}_${e.tissue.replaceAll(' ', '-')}_${e.group_name}_ZT${e.time_point}`)
-        // console.log('grouped_norm')
-        // console.log(grouped_norm)
 
         this.expression_normalized_averaged = _.mapObject(grouped_norm, function(val, key) {
           let o = JSON.parse(JSON.stringify(val[0]))
@@ -367,56 +361,32 @@ export default {
           }, 0) / val.length
           o.gene_expression_norm = o.gene_expression_norm_avg
 
-          // console.log('o.avg', o.avg)
-          
-          // o.std_dev = _.reduce(val, function(memo, v) {
-          //   return memo + Math.pow((v.gene_expression_norm - o.gene_expression_norm_avg),2)
-          // }, 0) / val.length
-
           o.std_dev = Math.sqrt(_.reduce(val, function(memo, v) { 
             return memo + Math.pow((v.gene_expression_norm - o.gene_expression_norm_avg), 2); 
           }, 0) / val.length)
 
-          // console.log('o.std_dev', o.std_dev)
-
           o.std_err = o.std_dev / Math.sqrt(val.length)
-
-          // console.log('o.std_err', o.std_err)
 
           return o
         });
 
-        // console.log('this.expression_normalized_averaged')
-        // console.log(this.expression_normalized_averaged)
-
-        // console.log('average_expressions')
-        // console.log(average_expressions)
-
-        // console.log('this.expression_normalized_averaged')
-        // console.log(this.expression_averaged)
-        // console.log(Object.entries(this.expression_averaged))
         this.expression_normalized_averaged = Object.entries(this.expression_normalized_averaged).map(e => e[1])
-        // console.log(this.expression_normalized_averaged)
-        this.avgPoints = [...this.expression_normalized_averaged]
-        this.avgPoints.forEach(e => e.visible = 1)
-        this.errorBarsData = [...this.expression_normalized_averaged]
-        this.errorBarsData.forEach(e => e.visible = (this.showErrorBars ? 1 : 0))
-        this.replicatePoints = this.expression_normalized_flattened
-        this.replicatePoints.forEach(e => e.visible = (this.showReplicatePoints ? 1 : 0))
-        this.allPoints = this.avgPoints.concat(this.replicatePoints)
 
-        // console.log('After mutation')
-        // console.log(this.gene_expression_data_tables)
 
         this.sumstat = d3
           .group(this.expression_normalized_averaged, 
           d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
-
-        this.sumstat_visibility = Object.fromEntries(
+        
+        this.gene_visibility = Object.fromEntries(
           new Map([...this.sumstat.keys()].map(e => [e, 1])))
 
-        // console.log('this.sumstat_visibility')
-        // console.log(this.sumstat_visibility)
+
+        this.time_points = [...new Set(this.expression_normalized_averaged.map(e => e.time_point))]
+          .map(el => el.toString())
+        var collator = new Intl.Collator([], {numeric: true});
+        this.time_points.sort((a, b) => collator.compare(a, b));
+
+        this.time_visibility = Object.fromEntries(new Map([...this.time_points].map(e => [e, 1])))
 
         this.categories = [...new Set(
           [...this.sumstat.keys()] 
@@ -427,9 +397,13 @@ export default {
           d, i/this.categories.length
         ]))
 
+        // Reset visibilities 
+        d3.selectAll('subgroup-rect').transition_attributes('fill-opacity', 1)
+        d3.selectAll('bar-group').transition_attributes('opacity', 1)
+
         this.update_grouped_bar_plot()
-        if (this.complete)
-          this.legend()
+        // Run legend only after it has generated once, after its event firing
+        if (this.complete) this.legend()
       }
       
       const elapsed = Date.now() - start
@@ -487,7 +461,7 @@ export default {
 
       // Bar groups grouping element
       this.svg.append('g')
-        .attr('id', 'barGroups')
+        .attr('id', 'bars')
 
       this.legendX = this.width*this.drawable_width_scale + 5
       this.legendY_spacing = 15
@@ -511,18 +485,15 @@ export default {
       // console.log('this.expression_normalized_averaged')
       // console.log(this.expression_normalized_averaged)
 
-      const time_points = [...new Set(this.expression_normalized_averaged.map(e => e.time_point))]
-        .map(el => el.toString())
-      var collator = new Intl.Collator([], {numeric: true});
-      time_points.sort((a, b) => collator.compare(a, b));
-
       let data, groups, subgroups
 
       if (this.grouped_by == 'Gene') {
         this.svg.select('.x-label').text('Tissue, Gene, Group')
-        subgroups = time_points
+        subgroups = this.time_points
         data = d3.group(gene_groups_map, d => `${d.gene_group}`)
         groups = Array.from(data.keys())
+        this.group_visibility = this.gene_visibility
+        this.subgroup_visibility = this.time_visibility
 
         for (const key of data.keys()) {
           data.set(key, data.get(key).map(el => ({
@@ -532,7 +503,13 @@ export default {
       } else if (this.grouped_by == 'Time') {
         console.log('Time')
         this.svg.select('.x-label').text('Time Point (ZT)')
-        groups = time_points
+        groups = this.time_points
+        this.group_visibility = this.time_visibility
+        console.log('this.group_visibility')
+        console.log(this.group_visibility)
+        this.subgroup_visibility = this.gene_visibility
+        console.log('this.subgroup_visibility')
+        console.log(this.subgroup_visibility)
         // data = d3
         //   .group(this.expression_normalized_averaged_flattened, d => `${d.time_point}`)
         
@@ -549,7 +526,9 @@ export default {
         // console.log(firstKey)
         // subgroups = data.get(firstKey).map(el => el.gene_group)  
         subgroups = [...new Set(... data.map(e => Object.keys(e[1])) )]
-        // console.log(subgroups)
+        console.log('subgroups')
+        console.log(subgroups)
+
         data.forEach(d => {
           const time_key = d[0]
           const groupings = d[1]
@@ -558,10 +537,6 @@ export default {
             return {key:id, value:d[1][id][0]}
           })
         })
-        // for (const key of data.keys()) {
-        //   data.set(key, data.get(key).map(el => ({
-        //     key: el.gene_group, value: el.gene_expression})))
-        // }
       }
       
       // var color = d3.scaleSequential(d3.interpolateWarm)
@@ -595,7 +570,7 @@ export default {
       console.log(data)
 
       // Display grouped bars
-      this.svg.select("#barGroups")
+      this.svg.select("#bars")
         .selectAll('.bar-group')
         .data(data)
         .join(
@@ -603,45 +578,48 @@ export default {
             enter.append('g')
               .attr("transform", d => `translate(${x(d[0])}, 0)`)
               .attr("class", "bar-group")
-              .selectAll("rect.group-rect")
+              .attr('id', d => `group_${d[0]}`)
+              .transition_attributes('opacity', d => {
+                console.log('enter', d[0], this.group_visibility[d[0]])
+                return this.group_visibility[d[0]]
+              })
+              .selectAll(".subgroup-rect")
               .data(d => d[1])
               .join(
                 (enter) => {
                   enter.append('rect')
-                    .attr("class", 'group-rect')
+                    .attr("class", 'subgroup-rect')
+                    .attr('id', d => `subgroup_${d.key}`)
                     .attr("x", d => this.xSubgroup(d.key))
                     .attr("y", d => y(d.value.gene_expression_norm_avg))
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
                     .attr("fill", d => this.getHSL(d.key))
-                    .transition_attributes('fill-opacity', 1)
+                    .transition_attributes('fill-opacity', d => {
+                      console.log('enter > enter', d.key, this.subgroup_visibility[d.key])
+                      return this.subgroup_visibility[d.key]})
                     .on("mouseover", (evt, d) => {
-                      // console.log('mouseover')
-                      // console.log(evt)
-                      // console.log(d)
-                      if (evt.y > 1) {
-                        let parentVal
-                        if (this.grouped_by == 'Time') 
-                           parentVal = d.value.time_point.toString()
-                        // console.log(parentVal)
-                        // console.log('height', this.height - y(d.value.gene_expression_norm_avg))
-                        // console.log('y():', y(d.value.gene_expression_norm_avg))
-                        
-                        this.svg.append('g')
-                          .attr('class', 'tooltip')
+                      this.svg.append('g').attr('class', 'tooltip')
                           .call(this.popover, this.popover_text(d), d)
-                      }
                     })
                     .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
                 },
                 (update) => {
                   update
+                    .attr('id', d => `subgroup_${d.key}`)
                     .attr("x", d => this.xSubgroup(d.key))
                     .attr("y", d => y(d.value.gene_expression_norm_avg))
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
                     .attr("fill", d => this.getHSL(d.key))
-                    .transition_attributes('fill-opacity', 1)
+                    .transition_attributes('fill-opacity', d => {
+                      console.log('enter > update', d.key, this.subgroup_visibility[d.key])
+                      return this.subgroup_visibility[d.key]})
+                    .on("mouseover", (evt, d) => {
+                      this.svg.append('g').attr('class', 'tooltip')
+                          .call(this.popover, this.popover_text(d), d)
+                    })
+                    .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
                 },
                 (exit) => {
                   exit.transition_attributes('fill-opacity', 0).remove()
@@ -651,42 +629,54 @@ export default {
           (update) => {
             update
               .attr("transform", d => `translate(${x(d[0])}, 0)`)
-              .selectAll(".group-rect")
+              .attr('id', d => `group_${d[0]}`)
+              .transition_attributes('opacity', d => {
+                console.log('update', d[0], this.group_visibility[d[0]])
+                return this.group_visibility[d[0]]
+              })
+              .selectAll(".subgroup-rect")
               .data(d => d[1])
               .join(
                 (enter) => {              
                   enter.append('rect')
-                    .attr("class", "group-rect")
+                    .attr("class", "subgroup-rect")
+                    .attr('id', d => `subgroup_${d.key}`)
                     .attr("x", d => this.xSubgroup(d.key))
                     .attr("y", d => y(d.value.gene_expression_norm_avg))
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
-                    .attr("fill", d => this.getHSL(d.key));
+                    .attr("fill", d => this.getHSL(d.key))
+                    .transition_attributes('fill-opacity', d => {
+                      console.log('update > enter', d.key, this.subgroup_visibility[d.key])
+                      return this.subgroup_visibility[d.key]})
+                    .on("mouseover", (evt, d) => {
+                      this.svg.append('g').attr('class', 'tooltip')
+                          .call(this.popover, this.popover_text(d), d)
+                    })
+                    .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
                 },
                 (update) => {
                   update
+                    .attr('id', d => `subgroup_${d.key}`)
                     .attr("x", d => this.xSubgroup(d.key))
                     .attr("y", d => this.y(d.value.gene_expression_norm_avg))
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
                     .attr("fill", d => this.getHSL(d.key))
-                    .transition_attributes('fill-opacity', 1)
+                    .transition_attributes('fill-opacity', d => {
+                      console.log('update > update', d.key, this.subgroup_visibility[d.key])
+                      return this.subgroup_visibility[d.key]})
+                    .on("mouseover", (evt, d) => {
+                      this.svg.append('g').attr('class', 'tooltip')
+                          .call(this.popover, this.popover_text(d), d)
+                    })
+                    .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
                   
                 },
                 (exit) => exit.transition_attributes('fill-opacity',0).remove()
               )
           },
-          (exit) => {
-            exit
-              .selectAll(".group-rect")
-              .data(d => d[1])
-              .join(
-                (exit) => {
-                  exit.transition_attributes('fill-opacity', 0).remove()
-                },
-              )
-              .transition_attributes('opacity', 0).remove()
-          },
+          (exit) => exit.transition_attributes('opacity', 0).remove()
         )
       const elapsed = Date.now() - start
       console.log('update_grouped_bar_plot time elapsed: ', elapsed)
@@ -736,7 +726,13 @@ export default {
     },
     popover(g, text_value, data) {
       // Tooltip popover 
-      if (!text_value) return g.style("display", "none");
+      console.log('popover')
+      console.log(data)
+      if (!text_value) return g.style("display", "none")
+      const time_point = data.value.time_point 
+      if (!this.time_visibility[time_point]) return g.style("display", "none")
+      const gene_identifier = data.value.identifier
+      if (!this.gene_visibility[gene_identifier]) return g.style("display", "none")
       // const opacity = d3.select('#avgPoints').selectAll(`#dot_${key}`).attr('fill-opacity')
       // if (opacity == 0) return g.style("display", "none");
 
@@ -818,8 +814,7 @@ export default {
             .attr('class', 'text_info')
           text_info.append('text')
             .attr('class', 'legend_tissue_text')
-            // .text(d => d[0].replaceAll('-', ' '))
-            .text(d => d[0])
+            .text(d => d[0].replaceAll('-', ' '))
             .attr('text-anchor', 'left')
             .attr('font-size', '0.7em')
             .attr('opacity', 1)
@@ -832,7 +827,7 @@ export default {
               const text_select = text_info.select('text')
               const groups = text_select._groups[0]
               const width = groups[i].getBBox().width
-              console.log('width', width)
+              // console.log('width', width)
               return text_info.select('text')._groups[0][i].getBBox().width+5})
             .attr('y', -9)
             .attr('width', 10)
@@ -936,7 +931,7 @@ export default {
               })`)
           tissue_root.select('.legend_tissue_text')
               .text(d => d[0].replaceAll('-', ' '))
-
+              
           update.selectAll('.legend_gene')
             .data(d => d[1])
             .join(
@@ -1098,39 +1093,49 @@ export default {
         (exit) => exit.transition_attributes('opacity', 0).remove()
       )
 
+      d3.selectAll('.eye').transition_attributes('opacity', 1)
+      d3.selectAll('.eye-off').transition_attributes('opacity', 0)
+
       // Set flag that SVG has been fully generated at least once
       this.complete = true
     },
     toggleVisibility(newOpacity, id) {
+      // Toggles visibility by gene and group
       // TODO: Toggle eye one level up if all child eyes are set to on or off
-      // console.log('toggleVisibility', newOpacity, id)
+      console.log('toggleVisibility', newOpacity, id)
       // console.log(this.allPoints)
-      return
-      const lines = d3.selectAll(`[id^='line_${id}']`)
-      lines.transition_attributes('stroke-opacity', newOpacity)
-      const matching_keys = Object.keys(this.sumstat_visibility).filter(e => e.includes(id))
-      matching_keys.forEach(e => this.sumstat_visibility[e] = newOpacity)
+      // console.log('this.group_visibility')
+      // console.log(this.group_visibility)
+
+      // const lines = d3.selectAll(`[id^='line_${id}']`)
+      // lines.transition_attributes('stroke-opacity', newOpacity)
+      
+      console.log('this.subgroup_visibility before')
+      console.log(this.subgroup_visibility)
+      let matching_keys, bars
+      if (this.grouped_by == 'Time') {
+        // Group is Time
+        // Subgroup is Gene + TRF/ALF
+        matching_keys = Object.keys(this.subgroup_visibility).filter(e => e.includes(id))
+        matching_keys.forEach(e => this.subgroup_visibility[e] = newOpacity)
+        bars = d3.select('#bars').selectAll(`[id^='subgroup_${id}']`)
+        console.log('matching_keys')
+        console.log(matching_keys)
+      } else if (this.grouped_by == 'Gene') {
+        // Group is Gene + TRF/ALF
+        // Subgroup is Time
+        matching_keys = Object.keys(this.group_visibility).filter(e => e.includes(id))
+        matching_keys.forEach(e => this.group_visibility[e] = newOpacity)
+        bars = d3.select('#bars').selectAll(`[id^='group_${id}']`)
+      }
+      console.log('this.subgroup_visibility after')
+      console.log(this.subgroup_visibility)
+      console.log('bars')
+      console.log(bars)
       // console.log('matching_keys')
       // console.log(matching_keys)
-      const avgPoints = d3.select('#avgPoints').selectAll(`[id^='dot_${id}']`)
-      avgPoints.transition_attributes('fill-opacity', newOpacity)
-      avgPoints._groups[0].forEach(e => e.__data__.visible = newOpacity)
+      bars.transition_attributes('fill-opacity', newOpacity)
 
-      if (this.showReplicatePoints) {
-        const replicatePoints = d3.select('#replicatePoints').selectAll(`[id^='dot_${id}']`)
-        replicatePoints.transition_attributes('fill-opacity', newOpacity)
-        replicatePoints._groups[0].forEach(e => e.__data__.visible = newOpacity)
-      }
-      
-      if (this.showErrorBars) {
-        const errorBars = d3.selectAll(`[id^='error_${id}'`)
-        errorBars.transition_attributes('stroke-opacity', newOpacity)
-      }
-
-      // console.log(this.allPoints)
-
-      // Update voronoi cells
-      this.voronoi_grid()
     },
     tissueClick(evt, i) {
       // Toggle visibility of Tissue data for every child gene and group
@@ -1165,7 +1170,7 @@ export default {
     },
     groupnameClick(evt, i) {
       // Toggle visibility of Tissue_Gene_Groupname data
-      // console.log('groupnameClick')
+      console.log('groupnameClick')
       const groupname_root = evt.currentTarget.parentNode
       const id = i[1][0].identifier
       
@@ -1348,11 +1353,18 @@ export default {
 
 <style lang="scss" scoped>
 
-// [class^="p-component"] {
-//     font-size: 0.8rem !important;
-// }
-
-.time-points {
-  font-size: 0.5rem !important;
+#group-by 
+{
+  :deep(.p-button) {
+    font-size: 0.85rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
 }
+
+// .time-points {
+//   font-size: 0.5rem !important;
+// }
 </style>
