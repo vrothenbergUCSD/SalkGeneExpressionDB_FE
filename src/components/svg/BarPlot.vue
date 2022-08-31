@@ -4,7 +4,7 @@
     <div id="bar-options" class="!grid grid-cols-12 mt-5">
       <div id="group-by" class="col-start-1 col-span-3 mx-auto">
         <div class="font-semibold pb-2">Group by:</div>
-        <SelectButton v-model="grouped_by" :options="grouped_by_options"/>
+        <SelectButton v-model="grouped_by" :options="grouped_by_options" @change="updateGroupedBy"/>
       </div>
       <div id="time-selection" v-show="grouped_by === 'Time'" class="mx-auto col-start-6 col-span-7">
         <div class="font-semibold pb-2">Time Points (ZT)</div>
@@ -175,6 +175,9 @@ export default {
 
     const svgElem = document.getElementById('bar-plot-svg')
     svgElem.addEventListener('load', this.legend())
+
+    // const xAxisElem = document.getElementById('myXaxis')
+    // xAxisElem.addEventListener('load', this.axisLinebreaks())
     
     console.log('BarPlot mounted, time elapsed:')
     console.log(Date.now() - start)
@@ -189,9 +192,55 @@ export default {
     }
   },
   methods: {
+    axisLinebreaks() {
+      // Line breaks for X labels if grouped by Gene 
+      if (this.grouped_by == 'Gene') {
+        this.svg.selectAll('.myXaxis .tick text').call(function(t) {   
+          console.log('here')
+          console.log(t)             
+          t.each(function(d) { // for each one
+            console.log('inside')
+            const self = d3.select(this);
+            console.log(self) // Selection
+            let st = self.text()
+            console.log(st) 
+            if (st == '') {
+              // Not yet initialized.. 
+              console.log('Not yet initialized')
+              st = self._groups[0][0]
+              console.log(st)
+              console.log(st.textContent)
+              // st = st.innerText
+            }
+
+            // let s = st.split('_')  // get the text and split it
+            // console.log(s)
+            // self.text(''); // clear it out
+            // console.log(self)
+            // self.append("tspan") // insert two tspans
+            //   .attr("x", 0)
+            //   .attr("dy",".8em")
+            //   .text(s[0]);
+            // self.append("tspan")
+            //   .attr("x", 0)
+            //   .attr("dy",".8em")
+            //   .text(s[1]);
+            // self.append("tspan")
+            //   .attr("x", 0)
+            //   .attr("dy",".8em")
+            //   .text(s[2]);
+          })
+        })
+
+      }
+
+    },
+    updateGroupedBy(evt) {
+      this.update_grouped_bar_plot()
+    },
     updateTimePointsSelected(evt) {
-      console.log('updateTimePointsSelected')
-      console.log(evt)
+      // console.log('updateTimePointsSelected')
+      // console.log(evt)
       // TODO: Make more efficient by only toggling changed values?
       // console.log('getTimePointsSelected')
       // console.log(time_points_selected)
@@ -214,8 +263,8 @@ export default {
           bar.transition_attributes('opacity', opacity)
         })
       }
-      console.log('this.time_visibility')
-      console.log(this.time_visibility)
+      // console.log('this.time_visibility')
+      // console.log(this.time_visibility)
 
       // Change selection
     },
@@ -447,6 +496,7 @@ export default {
       this.svg.append("g")
           .attr("transform", `translate(0, ${this.height*this.drawable_height_scale})`)
           .attr("class","myXaxis")
+          .attr('id', 'myXaxis')
 
       // X axis label
       this.svg.append("text")
@@ -499,18 +549,50 @@ export default {
       let data, groups, subgroups
 
       if (this.grouped_by == 'Gene') {
-        this.svg.select('.x-label').text('Tissue, Gene, Group')
+        this.svg.select('.x-label').text('')
         subgroups = this.time_points
-        data = d3.group(gene_groups_map, d => `${d.gene_group}`)
-        groups = Array.from(data.keys())
+        // data = d3.group(gene_groups_map, d => `${d.gene_group}`)
+        const gene_groups = _.groupBy(this.expression_normalized_averaged, e => `${e.identifier}`)
+        console.log('gene_groups')
+        console.log(gene_groups)
+        // groups = Array.from(data.keys())
         this.group_visibility = this.gene_visibility
+        console.log('this.gene_visibility')
+        console.log(this.gene_visibility)
         this.subgroup_visibility = this.time_visibility
 
-        for (const key of data.keys()) {
-          data.set(key, data.get(key).map(el => ({
-            key: el.time_point, value: el.gene_expression
-          })))
-        }
+        data = Object.keys(gene_groups).map((key) => {
+          // const grouping = _.groupBy(gene_groups[key], e => `${e.identifier}`)
+          return [key, gene_groups[key]]
+        })
+        console.log('data')
+        console.log(data)
+        groups = Object.keys(gene_groups)
+        console.log('groups')
+        console.log(groups)
+        // groups.forEach(e => {
+        //   const label = e.replaceAll('-', ' ').replaceAll('_', '\n')
+        //   console.log('label', label)
+        //   return label
+          
+        // })
+        // groups = groups.map(e => e.replaceAll('-', ' ').replaceAll('_', '\n'))
+        // console.log('groups')
+        // console.log(groups)
+
+        data.forEach(d => {
+          // const gene_key = d[0]
+          // const groupings = d[1]
+          d[1] = d[1].map(e => {
+            return {key:e.time_point.toString(), value:e}
+          })
+
+          // d[1] = Object.keys(d[1]).map((id) => {
+          //   return {key:id, value:d[1][id][0]}
+          // })
+        })
+
+
       } else if (this.grouped_by == 'Time') {
         console.log('Time')
         this.svg.select('.x-label').text('Time Point (ZT)')
@@ -530,19 +612,13 @@ export default {
           return [key, grouping]
         })
 
-        // console.log('time_groups')
-        // console.log(time_groups)
-        // const firstKey = data.keys().next().value
-        // console.log('firstKey')
-        // console.log(firstKey)
-        // subgroups = data.get(firstKey).map(el => el.gene_group)  
         subgroups = [...new Set(... data.map(e => Object.keys(e[1])) )]
         console.log('subgroups')
         console.log(subgroups)
 
         data.forEach(d => {
-          const time_key = d[0]
-          const groupings = d[1]
+          // const time_key = d[0]
+          // const groupings = d[1]
 
           d[1] = Object.keys(d[1]).map((id) => {
             return {key:id, value:d[1][id][0]}
@@ -561,6 +637,46 @@ export default {
       this.svg.selectAll(".myXaxis").transition()
         .duration(this.animationInterval)
         .call(this.xAxis);
+
+      if (this.grouped_by == 'Gene') {
+        this.svg.selectAll(".myXaxis")
+          .selectAll("text")
+          .style("text-anchor", "end")
+          .attr("dx", "-.8em")
+          .attr("dy", ".15em")
+          .attr("transform", "rotate(-45)")
+          
+
+        this.svg.selectAll('.myXaxis .tick text')
+          .selectAll('tspan')
+          .data(d => {
+            console.log('tspan d')
+            console.log(d)
+            let text = d.split('_')
+            let tissue = text[0].replaceAll('-', ' ')
+            let gene_group = text.slice(1).join(' ')
+            console.log(gene_group)
+            return [tissue, gene_group]
+          })
+          .join(
+            (enter) => {
+              console.log('enter')
+              console.log(enter)
+              enter.append('tspan')
+              .attr('id', 'woohoo')
+              .attr('x', 0)
+              .attr('dx', '-1em')
+              .attr('dy', function (d, i) { return (2 * i - 1) + 'em'; })
+              .text(d => {
+                console.log(d)
+                return d});
+
+            }
+          )
+        
+          console.log('all done')
+          
+      }
 
       // Subgroup position scale
       this.xSubgroup = d3.scaleBand()
@@ -591,7 +707,7 @@ export default {
               .attr("class", "bar-group")
               .attr('id', d => `group_${d[0]}`)
               .transition_attributes('opacity', d => {
-                console.log('enter', d[0], this.group_visibility[d[0]])
+                // console.log('enter', d[0], this.group_visibility[d[0]])
                 return this.group_visibility[d[0]]
               })
               .selectAll(".subgroup-rect")
@@ -605,13 +721,13 @@ export default {
                     .attr("y", d => y(d.value.gene_expression_norm_avg))
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
-                    .attr("fill", d => this.getHSL(d.key))
+                    .attr("fill", d => this.getHSL(d.value))
                     .transition_attributes('fill-opacity', d => {
-                      console.log('enter > enter', d.key, this.subgroup_visibility[d.key])
+                      // console.log('enter > enter', d.key, this.subgroup_visibility[d.key])
                       return this.subgroup_visibility[d.key]})
                     .on("mouseover", (evt, d) => {
                       this.svg.append('g').attr('class', 'tooltip')
-                          .call(this.popover, this.popover_text(d), d)
+                          .call(this.popover, d)
                     })
                     .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
                 },
@@ -622,13 +738,13 @@ export default {
                     .attr("y", d => y(d.value.gene_expression_norm_avg))
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
-                    .attr("fill", d => this.getHSL(d.key))
+                    .attr("fill", d => this.getHSL(d.value))
                     .transition_attributes('fill-opacity', d => {
                       console.log('enter > update', d.key, this.subgroup_visibility[d.key])
                       return this.subgroup_visibility[d.key]})
                     .on("mouseover", (evt, d) => {
                       this.svg.append('g').attr('class', 'tooltip')
-                          .call(this.popover, this.popover_text(d), d)
+                          .call(this.popover, d)
                     })
                     .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
                 },
@@ -656,13 +772,13 @@ export default {
                     .attr("y", d => y(d.value.gene_expression_norm_avg))
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
-                    .attr("fill", d => this.getHSL(d.key))
+                    .attr("fill", d => this.getHSL(d.value))
                     .transition_attributes('fill-opacity', d => {
                       console.log('update > enter', d.key, this.subgroup_visibility[d.key])
                       return this.subgroup_visibility[d.key]})
                     .on("mouseover", (evt, d) => {
                       this.svg.append('g').attr('class', 'tooltip')
-                          .call(this.popover, this.popover_text(d), d)
+                          .call(this.popover, d)
                     })
                     .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
                 },
@@ -673,13 +789,13 @@ export default {
                     .attr("y", d => this.y(d.value.gene_expression_norm_avg))
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
-                    .attr("fill", d => this.getHSL(d.key))
+                    .attr("fill", d => this.getHSL(d.value))
                     .transition_attributes('fill-opacity', d => {
                       console.log('update > update', d.key, this.subgroup_visibility[d.key])
                       return this.subgroup_visibility[d.key]})
                     .on("mouseover", (evt, d) => {
                       this.svg.append('g').attr('class', 'tooltip')
-                          .call(this.popover, this.popover_text(d), d)
+                          .call(this.popover, d)
                     })
                     .on("mouseout", () => this.svg.selectAll('.tooltip').remove());
                   
@@ -689,6 +805,10 @@ export default {
           },
           (exit) => exit.transition_attributes('opacity', 0).remove()
         )
+
+      
+
+
       const elapsed = Date.now() - start
       console.log('update_grouped_bar_plot time elapsed: ', elapsed)
     },
@@ -763,7 +883,7 @@ export default {
                     const tissue_gene = d[1][0][1][0].identifier.split('_').slice(0,-1).join('_')
                     console.log(tissue_gene)
                     return `legend_gene_${tissue_gene}`})
-                  .style('fill', d => this.getHSL(d[1][0][1][0].identifier, true))
+                  .style('fill', d => this.getHSL(d[1][0][1][0], true))
                   .attr('transform', (d,i) => `translate(${legend_indent_px}, ${
                     this.legendY_spacing *(1 + i * (1 + num_groups))
                     })`)
@@ -808,7 +928,7 @@ export default {
                           // console.log(d)
                           // console.log(d[0])
                           return `legend_groupname_${d[1][0].identifier}`})
-                        .style('fill', d => this.getHSL(d[1][0].identifier))
+                        .style('fill', d => this.getHSL(d[1][0]))
                         .attr('transform', (d,i) => `translate(${legend_indent_px}, ${
                           this.legendY_spacing * (i+1)
                           })`)
@@ -873,7 +993,7 @@ export default {
                   .attr('id', d => {
                     const tissue_gene = d[1][0][1][0].identifier.split('_').slice(0,-1).join('_')
                     return `legend_gene_${tissue_gene}`})
-                  .style('fill', d => this.getHSL(d[1][0][1][0].identifier, true))
+                  .style('fill', d => this.getHSL(d[1][0][1][0], true))
                   .attr('transform', (d,i) => `translate(${legend_indent_px}, ${
                     this.legendY_spacing *(1 + i * (1 + num_groups))
                     })`)
@@ -911,7 +1031,7 @@ export default {
                         .transition_attributes('opacity', 1)
                         .attr('class', 'legend_groupname')
                         .attr('id', d => `legend_groupname_${d[1][0].identifier}`)
-                        .style('fill', d => this.getHSL(d[1][0].identifier))
+                        .style('fill', d => this.getHSL(d[1][0]))
                         .attr('transform', (d,i) => `translate(${legend_indent_px}, ${
                           this.legendY_spacing * (i+1)
                           })`)
@@ -949,7 +1069,7 @@ export default {
                         this.legendY_spacing * (i+1)
                         })`)
                         .attr('id', d => `legend_groupname_${d[1][0].identifier}`)
-                        .style('fill', d => this.getHSL(d[1][0].identifier))
+                        .style('fill', d => this.getHSL(d[1][0]))
                         .transition_attributes('opacity', 1)
                       update.select('.eyes').on('click', this.groupnameClick) // Needed?
                       const text_info = update.select('.text_info')
@@ -971,7 +1091,7 @@ export default {
                     return `legend_gene_${tissue_gene}`
                   })
                   .style('fill', d => 
-                    this.getHSL(d[1][0][1][0].identifier, true))
+                    this.getHSL(d[1][0][1][0], true))
                   .transition_attributes('opacity', 1) 
                 gene_root.select('.legend_gene_text')
                     .text(d => d[0])
@@ -989,7 +1109,7 @@ export default {
                         .transition_attributes('opacity', 1)
                         .attr('class', 'legend_groupname')
                         .attr('id', d => `legend_groupname_${d[1][0].identifier}`)
-                        .style('fill', d => this.getHSL(d[1][0].identifier))
+                        .style('fill', d => this.getHSL(d[1][0]))
                         .attr('transform', (d,i) => `translate(${legend_indent_px}, ${
                           this.legendY_spacing * (i+1)
                           })`)
@@ -1028,7 +1148,7 @@ export default {
                         this.legendY_spacing * (i+1)
                         })`)
                         .attr('id', d => `legend_groupname_${d[1][0].identifier}`)
-                        .style('fill', d => this.getHSL(d[1][0].identifier))
+                        .style('fill', d => this.getHSL(d[1][0]))
                         .transition_attributes('opacity', 1)
                       update.select('.legend_groupname_text')
                           .text(d => d[0])  
@@ -1049,16 +1169,18 @@ export default {
         (exit) => exit.transition_attributes('opacity', 0).remove()
       )
 
+      // Reset eye visibility
       d3.selectAll('.eye').transition_attributes('opacity', 1)
       d3.selectAll('.eye-off').transition_attributes('opacity', 0)
 
       // Set flag that SVG has been fully generated at least once
       this.complete = true
     },
-    getHSL(name, gene=false) {
+    getHSL(data, gene=false) {
       // console.log('getHSL')
-      // console.log(name)
+      // console.log(data)
       // Differentiates groups by making one darker and one lighter
+      const name = data.identifier
       const shade_factor = 3
       const cat = name.split('_').slice(0,-1).join('_')
       const group = name.split('_').at(-1)
@@ -1073,7 +1195,6 @@ export default {
     popover_text(d) {
       // console.log('popover_text')
       // console.log(d)
-      d = d.value
       let text = `Data Point Details
       Gene: ${d.gene_id}
       Group: ${d.group_name}
@@ -1098,10 +1219,11 @@ export default {
       }
       return text
     },
-    popover(g, text_value, data) {
+    popover(g, data) {
       // Tooltip popover 
       console.log('popover')
       console.log(data)
+      const text_value = this.popover_text(data.value)
       if (!text_value) return g.style("display", "none")
       const time_point = data.value.time_point 
       if (!this.time_visibility[time_point]) return g.style("display", "none")
@@ -1121,7 +1243,7 @@ export default {
         .join("path")
           .attr("fill", "white")
           .attr("opacity", 1)
-          .attr("stroke", this.getHSL(data.key));
+          .attr("stroke", this.getHSL(data.value));
 
       // tooltip content
       const text = g.selectAll("text")
@@ -1141,13 +1263,13 @@ export default {
       if (this.grouped_by == 'Time')
         parentVal = data.value.time_point.toString()
       else if (this.grouped_by == 'Gene')
-        parentVal = data.value.gene_id
-      // console.log('parentVal', parentVal)
+        parentVal = data.value.identifier
+      console.log('parentVal', parentVal)
 
       // tooltip positioning
       const {x, y, width: w, height: h} = text.node().getBBox()
       text.attr("transform", `translate(${-w / 2},${15 - y})`)
-      const transform_x = this.x(parentVal) + this.xSubgroup(data.value.identifier) + this.xSubgroup.bandwidth()/2
+      const transform_x = this.x(parentVal) + this.xSubgroup(data.key) + this.xSubgroup.bandwidth()/2
       const transform_y = Math.max(this.y(data.value.gene_expression_norm_avg)-h-25,-this.margin.top)
       
       g.attr("transform", `translate(${transform_x},${transform_y})`)
