@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto">
+  <div id="line" class="mx-auto">
     <!--<div class="text-center mb-5">Line Plot component</div>-->
 
     <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
@@ -32,7 +32,10 @@ import ProgressSpinner from 'primevue/progressspinner'
 import InputSwitch from 'primevue/inputswitch'
 import _ from 'underscore';
 
-// import eye from '@/assets/eye.svg'
+import eyeUrl from '@/assets/eye.svg'
+import eyeOffUrl from '@/assets/eye-off.svg'
+import infoUrl from '@/assets/info.svg'
+
 // import eye
 function sleep(milliseconds) {
   const date = Date.now();
@@ -58,7 +61,7 @@ d3.selection.prototype.transition_attributes = function(
 d3.selection.prototype.append_eyes = function() {
   this.append('svg:image')
     .attr('class', 'eye')
-    .attr("xlink:href", "/assets/eye.svg")
+    .attr("xlink:href", eyeUrl)
     .attr('type', "image/svg+xml")
     .attr('x', 0)
     .attr('y', 0)
@@ -67,7 +70,7 @@ d3.selection.prototype.append_eyes = function() {
     .attr('opacity', 1)
   this.append('svg:image')
     .attr('class', 'eye-off')
-    .attr("xlink:href", "/assets/eye-off.svg")
+    .attr("xlink:href", eyeOffUrl)
     .attr('type', "image/svg+xml")
     .attr('x', 0)
     .attr('y', 0)
@@ -84,7 +87,6 @@ export default {
     InputSwitch,
   },
   props: { 
-    msg: String,
     genes: Array,
     datasets: Object,
   },
@@ -92,7 +94,6 @@ export default {
     return {
       // Datasets
       genes_str_arr: null,
-      // gene_expression_datasets: [],
 
       // Deep copy datasets (Needed?)
       gene_expression_data_tables: [],
@@ -143,41 +144,31 @@ export default {
     }
 
   },
-  created() {
-  },
   async mounted() {
     console.log('LinePlot mounted')
     const start = Date.now()
 
     this.initialize_line_plot()
-    console.log('Initialized line plot')
+    // console.log('Initialized line plot')
 
     if (this.datasets) {
       this.update_datasets()
     }
-    console.log('mounted: After this.update_datasets')
     // Wait for SVG to load before calling legend
     // Fixes bug where info icons don't yet have BBox dimensions to position after text
     const svgElem = document.getElementById('plot-svg')
     svgElem.addEventListener('load', this.legend())
-    // svgElem.addEventListener('onchange', this.legend())
     
     const elapsed = Date.now() - start
     console.log('LinePlot mounted, time elapsed', elapsed)
   },
-  updated() {
-    // console.log('LinePlot updated')
-    // if (this.complete) this.legend()
-
-  },
 
   methods: {
+
     update_datasets() {
       console.log('update_datasets')
       const start = Date.now()
       this.genes_str_arr = this.genes.map((d) => d.name)
-      // console.log('this.genes_str_arr')
-      // console.log(this.genes_str_arr)
       if (this.datasets) {
         // console.log('this.datasets')
         // console.log(this.datasets)
@@ -260,20 +251,6 @@ export default {
           e.replicate = e.sample_name.split('-').at(-1)
           e.identifier = `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}`
         })
-      
-        // const grouped = _.groupBy(this.expression_merged, function(e){
-        //   return `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}_ZT${e.time_point}`
-        // })
-        // console.log('grouped')
-        // console.log(grouped)
-       
-        // this.expression_averaged = _.mapObject(grouped, function(val, key) {
-        //   let o = JSON.parse(JSON.stringify(val[0]))
-        //   o.avg = _.reduce(val, function(memo, v) { 
-        //     return memo + v.gene_expression; 
-        //   }, 0) / val.length
-        //   return o
-        // });
 
         const grouped_tissue = _.groupBy(this.expression_merged, e => `${e.tissue.replaceAll(' ', '-')}`)
         // console.log('grouped_tissue')
@@ -382,15 +359,6 @@ export default {
           return o
         });
 
-        // console.log('this.expression_normalized_averaged')
-        // console.log(this.expression_normalized_averaged)
-
-        // console.log('average_expressions')
-        // console.log(average_expressions)
-
-        // console.log('this.expression_normalized_averaged')
-        // console.log(this.expression_averaged)
-        // console.log(Object.entries(this.expression_averaged))
         this.expression_normalized_averaged = Object.entries(this.expression_normalized_averaged).map(e => e[1])
         // console.log(this.expression_normalized_averaged)
         this.avgPoints = [...this.expression_normalized_averaged]
@@ -414,10 +382,6 @@ export default {
         // console.log('this.sumstat_visibility')
         // console.log(this.sumstat_visibility)
 
-        // this.sumstat_dots = d3
-        //   .group(this.expression_normalized_flattened, 
-        //   d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
-    
         this.categories = [...new Set(
           [...this.sumstat.keys()] 
           .map(e => e.split('_').slice(0,-1).join('_'))
@@ -429,12 +393,13 @@ export default {
 
         this.update_line_plot()
         this.legend()
+
       }
       
       const elapsed = Date.now() - start
       console.log('update_datasets time elapsed', elapsed)
     },
-    async initialize_line_plot() {
+    initialize_line_plot() {
       console.log('initialize_line_plot')
       // set the dimensions and margins of the graph
       this.margin = {top: 30, right: 30, bottom: 140, left: 80}
@@ -509,18 +474,6 @@ export default {
       this.svg.append('g')
         .attr('id', 'legend')
         .attr('transform', `translate(${this.legendX}, 0)`)
-        
-
-      // // Visibility icons
-      // this.showIcon = d3.create('svg')
-      //   .attr('xlmns', 'http://www.w3.org/2000/svg')
-      //   .attr('viewBox', '0 0 24 24')
-      //   .append('path')
-      //     .attr('d', 'M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z')
-
-      // this.hideIcon
-
-      return 
 
     },
     update_line_plot() {
@@ -769,12 +722,13 @@ export default {
             // .transition_attributes('opacity', 1)
           text_info.append('svg:image')
             .attr('class', 'info')
-            .attr("xlink:href", "/assets/info.svg")
+            .attr("xlink:href", infoUrl)
             .attr('type', "image/svg+xml")
             .attr('x', (d,i) => {
               const text_select = text_info.select('text')
               const groups = text_select._groups[0]
               const width = groups[i].getBBox().width
+              // console.log('width', width)
               return text_info.select('text')._groups[0][i].getBBox().width+5})
             .attr('y', -9)
             .attr('width', 10)
@@ -811,7 +765,7 @@ export default {
                   .attr('font-size', '0.7em')
                 text_info.append('svg:image')
                   .attr('class', 'info')
-                  .attr("xlink:href", "/assets/info.svg")
+                  .attr("xlink:href", infoUrl)
                   .attr('type', "image/svg+xml")
                   .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
                   .attr('y', -9)
@@ -851,7 +805,7 @@ export default {
                         .attr('opacity', 1)
                       text_info.append('svg:image')
                         .attr('class', 'info')
-                        .attr("xlink:href", "/assets/info.svg")
+                        .attr("xlink:href", infoUrl)
                         .attr('type', "image/svg+xml")
                         .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
                         .attr('y', -9)
@@ -906,7 +860,7 @@ export default {
                   .attr('font-size', '0.7em')
                 text_info.append('svg:image')
                   .attr('class', 'info')
-                  .attr("xlink:href", "/assets/info.svg")
+                  .attr("xlink:href", infoUrl)
                   .attr('type', "image/svg+xml")
                   .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
                   .attr('y', -9)
@@ -944,7 +898,7 @@ export default {
                         .attr('opacity', 1)
                       text_info.append('svg:image')
                         .attr('class', 'info')
-                        .attr("xlink:href", "/assets/info.svg")
+                        .attr("xlink:href", infoUrl)
                         .attr('type', "image/svg+xml")
                         .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
                         .attr('y', -9)
@@ -971,7 +925,7 @@ export default {
               (update) => {
                 // console.log('tissue update > gene update')
                 // console.log(update)
-                update.attr('transform', (d,i) => `translate(${5}, ${
+                update.attr('transform', (d,i) => `translate(${13}, ${
                   this.legendY_spacing *(1 + i * (1 + num_groups))
                   })`)
                   .style('fill', d => 
@@ -1008,7 +962,7 @@ export default {
                         .style('margin-bottom', 5)
                       text_info.append('svg:image')
                         .attr('class', 'info')
-                        .attr("xlink:href", "/assets/info.svg")
+                        .attr("xlink:href", infoUrl)
                         .attr('type', "image/svg+xml")
                         .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
                         .attr('y', -9)
@@ -1023,7 +977,7 @@ export default {
                       // console.log('tissue update > gene update > groupname update')
                       // console.log(update)
                       // TODO: Possible bug when updating and associated event is not updated?
-                      update.attr('transform', (d,i) => `translate(${5}, ${
+                      update.attr('transform', (d,i) => `translate(${13}, ${
                         this.legendY_spacing * (i+1)
                         })`)
                         .style('fill', d => this.getHSL(d[1][0].identifier))
