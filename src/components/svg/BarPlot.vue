@@ -1307,7 +1307,7 @@ export default {
         // Subgroup is Time
         matching_keys = Object.keys(this.group_visibility).filter(e => e.includes(id))
         matching_keys.forEach(e => this.group_visibility[e] = newOpacity)
-        bars = d3.select('#bars').selectAll(`[id^='group_${id}']`)
+        bars = d3.select('#bars').selectAll(`[id^='group_${id}']`).selectAll('.subgroup-rect')
       }
       console.log('this.subgroup_visibility after')
       console.log(this.subgroup_visibility)
