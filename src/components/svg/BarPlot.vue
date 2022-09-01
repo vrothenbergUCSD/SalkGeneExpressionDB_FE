@@ -1,20 +1,19 @@
 <template>
   <div id="bar" class="mx-auto">
     <!-- <div class="text-center mb-5">Bar Plot component</div> -->
-    <div id="bar-options" class="!grid grid-cols-12 mt-5">
-      <div id="group-by" class="col-start-1 col-span-3 mx-auto">
+    <!-- <div id="bar-options" class="!grid grid-cols-12 mt-3 items-center"> -->
+    <div id="bar-options" class="w-3/4 mx-auto mt-3 flex flex-row" v-show="this.complete">
+      <!-- <div id="group-by" class="col-start-1 col-span-3"> -->
+      <div id="group-by" class="flex flex-col align-items-center mx-2">
         <div class="font-semibold pb-2">Group by:</div>
         <SelectButton v-model="grouped_by" :options="grouped_by_options" @change="updateGroupedBy"/>
       </div>
-      <div id="time-selection" v-show="grouped_by === 'Time'" class="mx-auto col-start-6 col-span-7">
+      <!-- <div id="time-selection" v-show="grouped_by === 'Time'" class="col-start-6 col-span-7"> -->
+      <div id="time-selection" v-show="grouped_by === 'Time'" class="flex flex-col align-items-center mx-2">
         <div class="font-semibold pb-2">Time Points (ZT)</div>
-        <div class="time-points"></div>
-
         <SelectButton v-model="time_points_selected" 
           :options="time_points_options" optionLabel="name" 
           multiple @change="updateTimePointsSelected"/>
-
-        
       </div>
 
     </div>
@@ -143,7 +142,9 @@ export default {
 
       time_points_options: null,
       time_points_selected: null,
-      
+
+      windowHeight: window.innerHeight,
+      windowWidth: window.innerWidth,
     }
   },
   async mounted() {
@@ -178,10 +179,17 @@ export default {
 
     // const xAxisElem = document.getElementById('myXaxis')
     // xAxisElem.addEventListener('load', this.axisLinebreaks())
+
+    this.$nextTick(() => {
+      window.addEventListener('resize', this.onResize);
+    })
     
     console.log('BarPlot mounted, time elapsed:')
     console.log(Date.now() - start)
 
+  },
+  beforeDestroy() { 
+    window.removeEventListener('resize', this.onResize); 
   },
   watch: {
     datasets() {
@@ -192,6 +200,11 @@ export default {
     }
   },
   methods: {
+    onResize() {
+      this.windowHeight = window.innerHeight
+      this.windowWidth = window.innerWidth
+      console.log('LinePlot resized', this.windowWidth, this.windowHeight)
+    },
     axisLinebreaks() {
       // Line breaks for X labels if grouped by Gene 
       if (this.grouped_by == 'Gene') {
@@ -277,7 +290,7 @@ export default {
         // console.log(this.datasets)
 
         this.expression_merged = []
-        // Deep copy!
+        // Deep copy!  Prevents unexpected behavior when switching between Bar and Line.
         this.gene_expression_data_tables = JSON.parse(JSON.stringify(this.datasets.gene_expression_data_tables))
         this.gene_metadata = JSON.parse(JSON.stringify(this.datasets.gene_metadata))
         this.sample_metadata_tables = JSON.parse(JSON.stringify(this.datasets.sample_metadata_tables))
@@ -291,6 +304,7 @@ export default {
           e.experiment = table_split.at(0)
           e.year = table_split.at(1)          
           
+          // Example gene_expression_data table name
           // "TRF_2018_Mouse_Adrenal_gene_expression_data_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"
           // console.log('table ', table)
           let sample_table = table.replace('gene_expression_data', 'sample_metadata')
@@ -472,10 +486,10 @@ export default {
     },
     initialize_bar_plot() {
       // set the dimensions and margins of the graph
-      this.margin = {top: 30, right: 30, bottom: 140, left: 80}
-      this.width = 800 - this.margin.left - this.margin.right,
-      this.height = 500 - this.margin.top - this.margin.bottom;
-      this.drawable_width_scale = 0.75
+      this.margin = {top: 30, right: 10, bottom: 140, left: 80}
+      this.width = this.windowWidth * 0.6 - this.margin.left - this.margin.right,
+      this.height = this.windowHeight * 0.55 - this.margin.top - this.margin.bottom;
+      this.drawable_width_scale = 0.8
       this.drawable_height_scale = 1
       this.svg = d3.select("#plot-area")
           .append("svg")
@@ -534,6 +548,7 @@ export default {
 
     },
     load_chart() {
+      // Defunct?
       console.log('load_chart')
       if (this.chart_type == 'Grouped') {
         this.update_grouped_bar_plot()
@@ -1546,10 +1561,10 @@ export default {
 {
   :deep(.p-button) {
     font-size: 0.85rem !important;
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
-    padding-top: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
   }
 }
 

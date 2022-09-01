@@ -5,7 +5,7 @@
     <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
       <ProgressSpinner class="w-full mt-10" />
     </div>
-    <div id="plot-options" class="w-3/4 mx-auto mt-3" v-show="this.complete">
+    <div id="plot-options" class="w-3/4 mx-auto mt-1" v-show="this.complete">
       <div class="flex flex-row">
         <div class="flex flex-col align-items-center mx-2">
           <div class="font-semibold">Data Points</div>
@@ -36,7 +36,6 @@ import eyeUrl from '@/assets/eye.svg'
 import eyeOffUrl from '@/assets/eye-off.svg'
 import infoUrl from '@/assets/info.svg'
 
-// import eye
 function sleep(milliseconds) {
   const date = Date.now();
   let currentDate = null;
@@ -133,6 +132,9 @@ export default {
       complete: false,
       showReplicatePoints: false,
       showErrorBars: true,
+
+      windowHeight: window.innerHeight,
+      windowWidth: window.innerWidth,
     }
   },
   watch: {
@@ -158,13 +160,24 @@ export default {
     // Fixes bug where info icons don't yet have BBox dimensions to position after text
     const svgElem = document.getElementById('plot-svg')
     svgElem.addEventListener('load', this.legend())
+
+    this.$nextTick(() => {
+      window.addEventListener('resize', this.onResize);
+    })
     
     const elapsed = Date.now() - start
     console.log('LinePlot mounted, time elapsed', elapsed)
   },
+  beforeDestroy() { 
+    window.removeEventListener('resize', this.onResize); 
+  },
 
   methods: {
-
+    onResize() {
+      this.windowHeight = window.innerHeight
+      this.windowWidth = window.innerWidth
+      console.log('LinePlot resized', this.windowWidth, this.windowHeight)
+    },
     update_datasets() {
       console.log('update_datasets')
       const start = Date.now()
@@ -402,10 +415,11 @@ export default {
     initialize_line_plot() {
       console.log('initialize_line_plot')
       // set the dimensions and margins of the graph
-      this.margin = {top: 30, right: 30, bottom: 140, left: 80}
-      this.width = 800 - this.margin.left - this.margin.right,
-      this.height = 500 - this.margin.top - this.margin.bottom;
-      this.drawable_width_scale = 0.75
+      this.margin = {top: 30, right: 10, bottom: 140, left: 80}
+
+      this.width = this.windowWidth * 0.6 - this.margin.left - this.margin.right,
+      this.height = this.windowHeight * 0.55 - this.margin.top - this.margin.bottom;
+      this.drawable_width_scale = 0.8
       this.drawable_height_scale = 1
       this.svg = d3.select("#plot-area")
           .append("svg")

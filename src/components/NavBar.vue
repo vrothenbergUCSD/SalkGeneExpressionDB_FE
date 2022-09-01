@@ -1,9 +1,9 @@
 <!-- This example requires Tailwind CSS v2.0+ -->
 <template>
   <Disclosure as="nav" class="bg-gray-800" v-slot="{ open }">
-    <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-      <div class="relative flex items-center justify-between h-16">
-        <div class="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start">
+    <div class="mx-auto px-2">
+      <div class="relative flex items-center justify-start h-16">
+        <div class="flex-1 flex items-center justify-start">
           <div class="hidden sm:block sm:ml-6">
             <div class="flex space-x-4">
               <NavLink :to="{name: 'Home'}">
@@ -33,7 +33,7 @@
             </div>
           </div>
         </div>
-        <div class="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+        <div id="profile-menu" class="absolute inset-y-0 right-10 flex items-center pr-2">
           <!-- Profile dropdown -->
           <Menu as="div" class="ml-3 relative z-10" v-show="user">
             <div>

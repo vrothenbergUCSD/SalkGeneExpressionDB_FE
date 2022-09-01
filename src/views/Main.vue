@@ -1,10 +1,10 @@
 <template>
-<div id="main" class="w-full p-3 mx-auto">
+<div id="main" class="w-full p-3 mx-auto mb-20">
+  <div id="page-title" class="pb-2 font-semibold text-3xl text-center">Temporal Gene Expression</div>
   
-  <div id="selection-ui" class="w-11/12 p-3 mx-auto">
+  <div id="selection-ui" class="mt-2 mx-auto">
     <Toast />
-    <div class="p-5 font-semibold text-3xl text-center">Temporal Gene Expression</div>
-    <div id="filters-ui" class="my-3 p-2 mx-auto bg-slate-100 rounded-2xl flex flex-wrap" v-if="this.speciesSelected.length || this.experimentSelected.length || this.tissueSelected.length"> 
+    <div id="current-filters-ui" class="my-1 mx-3 bg-slate-100 rounded-2xl flex flex-wrap" v-if="this.speciesSelected.length || this.experimentSelected.length || this.tissueSelected.length"> 
       <div id="filters-species" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.speciesSelected.length">
         <div class="font-semibold text-sm pl-1">Species:</div>
         <div v-for="(item, index) in this.speciesSelected" :key="item">
@@ -31,123 +31,187 @@
         <Chip label="Clear All Filters" class="mx-1 text-sm font-semibold" removable @remove="clearAllFilters"/>
       </div>
     </div>
-    <div class="flex flex-wrap mx-auto " v-if="!this.filterWarning">
-      <div class="w-1/3 px-2 border">
-        <div class="font-semibold my-2">Species</div>
-        <DataTable :value="speciesFiltered" v-model:selection="speciesSelected" 
-          class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-          :loading="loading" @row-select="speciesRowChange('select')" 
-          @row-unselect="speciesRowChange('unselect')"
-          @row-select-all="speciesRowChange('select-all')"
-          @row-unselect-all="speciesRowChange('unselect-all')">
-        <Column selectionMode="multiple" style="width: 3rem" ></Column>
-        <Column field="name" header=""></Column>
-        <Column field="count" header="#">
-          <template #body="slotProps">
-            {{getCount('species', slotProps.data.name)}}
-          </template>
-        </Column>
-        <Column field="freq" header="Freq">
-          <template #body="slotProps">
-            {{getFreq('species', slotProps.data.name)}}
-          </template>
-        </Column>
-        </DataTable>
+    <div id="filters-graph-view" class="flex pl-3">
+      <div id="filters-boxes" class="w-1/4 mt-2">
+        <Accordion :multiple="true" :activeIndex="[0,1]">
+        <!-- <div class="font-semibold text-xl text-center py-1">Datasets</div> -->
+          <AccordionTab header="Datasets">
+            <div v-if="!this.datasetsFilterWarning">
+              <div class="p-1 border my-1 rounded">
+                <!-- <div class="font-semibold my-2">Species</div> -->
+                <DataTable :value="speciesFiltered" v-model:selection="speciesSelected" 
+                  class="p-datatable-sm p-datatable-species" stripedRows :scrollable="true" scrollHeight="200px" 
+                  :loading="loading" @row-select="speciesRowChange('select')" 
+                  @row-unselect="speciesRowChange('unselect')"
+                  @row-select-all="speciesRowChange('select-all')"
+                  @row-unselect-all="speciesRowChange('unselect-all')">
+                <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                <Column field="name" header="Species"></Column>
+                <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                  <template #body="slotProps">
+                    {{getCount('species', slotProps.data.name)}}
+                  </template>
+                </Column>
+                <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                  <template #body="slotProps">
+                    {{getFreq('species', slotProps.data.name)}}
+                  </template>
+                </Column>
+                </DataTable>
+              </div>
+              <div class="p-1 border my-1 rounded" >
+                <!-- <div class="font-semibold my-2">Experiment</div> -->
+                <DataTable :value="experimentFiltered" v-model:selection="experimentSelected" 
+                  class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+                  :loading="loading" @row-select="experimentRowChange('select')"
+                  @row-unselect="experimentRowChange('unselect')"
+                  @row-select-all="experimentRowChange('select-all')"
+                  @row-unselect-all="experimentRowChange('unselect-all')">
+                <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                <Column field="name" header="Experiment"></Column>
+                <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                  <template #body="slotProps">
+                    {{getCount('experiment', slotProps.data.name)}}
+                  </template>
+                </Column>
+                <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                  <template #body="slotProps">
+                    {{getFreq('experiment', slotProps.data.name)}}
+                  </template>
+                </Column>
+                </DataTable>
+            
+              </div>
+              <div class="p-1 border my-1 rounded">
+                <!-- <div class="font-semibold my-2">Tissue</div> -->
+                <DataTable :value="tissueFiltered" v-model:selection="tissueSelected" 
+                  class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+                  :loading="loading" @row-select="tissueRowChange('select')" 
+                  @row-unselect="tissueRowChange('unselect')"
+                  @row-select-all="tissueRowChange('select-all')"
+                  @row-unselect-all="tissueRowChange('unselect-all')">
+                <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                <Column field="name" header="Tissue" style="text-align:left"></Column>
+                <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                  <template #body="slotProps">
+                    {{getCount('tissue', slotProps.data.name)}}
+                  </template>
+                </Column>
+                <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                  <template #body="slotProps">
+                    {{getFreq('tissue', slotProps.data.name)}}
+                  </template>
+                </Column>
+                </DataTable>
+                
+              </div>
+              <div id="get-datasets" class="mt-1 text-center">
+                <Button label="Get Datasets" @click="getDatasets" :loading="this.gettingDatasets"/>
+              </div>
+            </div>
+            <div v-else class="text-center font-semibold text-lg">
+              Warning: No datasets in filtered selection.  Clear filters to regain datasets for selection.
+            </div>
+          </AccordionTab>
+          <AccordionTab header="Genes">
+            <!-- <div id="selected-metadata-view" class="" v-show="this.gotDatasets"> -->
+            <div id="genes-view" class="" v-show="this.gotDatasets">
+              <div class="font-semibold">Select Genes:</div>
+              <div v-show="this.loadingGenes" class="">
+                <ProgressBar mode="indeterminate" />
+              </div>
+              <div id="gene-search" class="p-1" v-show="!this.loadingGenes">
+                <AutoComplete :multiple="true" v-model="this.genesSelected" 
+                :suggestions="this.genesFiltered" @complete="searchGenes($event)" field="name" />
+                
+              </div>  
+              <div id="get-genes" class="mt-1 text-center">
+                  <Button label="Update Chart" @click="getGeneData" :loading="this.gettingGeneData"/>
+                </div>
+              <!-- </div> -->
+            </div>
+            <div v-show="!this.gotDatasets">
+              <div v-show="this.gettingDatasets">
+              Loading... please wait.
+              </div>
+              <div v-show="!this.gettingDatasets">
+              Please first select at least one dataset.
+              </div>
+            </div>
+          </AccordionTab>
+          <AccordionTab header="Filters">
+            <div v-if="!this.filterWarning">
+              <div class="p-1 border my-1 rounded">
+                <div class="font-semibold my-2">Gender</div>
+                <DataTable :value="genderFiltered" v-model:selection="genderSelected" 
+                  class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+                  :loading="loading" @row-select="genderRowChange('select')" 
+                  @row-unselect="genderRowChange('unselect')"
+                  @row-select-all="genderRowChange('select-all')"
+                  @row-unselect-all="genderRowChange('unselect-all')">
+                <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                <Column field="name" header="" style="text-align:left"></Column>
+                <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                  <template #body="slotProps">
+                    {{getCount('gender', slotProps.data.name)}}
+                  </template>
+                </Column>
+                <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                  <template #body="slotProps">
+                    {{getFreq('gender', slotProps.data.name)}}
+                  </template>
+                </Column>
+                </DataTable>
+              </div>
+              <div class="p-1 border my-1 rounded">
+                <div class="font-semibold my-2">Condition</div>
+                <DataTable :value="conditionFiltered" v-model:selection="conditionSelected" 
+                  class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+                  :loading="loading" @row-select="conditionRowChange('select')" 
+                  @row-unselect="conditionRowChange('unselect')"
+                  @row-select-all="conditionRowChange('select-all')"
+                  @row-unselect-all="conditionRowChange('unselect-all')">
+                <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                <Column field="name" header="" style="text-align:left"></Column>
+                <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                  <template #body="slotProps">
+                    {{getCount('condition', slotProps.data.name)}}
+                  </template>
+                </Column>
+                <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                  <template #body="slotProps">
+                    {{getFreq('condition', slotProps.data.name)}}
+                  </template>
+                </Column>
+                </DataTable>
+              </div>
+            </div>
+            <div v-else class="text-center font-semibold text-lg">
+              Warning: No samples in filtered selection.
+            </div>
+          </AccordionTab>
+        </Accordion>
       </div>
-      <div class="w-1/3 px-2 border" >
-        <div class="font-semibold my-2">Experiment</div>
-        <DataTable :value="experimentFiltered" v-model:selection="experimentSelected" 
-          class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-          :loading="loading" @row-select="experimentRowChange('select')"
-          @row-unselect="experimentRowChange('unselect')"
-          @row-select-all="experimentRowChange('select-all')"
-          @row-unselect-all="experimentRowChange('unselect-all')">
-        <Column selectionMode="multiple" style="width: 3rem"></Column>
-        <Column field="name" header=""></Column>
-        <Column field="count" header="#">
-          <template #body="slotProps">
-            {{getCount('experiment', slotProps.data.name)}}
-          </template>
-        </Column>
-        <Column field="freq" header="Freq">
-          <template #body="slotProps">
-            {{getFreq('experiment', slotProps.data.name)}}
-          </template>
-        </Column>
-
-        </DataTable>
-        
-      </div>
-      <div class="w-1/3 px-2 border">
-        <div class="font-semibold my-2">Tissue</div>
-        <DataTable :value="tissueFiltered" v-model:selection="tissueSelected" 
-          class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-          :loading="loading" @row-select="tissueRowChange('select')" 
-          @row-unselect="tissueRowChange('unselect')"
-          @row-select-all="tissueRowChange('select-all')"
-          @row-unselect-all="tissueRowChange('unselect-all')">
-        <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
-        <Column field="name" header=""></Column>
-        <Column field="count" header="#">
-          <template #body="slotProps">
-            {{getCount('tissue', slotProps.data.name)}}
-          </template>
-        </Column>
-        <Column field="freq" header="Freq">
-          <template #body="slotProps">
-            {{getFreq('tissue', slotProps.data.name)}}
-          </template>
-        </Column>
-        </DataTable>
-        
-      </div>
-    </div>
-    <div v-else class="text-center font-semibold text-lg">
-      Warning: No datasets in filtered selection.  Clear filters to regain datasets for selection.
-    </div>
-
-    <div id="get-datasets" class="mx-auto my-5 text-center" >
-      <Button label="Get Datasets" class="p-button-lg" @click="getDatasets" v-if="!this.gettingDatasets"/>
-      <ProgressSpinner class="mx-auto w-1/2" v-else/>
-    </div>
-
-    <div id="selected-metadata-view" class="mx-auto" v-if="this.gotDatasets">
-      <div id="genes-view" class="my-3 w-3/4 mx-auto" >
-        <div class="font-semibold m-2">Genes</div>
-        <div v-if="this.loadingGenes">
-          <ProgressBar mode="indeterminate" />
-        </div>
-        <div class="flex flex-row" v-else>
-          <div class="p-fluid w-3/4" v-show="!this.loadingGenes">
-            <AutoComplete :multiple="true" v-model="this.genesSelected" 
-            :suggestions="this.genesFiltered" @complete="searchGenes($event)" field="name" />
+      <div id="graphs-view" class="w-3/4 h-1/2">
+        <div v-if="this.gotDatasets && this.gotGeneData">
+          <div class="card mt-1">
+            <div class="mx-auto w-3/4">
+              <TabMenu :model="items" v-model:activeIndex="index"/>
+              <!-- <TabMenu :model="items"/> -->
+            </div>
+            <div v-if="index != null" class="mx-auto px-3 ">
+              <!-- <KeepAlive > -->
+              <component :is="items[index].currentComponent" :genes="this.genesSelected" :datasets="this.datasets"/>
+              <!-- </KeepAlive> -->
+            </div>
           </div>
-          <div class="flex align-items-center">
-            <Button label="Get Gene Data" class="ml-3" @click="getGeneData" :loading="this.gettingGeneData"/>
-          </div>
         </div>
-        
-      </div>
-
-      
-
-    </div>
-
-  </div>
-  <div id="graphs-view" v-show="this.gotDatasets && this.gotGeneData">
-    <div class="card mt-2">
-      <div class="mx-auto w-3/4">
-        <TabMenu :model="items" v-model:activeIndex="index"/>
-        <!-- <TabMenu :model="items"/> -->
-      </div>
-      <div v-if="index != null" class="mx-auto w-11/12">
-        <!-- <KeepAlive > -->
-          <component :is="items[index].currentComponent" :genes="this.genesSelected" :datasets="this.datasets"/>
-        <!-- </KeepAlive> -->
+        <div v-else class="flex h-[50vh]">
+          <ProgressSpinner v-show="!(this.gotDatasets && this.gotGeneData)" class="m-auto"/>
+        </div>
       </div>
     </div>
   </div>
-  
 </div>
 
 </template>
@@ -162,6 +226,8 @@ import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Chip from 'primevue/chip'
+import Accordion from 'primevue/accordion';
+import AccordionTab from 'primevue/accordiontab';
 
 // Needed?
 import Selection from "@/components/Selection.vue"
@@ -184,8 +250,10 @@ export default {
     DataTable,
     Column,
     Chip,
-    Selection,
-    Prime,
+    // Selection,
+    // Prime,
+    Accordion,
+    AccordionTab,
 
     BarPlot,
     LinePlot,
@@ -196,7 +264,7 @@ export default {
     return {
       items: [
         {
-          label: 'Bar',
+          label: 'Histogram',
           icon: 'pi pi-fw pi-chart-bar',
           currentComponent: 'BarPlot',
           // to: '/main/bar',
@@ -214,6 +282,7 @@ export default {
       gettingDatasets: false,
       gotGeneData: false,
       gettingGeneData: false, 
+      datasetsFilterWarning: false,
       filterWarning: false,
 
       db_metadata: null,
@@ -242,6 +311,14 @@ export default {
       genes: [], // [{name:'Alb'},...]
       genesFiltered: [],
       genesSelected: [],
+
+      gender: [],
+      genderFiltered: [],
+      genderSelected: [], 
+
+      condition: [],
+      conditionFiltered: [],
+      conditionSelected: [], 
 
       gene_metadata_table_names: [],
       sample_metadata_table_names: [],
@@ -309,7 +386,7 @@ export default {
     this.tissueSelected = [{name:'BAT'}, {name:'DG'}]
     this.tissueRowChange('select')
     await this.getDatasets()
-    this.genesSelected = [{name:'Alb'}]
+    this.genesSelected = [{name:'Clock'}]
     await this.getGeneData()
     this.index = 0
 
@@ -357,9 +434,17 @@ export default {
       // this.genes = this.genes.data.map((d) => ({name: d.gene_name}))
       // this.loadingGenes = false
       // this.datasets = await DataService.getDatasets
+
+      // BUG: Need to be after gotDatasets flag?
+      if (this.gotGeneData) {
+        // Already got genes at least once, call getGeneData to update chart
+        await this.getGeneData()
+      }
+
       this.gotDatasets = true
       this.gettingDatasets = false
 
+      
       const elapsed = Date.now() - start
       console.log('getDatasets time elapsed: ', elapsed)
     },
@@ -635,7 +720,7 @@ export default {
       // console.log('intersection')
       // console.log(intersection)
       // If no datasets in intersection, show warning
-      this.filterWarning = intersection.length == 0
+      this.datasetsFilterWarning = intersection.length == 0
 
       // If not called from species change, update possible selections  
       // If called from species change, and reset is true
@@ -736,6 +821,34 @@ export default {
       this.updateLookupTable('tissue', reset)
       // console.log('----------------')
     },
+    genderRowChange(text) {
+      // console.log('----------------')
+      // console.log('genderRowChange')
+      let reset = this.genderSelected.length == 0
+      if (text == 'unselect-all') {
+        this.genderSelected = []
+        reset = true
+      } else if (text == 'select-all') {
+        this.genderSelected = this.genderFiltered
+        reset = false
+      }
+      this.updateLookupTable('gender', reset)
+      // console.log('----------------')
+    },
+    conditionRowChange(text) {
+      // console.log('----------------')
+      // console.log('conditionRowChange')
+      let reset = this.conditionSelected.length == 0
+      if (text == 'unselect-all') {
+        this.conditionSelected = []
+        reset = true
+      } else if (text == 'select-all') {
+        this.conditionSelected = this.conditionFiltered
+        reset = false
+      }
+      this.updateLookupTable('condition', reset)
+      // console.log('----------------')
+    },
     filterResults() {
       // Defunct? 
       //
@@ -803,6 +916,33 @@ export default {
     color: #ffffff;
 }
 
+#gene-search {
+  :deep(.p-autocomplete-token) {
+    margin-top:2px !important;
+  }
+
+}
+#filters-boxes {
+  :deep(.p-accordion-header-link ) {
+    padding:10px !important;
+  }
+
+  :deep(.p-accordion-content) {
+    padding:10px !important;
+  }
+}
+
+#current-filters-ui {
+  :deep(.p-chip) {
+    margin-top: 2px !important;
+  }
+}
+
+#graphs-view {
+  :deep(.p-menuitem-link) {
+    padding: 10px !important;
+  }
+}
 
 
 </style>
