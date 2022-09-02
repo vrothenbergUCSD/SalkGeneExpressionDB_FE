@@ -203,7 +203,7 @@ export default {
     onResize() {
       this.windowHeight = window.innerHeight
       this.windowWidth = window.innerWidth
-      console.log('LinePlot resized', this.windowWidth, this.windowHeight)
+      // console.log('BarPlot resized', this.windowWidth, this.windowHeight)
     },
     axisLinebreaks() {
       // Line breaks for X labels if grouped by Gene 
@@ -1236,8 +1236,8 @@ export default {
     },
     popover(g, data) {
       // Tooltip popover 
-      console.log('popover')
-      console.log(data)
+      // console.log('popover')
+      // console.log(data)
       const text_value = this.popover_text(data.value)
       if (!text_value) return g.style("display", "none")
       const time_point = data.value.time_point 
@@ -1297,7 +1297,7 @@ export default {
     toggleVisibility(newOpacity, id) {
       // Toggles visibility by gene and group
       // TODO: Toggle eye one level up if all child eyes are set to on or off
-      console.log('toggleVisibility', newOpacity, id)
+      // console.log('toggleVisibility', newOpacity, id)
       // console.log(this.allPoints)
       // console.log('this.group_visibility')
       // console.log(this.group_visibility)
@@ -1305,8 +1305,8 @@ export default {
       // const lines = d3.selectAll(`[id^='line_${id}']`)
       // lines.transition_attributes('stroke-opacity', newOpacity)
       
-      console.log('this.subgroup_visibility before')
-      console.log(this.subgroup_visibility)
+      // console.log('this.subgroup_visibility before')
+      // console.log(this.subgroup_visibility)
       let matching_keys, bars
       if (this.grouped_by == 'Time') {
         // Group is Time
@@ -1314,8 +1314,8 @@ export default {
         matching_keys = Object.keys(this.subgroup_visibility).filter(e => e.includes(id))
         matching_keys.forEach(e => this.subgroup_visibility[e] = newOpacity)
         bars = d3.select('#bars').selectAll(`[id^='subgroup_${id}']`)
-        console.log('matching_keys')
-        console.log(matching_keys)
+        // console.log('matching_keys')
+        // console.log(matching_keys)
       } else if (this.grouped_by == 'Gene') {
         // TODO: Not implemented
         // Group is Gene + TRF/ALF
@@ -1324,10 +1324,10 @@ export default {
         matching_keys.forEach(e => this.group_visibility[e] = newOpacity)
         bars = d3.select('#bars').selectAll(`[id^='group_${id}']`).selectAll('.subgroup-rect')
       }
-      console.log('this.subgroup_visibility after')
-      console.log(this.subgroup_visibility)
-      console.log('bars')
-      console.log(bars)
+      // console.log('this.subgroup_visibility after')
+      // console.log(this.subgroup_visibility)
+      // console.log('bars')
+      // console.log(bars)
       // console.log('matching_keys')
       // console.log(matching_keys)
       bars.transition_attributes('fill-opacity', newOpacity)
@@ -1335,10 +1335,10 @@ export default {
     },
     tissueClick(evt, i) {
       // Toggle visibility of Tissue data for every child gene and group
-      console.log('tissueClick')
+      // console.log('tissueClick')
       const tissue_root = evt.currentTarget.parentNode
       const id = i[1][0][1][0][1][0].identifier.split('_')[0]
-      console.log('id', id)
+      // console.log('id', id)
       const opacity = tissue_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
 
@@ -1351,10 +1351,10 @@ export default {
     },
     geneClick(evt, i) {
       // Toggle visibility of Tissue_Gene data for both groups
-      console.log('geneClick')
+      // console.log('geneClick')
       const gene_root = evt.currentTarget.parentNode
       const id = i[1][0][1][0].identifier.split('_').slice(0,-1).join('_')
-      console.log('id', id)
+      // console.log('id', id)
       
       const opacity = gene_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
@@ -1367,10 +1367,10 @@ export default {
     },
     groupnameClick(evt, i) {
       // Toggle visibility of Tissue_Gene_Groupname data
-      console.log('groupnameClick')
+      // console.log('groupnameClick')
       const groupname_root = evt.currentTarget.parentNode
       const id = i[1][0].identifier
-      console.log('id', id)
+      // console.log('id', id)
       
       const opacity = groupname_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
@@ -1447,8 +1447,8 @@ export default {
       return text
     },
     infoGroupnameText(data) {
-      console.log('infoGroupnameText')
-      console.log(data)
+      // console.log('infoGroupnameText')
+      // console.log(data)
       const groupname = data[0]
       const sample = data[1][0]
       const stats = data[2]

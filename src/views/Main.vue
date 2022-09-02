@@ -1,21 +1,28 @@
 <template>
 <div id="main" class="w-full p-3 mx-auto mb-20">
-  <div id="page-title" class="pb-2 font-semibold text-3xl text-center">Temporal Gene Expression</div>
+  <div id="page-title" class="pb-2 font-semibold text-3xl text-center">
+    Temporal Gene Expression
+  </div>
   
   <div id="selection-ui" class="mt-2 mx-auto">
     <Toast />
-    <div id="current-filters-ui" class="my-1 mx-3 bg-slate-100 rounded-2xl flex flex-wrap" v-if="this.speciesSelected.length || this.experimentSelected.length || this.tissueSelected.length"> 
-      <div id="filters-species" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.speciesSelected.length">
+    <div id="current-filters-ui" class="my-1 mx-3 bg-slate-100 rounded-2xl min-w-[24rem] flex flex-wrap" 
+      v-if="this.speciesSelected.length || this.experimentSelected.length || this.tissueSelected.length"> 
+      <div id="filters-species" v-if="this.speciesSelected.length"
+        class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3">
         <div class="font-semibold text-sm pl-1">Species:</div>
         <div v-for="(item, index) in this.speciesSelected" :key="item">
-          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeSpeciesFilter(item.name)"/>
+          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable 
+          @remove="removeSpeciesFilter(item.name)"/>
           <span class="px-1 font-semibold" v-if="index < this.speciesSelected.length-1">or</span>
         </div>
       </div>
-      <div id="filters-experiment" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.experimentSelected.length">
+      <div id="filters-experiment" v-if="this.experimentSelected.length"
+      class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" >
         <div class="font-semibold text-sm pl-1">Experiments:</div>
         <div v-for="(item, index) in this.experimentSelected" :key="item" class="my-1">
-          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeExperimentFilter(item.name)"/>
+          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable 
+            @remove="removeExperimentFilter(item.name)"/>
           <span class="px-1 font-semibold text-sm" v-if="index < this.experimentSelected.length-1">or</span>
         </div>
       </div>
@@ -23,17 +30,19 @@
         <div class="font-semibold text-sm pl-1">Tissues:</div>
         <div v-for="(item, index) in this.tissueSelected" :key="item">
           <!-- content -->
-          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeTissueFilter(item.name)"/>
+          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable 
+            @remove="removeTissueFilter(item.name)"/>
           <span class="px-1 font-semibold text-sm" v-if="index < this.tissueSelected.length-1">or</span>
         </div>
       </div>
-      <div id="clear-filters" class=" my-2 flex flex-wrap align-items-center mx-3" >
-        <Chip label="Clear All Filters" class="mx-1 text-sm font-semibold" removable @remove="clearAllFilters"/>
+      <div id="clear-filters" class="my-2 flex flex-wrap align-items-center mx-3">
+        <Chip label="Clear All Filters" class="mx-1 text-sm font-semibold" 
+          removable @remove="clearAllFilters"/>
       </div>
     </div>
     <div id="filters-graph-view" class="flex pl-3">
-      <div id="filters-boxes" class="w-1/4 mt-2">
-        <Accordion :multiple="true" :activeIndex="[0,1]">
+      <div id="filters-boxes" class="w-1/4 mt-2 min-w-[18rem]">
+        <Accordion :multiple="true" :activeIndex="[0,1,2]">
         <!-- <div class="font-semibold text-xl text-center py-1">Datasets</div> -->
           <AccordionTab header="Datasets">
             <div v-if="!this.datasetsFilterWarning">
@@ -141,49 +150,59 @@
           </AccordionTab>
           <AccordionTab header="Filters">
             <div v-if="!this.filterWarning">
-              <div class="p-1 border my-1 rounded">
-                <div class="font-semibold my-2">Gender</div>
-                <DataTable :value="genderFiltered" v-model:selection="genderSelected" 
-                  class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-                  :loading="loading" @row-select="genderRowChange('select')" 
-                  @row-unselect="genderRowChange('unselect')"
-                  @row-select-all="genderRowChange('select-all')"
-                  @row-unselect-all="genderRowChange('unselect-all')">
-                <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
-                <Column field="name" header="" style="text-align:left"></Column>
-                <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
-                  <template #body="slotProps">
-                    {{getCount('gender', slotProps.data.name)}}
-                  </template>
-                </Column>
-                <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
-                  <template #body="slotProps">
-                    {{getFreq('gender', slotProps.data.name)}}
-                  </template>
-                </Column>
-                </DataTable>
+              <div v-show="this.gotDatasets">
+                <div class="p-1 border my-1 rounded">
+                  <div class="font-semibold my-2">Gender</div>
+                  <DataTable :value="genderFiltered" v-model:selection="genderSelected" 
+                    class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+                    :loading="loading" @row-select="genderRowChange('select')" 
+                    @row-unselect="genderRowChange('unselect')"
+                    @row-select-all="genderRowChange('select-all')"
+                    @row-unselect-all="genderRowChange('unselect-all')">
+                  <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                  <Column field="name" header="" style="text-align:left"></Column>
+                  <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                    <template #body="slotProps">
+                      {{getCount('gender', slotProps.data.name)}}
+                    </template>
+                  </Column>
+                  <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                    <template #body="slotProps">
+                      {{getFreq('gender', slotProps.data.name)}}
+                    </template>
+                  </Column>
+                  </DataTable>
+                </div>
+                <div class="p-1 border my-1 rounded">
+                  <div class="font-semibold my-2">Condition</div>
+                  <DataTable :value="conditionFiltered" v-model:selection="conditionSelected" 
+                    class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+                    :loading="loading" @row-select="conditionRowChange('select')" 
+                    @row-unselect="conditionRowChange('unselect')"
+                    @row-select-all="conditionRowChange('select-all')"
+                    @row-unselect-all="conditionRowChange('unselect-all')">
+                  <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                  <Column field="name" header="" style="text-align:left"></Column>
+                  <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                    <template #body="slotProps">
+                      {{getCount('condition', slotProps.data.name)}}
+                    </template>
+                  </Column>
+                  <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                    <template #body="slotProps">
+                      {{getFreq('condition', slotProps.data.name)}}
+                    </template>
+                  </Column>
+                  </DataTable>
+                </div>
               </div>
-              <div class="p-1 border my-1 rounded">
-                <div class="font-semibold my-2">Condition</div>
-                <DataTable :value="conditionFiltered" v-model:selection="conditionSelected" 
-                  class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-                  :loading="loading" @row-select="conditionRowChange('select')" 
-                  @row-unselect="conditionRowChange('unselect')"
-                  @row-select-all="conditionRowChange('select-all')"
-                  @row-unselect-all="conditionRowChange('unselect-all')">
-                <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
-                <Column field="name" header="" style="text-align:left"></Column>
-                <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
-                  <template #body="slotProps">
-                    {{getCount('condition', slotProps.data.name)}}
-                  </template>
-                </Column>
-                <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
-                  <template #body="slotProps">
-                    {{getFreq('condition', slotProps.data.name)}}
-                  </template>
-                </Column>
-                </DataTable>
+              <div v-show="!this.gotDatasets">
+                <div v-show="this.gettingDatasets">
+                Loading... please wait.
+                </div>
+                <div v-show="!this.gettingDatasets">
+                Please first select at least one dataset.
+                </div>
               </div>
             </div>
             <div v-else class="text-center font-semibold text-lg">
@@ -192,7 +211,7 @@
           </AccordionTab>
         </Accordion>
       </div>
-      <div id="graphs-view" class="w-3/4 h-1/2">
+      <div id="graphs-view" class="w-3/4 h-1/2 min-w-[50rem]">
         <div v-if="this.gotDatasets && this.gotGeneData">
           <div class="card mt-1">
             <div class="mx-auto w-3/4">
@@ -228,10 +247,6 @@ import Column from 'primevue/column'
 import Chip from 'primevue/chip'
 import Accordion from 'primevue/accordion';
 import AccordionTab from 'primevue/accordiontab';
-
-// Needed?
-import Selection from "@/components/Selection.vue"
-import Prime from "@/components/Prime.vue"
 
 import BarPlot from "@/components/svg/BarPlot.vue"
 import LinePlot from "@/components/svg/LinePlot.vue"
@@ -291,7 +306,8 @@ export default {
       lookup_table: null,
       
       columns: null,
-      categories: ['species', 'experiment', 'tissue'],
+      dataset_categories: ['species', 'experiment', 'tissue'],
+      sample_categories: ['gender', 'condition'],
 
       speciesList: [], //["Mouse", "Human", "Baboon"],
       speciesFiltered: [], // [{name: Mouse}, {name:Human}]
@@ -314,11 +330,13 @@ export default {
 
       gender: [],
       genderFiltered: [],
-      genderSelected: [], 
+      genderSelected: [],
+      genderSelectedFilters: [], 
 
       condition: [],
       conditionFiltered: [],
       conditionSelected: [], 
+      conditionSelectedFilters: [],
 
       gene_metadata_table_names: [],
       sample_metadata_table_names: [],
@@ -381,6 +399,8 @@ export default {
       this.loadMetadata(), 
       // this.loadGenes()
     ])
+    console.log('this.lookup_table')
+    console.log(this.lookup_table)
 
     // Testing - Remove later
     this.tissueSelected = [{name:'BAT'}, {name:'DG'}]
@@ -388,8 +408,9 @@ export default {
     await this.getDatasets()
     this.genesSelected = [{name:'Clock'}]
     await this.getGeneData()
-    this.index = 0
 
+    // Line chart at index 1
+    this.index = 1
 
     // // this.$router.push('/main/line')
     
@@ -435,7 +456,6 @@ export default {
       // this.loadingGenes = false
       // this.datasets = await DataService.getDatasets
 
-      // BUG: Need to be after gotDatasets flag?
       if (this.gotGeneData) {
         // Already got genes at least once, call getGeneData to update chart
         await this.getGeneData()
@@ -444,7 +464,6 @@ export default {
       this.gotDatasets = true
       this.gettingDatasets = false
 
-      
       const elapsed = Date.now() - start
       console.log('getDatasets time elapsed: ', elapsed)
     },
@@ -583,9 +602,21 @@ export default {
       // console.log('loadGenes time elapsed: ', elapsed)
     },
     async loadMetadata() {
+      console.log('loadMetadata')
       const start = Date.now()
       // this.db_metadata = await DataService.getDatabaseMetadata().then(e => e.data)
       this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
+      console.log('this.db_metadata')
+      console.log(this.db_metadata)
+      // Parse gender and condition fields
+      this.db_metadata.forEach(e => {
+        const genderStr = e.gender.replaceAll(/[']+/g, '"')
+        e.gender = JSON.parse(genderStr)
+
+        const conditionStr = e.condition.replaceAll(/[']+/g, '"')
+        e.condition = JSON.parse(conditionStr)
+      })
+
       this.lookup_table = this.initializeLookupTable(this.db_metadata)
       this.filtered_metadata = this.db_metadata
       this.selected_metadata = []
@@ -598,6 +629,24 @@ export default {
 
       this.tissueList = this.buildList([...new Set(this.db_metadata.map(item => item.tissue))])
       this.tissueFiltered = this.tissueList
+
+
+      this.genderList = this.buildList([...new Set(this.db_metadata.map(item => 
+        [...new Set(item.gender.map(g => g.gender))]
+        ).flat())])
+
+      console.log('this.genderList')
+      console.log(this.genderList)
+      this.genderFiltered = this.genderList
+      
+
+      this.conditionList = this.buildList([...new Set(this.db_metadata.map(item =>
+        [...new Set(item.condition.map(c => c.condition))]
+        ).flat())])
+      this.conditionFiltered = this.conditionList
+      console.log('this.conditionList')
+      console.log(this.conditionList)
+
 
       this.loading = false
       const elapsed = Date.now() - start
@@ -647,23 +696,58 @@ export default {
       if (!this.tissueSelected.length) reset = true
       this.updateLookupTable('tissue', reset)
     },
+    removeGenderFilter(text) {
+      // console.log('removeGenderFilter')
+      this.genderSelected = this.genderSelected.filter((obj) => 
+         obj.name != text
+      );
+      let reset = false
+      if (!this.genderSelected.length) reset = true
+      this.updateLookupTable('gender', reset)
+    },
+    removeConditionFilter(text) {
+      // console.log('removeGenderFilter')
+      this.conditionSelected = this.conditionSelected.filter((obj) => 
+         obj.name != text
+      );
+      let reset = false
+      if (!this.conditionSelected.length) reset = true
+      this.updateLookupTable('condition', reset)
+    },
     clearAllFilters() {
       // console.log('clearAllFilters')
       this.speciesSelected = []
       this.experimentSelected = []
       this.tissueSelected = []
+      this.genderSelected = []
+      this.conditionSelected = []
       this.updateLookupTable('', true)
     },
     initializeLookupTable(metadata) {
       // console.log('initializeLookupTable')
       const table = {}
-      this.categories.forEach((cat) => {
+      this.dataset_categories.forEach((cat) => {
         // species, experiment, tissue
         table[cat] = {}
         const uniqVal = [...new Set(metadata.map(item => item[cat]))]
         let sum = 0
         uniqVal.forEach((val) => {
           // Mouse, TRF_2020, Liver, etc. 
+          table[cat][val] = {}
+          table[cat][val].count = metadata
+            .reduce((acc, cur) => cur[cat] === val ? ++acc : acc, 0)
+          sum += table[cat][val].count
+        })
+        uniqVal.forEach((val) => {
+          table[cat][val].freq = table[cat][val].count / sum
+        })
+      })
+      this.sample_categories.forEach((cat) => {
+        table[cat] = {}
+        const uniqVal = [...new Set(metadata.map(item => 
+          [...new Set(item[cat].map(m => m[cat]))]).flat())]
+        let sum = 0
+        uniqVal.forEach(val => {
           table[cat][val] = {}
           table[cat][val].count = metadata
             .reduce((acc, cur) => cur[cat] === val ? ++acc : acc, 0)
@@ -741,7 +825,7 @@ export default {
       if (this.tissueOnlySelected)
         this.tissueFiltered = this.buildList([...new Set(this.db_metadata.map(item => item.tissue))])
 
-      this.categories.forEach((cat) => {
+      this.dataset_categories.forEach((cat) => {
         // cat = species, experiment, tissue
         let uniqVal = [...new Set(intersection.map(item => item[cat]))]
         // If called by current category and not resetting 

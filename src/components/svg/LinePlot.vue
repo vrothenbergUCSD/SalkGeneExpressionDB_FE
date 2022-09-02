@@ -176,7 +176,7 @@ export default {
     onResize() {
       this.windowHeight = window.innerHeight
       this.windowWidth = window.innerWidth
-      console.log('LinePlot resized', this.windowWidth, this.windowHeight)
+      // console.log('LinePlot resized', this.windowWidth, this.windowHeight)
     },
     update_datasets() {
       console.log('update_datasets')
