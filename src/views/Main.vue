@@ -61,6 +61,7 @@
     </div>
     <div id="filters-graph-view" class="flex pl-3">
       <div id="filters-boxes" class="w-1/4 mt-2 min-w-[20rem]">
+        
         <Accordion :multiple="true" :activeIndex="[0,1,2]">
           <AccordionTab header="Filters">
             <div v-if="!this.datasets_filter_warning">
@@ -68,12 +69,12 @@
                 Datasets
               </div>
               <div class="p-1 border my-1 rounded">
-                <DataTable :value="species_filtered" v-model:selection="species_selected" 
+                <DataTable :value="this.species_filtered" v-model:selection="this.species_selected" 
                   class="p-datatable-sm p-datatable-species" stripedRows :scrollable="true" scrollHeight="200px" 
-                  :loading="loading" @row-select="update_lookup_table" 
-                  @row-unselect="update_lookup_table"
-                  @row-select-all="update_lookup_table"
-                  @row-unselect-all="update_lookup_table">
+                  :loading="loading" @row-select="update_lookup_table()" 
+                  @row-unselect="update_lookup_table()"
+                  @row-select-all="update_lookup_table()"
+                  @row-unselect-all="update_lookup_table()">
                 <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
                 <Column field="name" header="Species"></Column>
                 <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
@@ -136,7 +137,7 @@
                 Samples
               </div>
               <div class="p-1 border my-1 rounded">
-                <DataTable :value="gender_filtered" v-model:selection="gender_selected" 
+                <DataTable :value="gender_filtered" v-model:selection="this.gender_selected" 
                   class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
                   :loading="loading" @row-select="update_lookup_table" 
                   @row-unselect="update_lookup_table"
@@ -157,7 +158,7 @@
                 </DataTable>
               </div>
               <div class="p-1 border my-1 rounded">
-                <DataTable :value="condition_filtered" v-model:selection="condition_selected" 
+                <DataTable :value="condition_filtered" v-model:selection="this.condition_selected" 
                   class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
                   :loading="loading" @row-select="update_lookup_table" 
                   @row-unselect="update_lookup_table"
@@ -296,9 +297,8 @@ export default {
       filter_warning: false,
 
       db_metadata: null,
-      filtered_metadata: null,
       selected_metadata: null,
-      lookup_table: null,
+      lookup_table: {},
       
       dataset_categories: ['species', 'experiment', 'tissue'],
       sample_categories: ['gender', 'condition'],
@@ -306,31 +306,32 @@ export default {
       species_list: [], //["Mouse", "Human", "Baboon"],
       species_filtered: [], // [{name: Mouse}, {name:Human}]
       species_selected: [],
-      species_selectedFilters: [],
+      species_result: null,
 
       experiment_list: [], //["Mouse_TRF_2018", "Mouse_TRF_2019", "Baboon_TRF_2020", "Human_ABC_2020"],
       experiment_filtered: [],
       experiment_selected: [],
-      experiment_selectedFilters: [],
+      experiment_result: null,
 
       tissue_list: [], //["Liver", "Muscle", "Adipose", "Heart", "Neuron"],
       tissue_filtered: [],     
       tissue_selected: [],
-      tissue_selectedFilters: [],
+      tissue_result: null,
 
       genes: [], // [{name:'Alb'},...]
       genes_filtered: [],
       genes_selected: [],
+      genes_results: null,
 
       gender: [],
       gender_filtered: [],
       gender_selected: [],
-      gender_selectedFilters: [], 
+      gender_result: null,
 
       condition: [],
       condition_filtered: [],
       condition_selected: [], 
-      condition_selectedFilters: [],
+      condition_result: null,
 
       gene_metadata_table_names: [],
       sample_metadata_table_names: [],
@@ -346,23 +347,14 @@ export default {
       current_component: null,
     }
   },
-  created() {
-    console.log('Main created')
-
-    this.species_list = this.build_list(this.species_list)
-    this.species_filtered = this.species_list
-    
-    this.experiment_list = this.build_list(this.experiment_list)
-    this.experiment_filtered = this.experiment_list
-
-    this.tissue_list = this.build_list(this.tissue_list)
-    this.tissue_filtered = this.tissue_list
-
-  },
   async mounted() {
     // Populate array with all genes
     console.log('Main mounted, await datasets metadata: ')
     const start = Date.now()
+
+    // Initialize lookup_table
+    this.dataset_categories.forEach(e => this.lookup_table[e] = {})
+    this.sample_categories.forEach(e => this.lookup_table[e] = {})
 
     // Concurrent await
     await Promise.all([
@@ -370,11 +362,9 @@ export default {
     ])
 
     // Testing - Remove later
-    this.tissue_selected = [{name:'BAT'}]
-    this.update_lookup_table()
-    await this.get_datasets()
+    this.tissue_selected = [{name:'Arcuate'}]
     this.genes_selected = [{name:'Clock'}]
-    await this.get_gene_data()
+    await this.update_lookup_table()
 
     // Line chart at index 1
     this.index = 1
@@ -383,7 +373,47 @@ export default {
     console.log('Main mounted time elapsed ', elapsed)
   },
   methods: {
+    async load_metadata() {
+      console.log('load_metadata')
+      const start = Date.now()
+      this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
+      // Parse gender and condition fields
+      this.db_metadata.forEach(e => {
+        const genderStr = e.gender.replaceAll(/[']+/g, '"')
+        e.gender = JSON.parse(genderStr)
+
+        const conditionStr = e.condition.replaceAll(/[']+/g, '"')
+        e.condition = JSON.parse(conditionStr)
+      })
+
+      this.species_list = this.build_list([...new Set(this.db_metadata.map(item => item.species))])
+      this.species_filtered = this.species_list
+      console.log('this.species_filtered')
+      console.log(this.species_filtered)
+
+      this.experiment_list = this.build_list([...new Set(this.db_metadata.map(item => item.experiment))])
+      this.experiment_filtered = this.experiment_list
+
+      this.tissue_list = this.build_list([...new Set(this.db_metadata.map(item => item.tissue))])
+      this.tissue_filtered = this.tissue_list
+
+      this.gender_list = this.build_list([...new Set(this.db_metadata.map(item => 
+        [...new Set(item.gender.map(g => g.gender))]
+        ).flat())])
+      this.gender_filtered = this.gender_list
+      
+      this.condition_list = this.build_list([...new Set(this.db_metadata.map(item =>
+        [...new Set(item.condition.map(c => c.condition))]
+        ).flat())])
+      this.condition_filtered = this.condition_list
+
+      this.loading = false
+      const elapsed = Date.now() - start 
+      console.log('load_metadata time elapsed: ', elapsed)
+    },
     async get_datasets() {
+      console.log('get_datasets')
+      const start = Date.now()
       this.getting_datasets = true
       this.gene_metadata_table_names = []
       this.sample_metadata_table_names = []
@@ -411,10 +441,13 @@ export default {
       this.got_datasets = true
       this.getting_datasets = false
 
-      if (this.got_gene_data) {
-        // Already got genes at least once, call get_gene_data to update chart
-        await this.get_gene_data()
-      }
+      if (this.genes_selected.length)
+        // If user has at least one selected genes call get_gene_data 
+        //  to update chart
+        this.get_gene_data()
+
+      const elapsed = Date.now() - start 
+      console.log('get_datasets time elapsed: ', elapsed)
     },
     async get_gene_metadata_tables(tables) {
       this.loading_genes = true
@@ -431,7 +464,6 @@ export default {
       this.loading_genes = false
     },
     async get_sample_metadata_tables(tables) {
-      const start = Date.now()
       this.sample_metadata_tables = await Promise.all(tables.map(async (t) => {
         const result = await DataService.getSampleMetadata(t)
         return {
@@ -451,7 +483,6 @@ export default {
       }))
     },
     async get_selected_gene_metadata(genes, tables) {
-      const start = Date.now()
       let genesStr = genes.map((d) => d.name).toString()
       this.selected_gene_metadata = await Promise.all(tables.map(async (t) => {
         const result = await DataService.getGeneMetadata(genesStr, t)     
@@ -462,6 +493,8 @@ export default {
       }))
     },
     async get_gene_data() {
+      console.log('get_gene_data')
+      const start = Date.now()
       this.getting_gene_data = true
       if (!this.genes_selected.length) {
         this.$toast.add({severity: 'error', summary: 'Error', detail: 'No genes selected', life: 5000});
@@ -480,49 +513,149 @@ export default {
       }
       this.got_gene_data = true
       this.getting_gene_data = false
+      const elapsed = Date.now() - start 
+      console.log('get_gene_data time elapsed: ', elapsed)
     },
-    async load_metadata() {
+    async update_lookup_table() {
+      console.log('update_lookup_table')
       const start = Date.now()
-      this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
-      // Parse gender and condition fields
-      this.db_metadata.forEach(e => {
-        const genderStr = e.gender.replaceAll(/[']+/g, '"')
-        e.gender = JSON.parse(genderStr)
+      // Get each subset of all datasets for each filter grouping, excluding its
+      //  own additional filter conditions to prevent prematurely locking in a selection
+      this.species_result = this.filter_metadata_except('species')
+      this.experiment_result = this.filter_metadata_except('experiment')
+      this.tissue_result = this.filter_metadata_except('tissue')
+      this.gender_result = this.filter_metadata_except('gender') 
+      this.condition_result = this.filter_metadata_except('condition')
 
-        const conditionStr = e.condition.replaceAll(/[']+/g, '"')
-        e.condition = JSON.parse(conditionStr)
+      this.species_filtered = this.build_list([...new Set(this.species_result.map(item => item.species))].sort())
+      this.experiment_filtered = this.build_list([...new Set(this.experiment_result.map(item => item.experiment))].sort())
+      this.tissue_filtered = this.build_list([...new Set(this.tissue_result.map(item => item.tissue))].sort())
+
+      // Get all genders in filtered list then flatten and get unique values
+      this.gender_filtered = this.build_list([...new Set(
+        this.gender_result.map(item => 
+          [...new Set(item.gender.map(m => m.gender))]).flat()  
+        )].sort())
+      this.condition_filtered = this.build_list([...new Set(
+        this.condition_result.map(item => 
+          [...new Set(item.condition.map(m => m.condition))]).flat() 
+        )].sort())
+
+      this.selected_metadata = _.intersection(
+        this.species_result, 
+        this.experiment_result,
+        this.tissue_result,
+        this.gender_result,
+        this.condition_result)
+
+      let uniqVal, catResult, dataset, catFiltered, sum
+
+      this.dataset_categories.forEach((cat) => {
+        // cat = species, experiment, tissue
+        catResult = cat + '_result'
+        dataset = this[catResult]
+        catFiltered = cat + '_filtered'
+        uniqVal = this[catFiltered].map(el => el.name)
+        sum = 0
+        this.lookup_table[cat] = {}
+        uniqVal.forEach((val) => {
+          // val = Mouse, TRF_2020, Liver, etc. 
+          this.lookup_table[cat][val] = {}
+          this.lookup_table[cat][val].count = dataset
+            .reduce((acc, cur) => cur[cat] === val ? ++acc : acc, 0)
+          sum += this.lookup_table[cat][val].count
+        })
+        uniqVal.forEach((val) => {
+          this.lookup_table[cat][val].freq = this.lookup_table[cat][val].count / sum
+        })
       })
 
-      this.update_lookup_table()
-      this.filtered_metadata = this.db_metadata
-      this.selected_metadata = []
+      this.sample_categories.forEach((cat) => {
+        // cat = gender, condition
+        catResult = cat + '_result'
+        dataset = this[catResult]
+        catFiltered = cat + '_filtered'
+        uniqVal = this[catFiltered].map(el => el.name)
+        sum = 0
+        this.lookup_table[cat] = {}
+        uniqVal.forEach(val => {
+          // val = Male, Female, etc..
+          this.lookup_table[cat][val] = {}
+          this.lookup_table[cat][val].count = dataset
+            .reduce((acc, cur) => {
+              const reduce_result = cur[cat].reduce((a, c) => 
+                c[cat] === val ? a + c.count : a, 0)
+              return cat in cur ? acc + reduce_result : acc}, 0)
+          sum += this.lookup_table[cat][val].count
+        })
+        uniqVal.forEach((val) => {
+          this.lookup_table[cat][val].freq = this.lookup_table[cat][val].count / sum
+        })
+      })
 
-      this.species_list = this.build_list([...new Set(this.db_metadata.map(item => item.species))])
-      this.species_filtered = this.species_list
+      // Get datasets, update chart if genes selected
+      await this.get_datasets()
 
-      this.experiment_list = this.build_list([...new Set(this.db_metadata.map(item => item.experiment))])
-      this.experiment_filtered = this.experiment_list
+      const elapsed = Date.now() - start 
+      console.log('update_lookup_table time elapsed: ', elapsed)
+    },
+    filter_metadata_except(except_category) {
+      // Applies all selection filters for other categories excluding the provided category
+      // Allows for selecting more instances of a filter category without prematurely
+      //  locking in current filters, preventing adding new selections that are not 
+      //  in the intersection, e.g. selecting Heart tissue would filter down all 
+      //  datasets to only include those from Heart tissue, preventing selecting Liver, etc.
 
-      this.tissue_list = this.build_list([...new Set(this.db_metadata.map(item => item.tissue))])
-      this.tissue_filtered = this.tissue_list
+      let filtered = this.db_metadata
+      if (except_category != 'species') {
+        const species_selected_names = this.species_selected.map(el => el.name)
+        // If no species selected, then skip filtering
+        if (species_selected_names.length)
+          filtered = filtered.filter(
+            ({ species }) => species_selected_names.some(
+              (s) => species.toLowerCase().includes(s.toLowerCase())))
+      }
 
+      if (except_category != 'experiment') {
+        const experiment_selected_names = this.experiment_selected.map(el => el.name)
+        if (experiment_selected_names.length)
+          filtered = filtered.filter(
+            ({ experiment }) => experiment_selected_names.some(
+              (s) => experiment.toLowerCase().includes(s.toLowerCase())))
+      }
 
-      this.gender_list = this.build_list([...new Set(this.db_metadata.map(item => 
-        [...new Set(item.gender.map(g => g.gender))]
-        ).flat())])
-      this.gender_filtered = this.gender_list
-      
-      this.condition_list = this.build_list([...new Set(this.db_metadata.map(item =>
-        [...new Set(item.condition.map(c => c.condition))]
-        ).flat())])
-      this.condition_filtered = this.condition_list
+      if (except_category != 'tissue') {
+        const tissue_selected_names = this.tissue_selected.map(el => el.name)
+        if (tissue_selected_names.length)
+          filtered = filtered.filter(
+            ({ tissue }) => tissue_selected_names.some(
+              (s) => tissue.toLowerCase().includes(s.toLowerCase())))
+      }
 
-      this.loading = false
+      if (except_category != 'gender') {
+        const gender_selected_names = this.gender_selected.map(el => el.name)
+        if (gender_selected_names.length)
+          filtered = filtered.filter(
+            ({ gender }) => gender_selected_names.some(
+              (s) => gender.some((gend) => 
+                gend.gender.toLowerCase() == s.toLowerCase())))
+      }
+
+      if (except_category != 'condition') {
+        const condition_selected_names = this.condition_selected.map(el => el.name)
+        if (condition_selected_names.length)
+          filtered = filtered.filter(
+          ({ condition }) => condition_selected_names.some(
+            (s) => condition.some((cond) => 
+              cond.condition.toLowerCase() == s.toLowerCase())))
+      }
+
+      return filtered
     },
     get_count(cat, value) {
       // cat = 'species' 
-      // value = 'Human'
-      if (Object.keys(this.lookup_table[cat]).includes(value))
+      // value = 'Human' 
+      if (Object.keys(this.lookup_table[cat]).includes(value)) 
         return this.lookup_table[cat][value].count
       return null
     },
@@ -569,136 +702,6 @@ export default {
       this.condition_selected = []
       this.update_lookup_table()
     },
-    filter_metadata_except(except_category) {
-      // Applies all selection filters for other categories excluding the provided category
-      // Allows for selecting more instances of a filter category without prematurely
-      //  locking in current filters, preventing adding new selections that are not 
-      //  in the intersection, e.g. selecting Heart tissue would filter down all 
-      //  datasets to only include those from Heart tissue, preventing selecting Liver, etc.
-
-      let filtered = this.db_metadata
-      if (except_category != 'species') {
-        const species_selectedNames = this.species_selected.map(el => el.name)
-        // If no species selected, then skip filtering
-        if (species_selectedNames.length)
-          filtered = filtered.filter(
-            ({ species }) => species_selectedNames.some(
-              (s) => species.toLowerCase().includes(s.toLowerCase())))
-      }
-
-      if (except_category != 'experiment') {
-        const experiment_selectedNames = this.experiment_selected.map(el => el.name)
-        if (experiment_selectedNames.length)
-          filtered = filtered.filter(
-            ({ experiment }) => experiment_selectedNames.some(
-              (s) => experiment.toLowerCase().includes(s.toLowerCase())))
-      }
-
-      if (except_category != 'tissue') {
-        const tissue_selectedNames = this.tissue_selected.map(el => el.name)
-        if (tissue_selectedNames.length)
-          filtered = filtered.filter(
-            ({ tissue }) => tissue_selectedNames.some(
-              (s) => tissue.toLowerCase().includes(s.toLowerCase())))
-      }
-
-      if (except_category != 'gender') {
-        const gender_selectedNames = this.gender_selected.map(el => el.name)
-        if (gender_selectedNames.length)
-          filtered = filtered.filter(
-            ({ gender }) => gender_selectedNames.some(
-              (s) => gender.some((gend) => 
-                gend.gender.toLowerCase() == s.toLowerCase())))
-      }
-
-      if (except_category != 'condition') {
-        const condition_selectedNames = this.condition_selected.map(el => el.name)
-        if (condition_selectedNames.length)
-          filtered = filtered.filter(
-          ({ condition }) => condition_selectedNames.some(
-            (s) => condition.some((cond) => 
-              cond.condition.toLowerCase() == s.toLowerCase())))
-      }
-
-      return filtered
-    },
-    update_lookup_table() {
-      // Get each subset of all datasets for each filter grouping, excluding its
-      //  own additional filter conditions to prevent prematurely locking in a selection
-      this.species_result = this.filter_metadata_except('species')
-      this.experiment_result = this.filter_metadata_except('experiment')
-      this.tissue_result = this.filter_metadata_except('tissue')
-      this.gender_result = this.filter_metadata_except('gender') 
-      this.condition_result = this.filter_metadata_except('condition')
-
-      this.species_filtered = this.build_list([...new Set(this.species_result.map(item => item.species))].sort())
-      this.experiment_filtered = this.build_list([...new Set(this.experiment_result.map(item => item.experiment))].sort())
-      this.tissue_filtered = this.build_list([...new Set(this.tissue_result.map(item => item.tissue))].sort())
-
-      // Get all genders in filtered list then flatten and get unique values
-      this.gender_filtered = this.build_list([...new Set(
-        this.gender_result.map(item => 
-          [...new Set(item.gender.map(m => m.gender))]).flat()  
-        )].sort())
-      this.condition_filtered = this.build_list([...new Set(
-        this.condition_result.map(item => 
-          [...new Set(item.condition.map(m => m.condition))]).flat() 
-        )].sort())
-
-      this.selected_metadata = _.intersection(
-        this.species_result, 
-        this.experiment_result,
-        this.tissue_result,
-        this.gender_result,
-        this.condition_result)
-
-      let uniqVal, catResult, dataset, catFiltered, sum
-
-      this.lookup_table = {}
-
-      this.dataset_categories.forEach((cat) => {
-        // cat = species, experiment, tissue
-        catResult = cat + '_result'
-        dataset = this[catResult]
-        catFiltered = cat + '_filtered'
-        uniqVal = this[catFiltered].map(el => el.name)
-        sum = 0
-        this.lookup_table[cat] = {}
-        uniqVal.forEach((val) => {
-          // val = Mouse, TRF_2020, Liver, etc. 
-          this.lookup_table[cat][val] = {}
-          this.lookup_table[cat][val].count = dataset
-            .reduce((acc, cur) => cur[cat] === val ? ++acc : acc, 0)
-          sum += this.lookup_table[cat][val].count
-        })
-        uniqVal.forEach((val) => {
-          this.lookup_table[cat][val].freq = this.lookup_table[cat][val].count / sum
-        })
-      })
-
-      this.sample_categories.forEach((cat) => {
-        // cat = gender, condition
-        catResult = cat + '_result'
-        dataset = this[catResult]
-        catFiltered = cat + '_filtered'
-        uniqVal = this[catFiltered].map(el => el.name)
-        sum = 0
-        this.lookup_table[cat] = {}
-        uniqVal.forEach(val => {
-          // val = Male, Female, etc..
-          this.lookup_table[cat][val] = {}
-          this.lookup_table[cat][val].count = dataset
-            .reduce((acc, cur) => {
-              const reduce_result = cur[cat].reduce((a, c) => 
-                c[cat] === val ? a + c.count : a, 0)
-              return cat in cur ? acc + reduce_result : acc}, 0)
-          sum += this.lookup_table[cat][val].count
-        })
-        uniqVal.forEach((val) => {
-          this.lookup_table[cat][val].freq = this.lookup_table[cat][val].count / sum
-        })
-      })
-    },
     async search_genes(event) {
       setTimeout(() => {
         if (!event.query.trim().length) {
@@ -712,7 +715,6 @@ export default {
       }, 250);
     },
   },
-
 }
 </script>
 

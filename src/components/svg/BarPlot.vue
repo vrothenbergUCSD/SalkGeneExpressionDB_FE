@@ -183,9 +183,9 @@ export default {
     this.$nextTick(() => {
       window.addEventListener('resize', this.onResize);
     })
-    
-    console.log('BarPlot mounted, time elapsed:')
-    console.log(Date.now() - start)
+
+    const elapsed = Date.now() - start
+    console.log('BarPlot mounted, time elapsed: ', elapsed)
 
   },
   beforeDestroy() { 
@@ -203,27 +203,24 @@ export default {
     onResize() {
       this.windowHeight = window.innerHeight
       this.windowWidth = window.innerWidth
-      // console.log('BarPlot resized', this.windowWidth, this.windowHeight)
     },
     axisLinebreaks() {
       // Line breaks for X labels if grouped by Gene 
       if (this.grouped_by == 'Gene') {
         this.svg.selectAll('.myXaxis .tick text').call(function(t) {   
-          console.log('here')
-          console.log(t)             
+          // console.log('here')
+          // console.log(t)             
           t.each(function(d) { // for each one
-            console.log('inside')
+            // console.log('inside')
             const self = d3.select(this);
-            console.log(self) // Selection
+            // console.log(self) // Selection
             let st = self.text()
-            console.log(st) 
+            // console.log(st) 
             if (st == '') {
               // Not yet initialized.. 
-              console.log('Not yet initialized')
+              // console.log('Not yet initialized')
               st = self._groups[0][0]
-              console.log(st)
-              console.log(st.textContent)
-              // st = st.innerText
+   
             }
 
             // let s = st.split('_')  // get the text and split it
@@ -252,43 +249,28 @@ export default {
       this.update_grouped_bar_plot()
     },
     updateTimePointsSelected(evt) {
-      // console.log('updateTimePointsSelected')
-      // console.log(evt)
       // TODO: Make more efficient by only toggling changed values?
-      // console.log('getTimePointsSelected')
-      // console.log(time_points_selected)
-      // this.time_points_selected = time_points_selected
-      // console.log(this.time_points_selected)
       for (const key of Object.keys(this.time_visibility)) {
         this.time_visibility[key] = 0
       }
       this.time_points_selected.forEach(e => this.time_visibility[e.name] = 1)
-      // console.log(this.time_points_selected)
-      // console.log(this.time_visibility)
-      if (this.grouped_by == 'Time') {
-        // d3.select
-        Object.keys(this.time_visibility).forEach(key => {
-          const opacity = this.time_visibility[key]
-          const id = `#group_${key}`
-          // console.log(id)
-          const bar = d3.select('#bars').selectAll(id)
-          // console.log(bar)
-          bar.transition_attributes('opacity', opacity)
-        })
-      }
-      // console.log('this.time_visibility')
-      // console.log(this.time_visibility)
-
-      // Change selection
+      Object.keys(this.time_visibility).forEach(key => {
+        const opacity = this.time_visibility[key]
+        let id
+        if (this.grouped_by == 'Time')
+          id = `#group_${key}`
+        else if (this.grouped_by == 'Gene')
+          id = `#subgroup_${key}`
+        
+        const bar = d3.select('#bars').selectAll(id)
+        bar.transition_attributes('opacity', opacity)
+      })
     },
     update_datasets() {
       console.log('update_datasets')
       const start = Date.now()
       this.genes_str_arr = this.genes.map((d) => d.name)
       if (this.datasets) {
-        // console.log('this.datasets')
-        // console.log(this.datasets)
-
         this.expression_merged = []
         // Deep copy!  Prevents unexpected behavior when switching between Bar and Line.
         this.gene_expression_data_tables = JSON.parse(JSON.stringify(this.datasets.gene_expression_data_tables))
@@ -296,19 +278,12 @@ export default {
         this.sample_metadata_tables = JSON.parse(JSON.stringify(this.datasets.sample_metadata_tables))
 
         this.gene_expression_data_tables.forEach((e) => {
-          // console.log('this.gene_expression_data_tables.forEach')
-          // console.log(e)
           const table = e.table_name
           const table_split = table.split('_')
           e.owner = table_split.at(-1)
           e.experiment = table_split.at(0)
           e.year = table_split.at(1)          
-          
-          // Example gene_expression_data table name
-          // "TRF_2018_Mouse_Adrenal_gene_expression_data_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"
-          // console.log('table ', table)
           let sample_table = table.replace('gene_expression_data', 'sample_metadata')
-          // console.log('sample_table', sample_table)
           let expression_data = e.data
           let sample_data = this.sample_metadata_tables.find(obj => {
             return obj.table == sample_table
@@ -318,8 +293,6 @@ export default {
               ...sample_data.find((item) => (item.sample_name == itm.sample_name) && item),
               ...itm
           }))
-          // console.log('merged_data')
-          // console.log(merged_data)
           e.data = merged_data
           e.data.forEach(itm => itm.table = table)
 
@@ -374,11 +347,8 @@ export default {
         })
 
         const grouped_tissue_gene_groupname = grouped_tissue_gene.map((tissue) => {
-          // console.log(tissue)
           return [tissue[0], Object.keys(tissue[1]).map((key) => {
-            // console.log(key) // gene_id
             return [key, _.groupBy(tissue[1][key], function(e) {
-              // console.log(e)
               return `${e.group_name}`
             })]
           })]
@@ -444,14 +414,12 @@ export default {
 
         this.expression_normalized_averaged = Object.entries(this.expression_normalized_averaged).map(e => e[1])
 
-
         this.sumstat = d3
           .group(this.expression_normalized_averaged, 
           d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
         
         this.gene_visibility = Object.fromEntries(
           new Map([...this.sumstat.keys()].map(e => [e, 1])))
-
 
         this.time_points = [...new Set(this.expression_normalized_averaged.map(e => e.time_point))]
           .map(el => el.toString())
@@ -547,19 +515,9 @@ export default {
         .attr('transform', `translate(${this.legendX}, 0)`)
 
     },
-    load_chart() {
-      // Defunct?
-      console.log('load_chart')
-      if (this.chart_type == 'Grouped') {
-        this.update_grouped_bar_plot()
-      }
-    },
     update_grouped_bar_plot() {
       console.log('update_grouped_bar_plot')
       const start = Date.now()
-
-      // console.log('this.expression_normalized_averaged')
-      // console.log(this.expression_normalized_averaged)
 
       let data, groups, subgroups
 
@@ -568,59 +526,25 @@ export default {
         subgroups = this.time_points
         // data = d3.group(gene_groups_map, d => `${d.gene_group}`)
         const gene_groups = _.groupBy(this.expression_normalized_averaged, e => `${e.identifier}`)
-        console.log('gene_groups')
-        console.log(gene_groups)
-        // groups = Array.from(data.keys())
         this.group_visibility = this.gene_visibility
-        console.log('this.gene_visibility')
-        console.log(this.gene_visibility)
         this.subgroup_visibility = this.time_visibility
 
         data = Object.keys(gene_groups).map((key) => {
           // const grouping = _.groupBy(gene_groups[key], e => `${e.identifier}`)
           return [key, gene_groups[key]]
         })
-        console.log('data')
-        console.log(data)
         groups = Object.keys(gene_groups)
-        console.log('groups')
-        console.log(groups)
-        // groups.forEach(e => {
-        //   const label = e.replaceAll('-', ' ').replaceAll('_', '\n')
-        //   console.log('label', label)
-        //   return label
-          
-        // })
-        // groups = groups.map(e => e.replaceAll('-', ' ').replaceAll('_', '\n'))
-        // console.log('groups')
-        // console.log(groups)
 
         data.forEach(d => {
-          // const gene_key = d[0]
-          // const groupings = d[1]
           d[1] = d[1].map(e => {
             return {key:e.time_point.toString(), value:e}
           })
-
-          // d[1] = Object.keys(d[1]).map((id) => {
-          //   return {key:id, value:d[1][id][0]}
-          // })
         })
-
-
       } else if (this.grouped_by == 'Time') {
-        console.log('Time')
         this.svg.select('.x-label').text('Time Point (ZT)')
         groups = this.time_points
         this.group_visibility = this.time_visibility
-        console.log('this.group_visibility')
-        console.log(this.group_visibility)
         this.subgroup_visibility = this.gene_visibility
-        console.log('this.subgroup_visibility')
-        console.log(this.subgroup_visibility)
-        // data = d3
-        //   .group(this.expression_normalized_averaged_flattened, d => `${d.time_point}`)
-        
         const time_groups = _.groupBy(this.expression_normalized_averaged, e => `${e.time_point}`)
         data = Object.keys(time_groups).map((key) => {
           const grouping = _.groupBy(time_groups[key], e => `${e.identifier}`)
@@ -628,23 +552,15 @@ export default {
         })
 
         subgroups = [...new Set(... data.map(e => Object.keys(e[1])) )]
-        console.log('subgroups')
-        console.log(subgroups)
 
         data.forEach(d => {
-          // const time_key = d[0]
-          // const groupings = d[1]
-
           d[1] = Object.keys(d[1]).map((id) => {
             return {key:id, value:d[1][id][0]}
           })
         })
       }
       
-      // var color = d3.scaleSequential(d3.interpolateWarm)
       this.color = d3.scaleSequential(d3.interpolateWarm)
-      // this.color = color2
-      // var color = d3.scaleOrdinal(d3.schemeCategory10);
 
       this.x.domain(groups)
         .padding([0.1])
@@ -665,32 +581,28 @@ export default {
         this.svg.selectAll('.myXaxis .tick text')
           .selectAll('tspan')
           .data(d => {
-            console.log('tspan d')
-            console.log(d)
             let text = d.split('_')
             let tissue = text[0].replaceAll('-', ' ')
             let gene_group = text.slice(1).join(' ')
-            console.log(gene_group)
+            // console.log(gene_group)
             return [tissue, gene_group]
           })
           .join(
             (enter) => {
-              console.log('enter')
-              console.log(enter)
+              // console.log('enter')
+              // console.log(enter)
               enter.append('tspan')
               .attr('id', 'woohoo')
               .attr('x', 0)
               .attr('dx', '-1em')
               .attr('dy', function (d, i) { return (2 * i - 1) + 'em'; })
               .text(d => {
-                console.log(d)
+                // console.log(d)
                 return d});
 
             }
           )
-        
-          console.log('all done')
-          
+          // console.log('all done')
       }
 
       // Subgroup position scale
@@ -708,8 +620,6 @@ export default {
           .call(this.yAxis)
       
       // this.svg.selectAll("g.group").remove()
-      console.log('data')
-      console.log(data)
 
       // Display grouped bars
       this.svg.select("#bars")
@@ -721,10 +631,7 @@ export default {
               .attr("transform", d => `translate(${x(d[0])}, 0)`)
               .attr("class", "bar-group")
               .attr('id', d => `group_${d[0]}`)
-              .transition_attributes('opacity', d => {
-                // console.log('enter', d[0], this.group_visibility[d[0]])
-                return this.group_visibility[d[0]]
-              })
+              .transition_attributes('opacity', d => this.group_visibility[d[0]])
               .selectAll(".subgroup-rect")
               .data(d => d[1])
               .join(
@@ -737,9 +644,7 @@ export default {
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
                     .attr("fill", d => this.getHSL(d.value))
-                    .transition_attributes('fill-opacity', d => {
-                      // console.log('enter > enter', d.key, this.subgroup_visibility[d.key])
-                      return this.subgroup_visibility[d.key]})
+                    .transition_attributes('fill-opacity', d => this.subgroup_visibility[d.key])
                     .on("mouseover", (evt, d) => {
                       this.svg.append('g').attr('class', 'tooltip')
                           .call(this.popover, d)
@@ -754,9 +659,7 @@ export default {
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
                     .attr("fill", d => this.getHSL(d.value))
-                    .transition_attributes('fill-opacity', d => {
-                      console.log('enter > update', d.key, this.subgroup_visibility[d.key])
-                      return this.subgroup_visibility[d.key]})
+                    .transition_attributes('fill-opacity', d => this.subgroup_visibility[d.key])
                     .on("mouseover", (evt, d) => {
                       this.svg.append('g').attr('class', 'tooltip')
                           .call(this.popover, d)
@@ -772,10 +675,7 @@ export default {
             update
               .attr("transform", d => `translate(${x(d[0])}, 0)`)
               .attr('id', d => `group_${d[0]}`)
-              .transition_attributes('opacity', d => {
-                console.log('update', d[0], this.group_visibility[d[0]])
-                return this.group_visibility[d[0]]
-              })
+              .transition_attributes('opacity', d => this.group_visibility[d[0]])
               .selectAll(".subgroup-rect")
               .data(d => d[1])
               .join(
@@ -788,9 +688,7 @@ export default {
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
                     .attr("fill", d => this.getHSL(d.value))
-                    .transition_attributes('fill-opacity', d => {
-                      console.log('update > enter', d.key, this.subgroup_visibility[d.key])
-                      return this.subgroup_visibility[d.key]})
+                    .transition_attributes('fill-opacity', d => this.subgroup_visibility[d.key])
                     .on("mouseover", (evt, d) => {
                       this.svg.append('g').attr('class', 'tooltip')
                           .call(this.popover, d)
@@ -805,9 +703,7 @@ export default {
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
                     .attr("fill", d => this.getHSL(d.value))
-                    .transition_attributes('fill-opacity', d => {
-                      console.log('update > update', d.key, this.subgroup_visibility[d.key])
-                      return this.subgroup_visibility[d.key]})
+                    .transition_attributes('fill-opacity', d => this.subgroup_visibility[d.key])
                     .on("mouseover", (evt, d) => {
                       this.svg.append('g').attr('class', 'tooltip')
                           .call(this.popover, d)
@@ -821,15 +717,10 @@ export default {
           (exit) => exit.transition_attributes('opacity', 0).remove()
         )
 
-      
-
-
       const elapsed = Date.now() - start
       console.log('update_grouped_bar_plot time elapsed: ', elapsed)
     },
     legend() {
-      console.log('legend')
-      console.log(this.expression_normalized)
       // BUG: num_tissues not used, needed for multiple tissues?
       const num_tissues = this.expression_normalized.length
       const num_genes = this.expression_normalized[0][1].length
@@ -894,9 +785,7 @@ export default {
                 const gene_root = enter.append('g')
                   .attr('class', 'legend_gene')
                   .attr('id', d => {
-                    console.log('legend_gene')
                     const tissue_gene = d[1][0][1][0].identifier.split('_').slice(0,-1).join('_')
-                    console.log(tissue_gene)
                     return `legend_gene_${tissue_gene}`})
                   .style('fill', d => this.getHSL(d[1][0][1][0], true))
                   .attr('transform', (d,i) => `translate(${legend_indent_px}, ${
@@ -938,10 +827,6 @@ export default {
                         .transition_attributes('opacity', 1)
                         .attr('class', 'legend_groupname')
                         .attr('id', d => {
-                          // console.log('legend_groupname')
-                          // const ident = d[1][0].identifier
-                          // console.log(d)
-                          // console.log(d[0])
                           return `legend_groupname_${d[1][0].identifier}`})
                         .style('fill', d => this.getHSL(d[1][0]))
                         .attr('transform', (d,i) => `translate(${legend_indent_px}, ${
@@ -983,8 +868,6 @@ export default {
           return tissue_root
         },
         (update) => {
-          // console.log('tissue update')
-          // console.log(update)
           const tissue_root = update.transition_attributes('opacity', 1)
             .attr('id', d => `legend_tissue_${d[0]}`)
             .attr('transform', (d,i) => `translate(${legend_indent_px}, ${
@@ -1001,8 +884,6 @@ export default {
             .data(d => d[1])
             .join(
               (enter) => {
-                // console.log('tissue update > gene enter')
-                // console.log(enter)
                 const gene_root = enter.append('g')
                   .attr('class', 'legend_gene')
                   .attr('id', d => {
@@ -1040,8 +921,6 @@ export default {
                   .data(d => d[1])
                   .join(
                     (enter) => {
-                      // console.log('groupname enter')
-                      // console.log(enter)
                       const groupname_root = enter.append('g')
                         .transition_attributes('opacity', 1)
                         .attr('class', 'legend_groupname')
@@ -1078,8 +957,6 @@ export default {
                       return groupname_root
                     },
                     (update) => {
-                      // console.log('groupname update')
-                      // console.log(update)
                       update.attr('transform', (d,i) => `translate(${legend_indent_px}, ${
                         this.legendY_spacing * (i+1)
                         })`)
@@ -1141,7 +1018,6 @@ export default {
                         .attr('text-anchor', 'left')
                         .attr('font-size', '0.7em')
                         .attr('opacity', 1)
-                        // .style('margin-bottom', 5)
                       text_info.append('svg:image')
                         .attr('class', 'info')
                         .attr("xlink:href", infoUrl)
@@ -1156,9 +1032,6 @@ export default {
                       return groupname_root
                     },
                     (update) => {
-                      // console.log('tissue update > gene update > groupname update')
-                      // console.log(update)
-                      // TODO: Possible bug when updating and associated event is not updated?
                       update.attr('transform', (d,i) => `translate(${legend_indent_px}, ${
                         this.legendY_spacing * (i+1)
                         })`)
@@ -1170,10 +1043,7 @@ export default {
                       update.select('.eyes').on('click', this.groupnameClick) // Needed? 
                       const text_info = update.select('.text_info')
                       update.select('.info')
-                        .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-
-
-                          
+                        .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)  
                     },
                     (exit) => exit.transition_attributes('opacity', 0).remove()
                   )
@@ -1192,8 +1062,6 @@ export default {
       this.complete = true
     },
     getHSL(data, gene=false) {
-      // console.log('getHSL')
-      // console.log(data)
       // Differentiates groups by making one darker and one lighter
       const name = data.identifier
       const shade_factor = 3
@@ -1208,8 +1076,6 @@ export default {
       return hsl
     },
     popover_text(d) {
-      // console.log('popover_text')
-      // console.log(d)
       let text = `Data Point Details
       Gene: ${d.gene_id}
       Group: ${d.group_name}
@@ -1236,17 +1102,12 @@ export default {
     },
     popover(g, data) {
       // Tooltip popover 
-      // console.log('popover')
-      // console.log(data)
       const text_value = this.popover_text(data.value)
       if (!text_value) return g.style("display", "none")
       const time_point = data.value.time_point 
       if (!this.time_visibility[time_point]) return g.style("display", "none")
       const gene_identifier = data.value.identifier
       if (!this.gene_visibility[gene_identifier]) return g.style("display", "none")
-      // const opacity = d3.select('#avgPoints').selectAll(`#dot_${key}`).attr('fill-opacity')
-      // if (opacity == 0) return g.style("display", "none");
-
       // tooltip group
       g.style("display", "flex")
         .style("pointer-events", "none")
@@ -1279,7 +1140,6 @@ export default {
         parentVal = data.value.time_point.toString()
       else if (this.grouped_by == 'Gene')
         parentVal = data.value.identifier
-      console.log('parentVal', parentVal)
 
       // tooltip positioning
       const {x, y, width: w, height: h} = text.node().getBBox()
@@ -1291,22 +1151,9 @@ export default {
       
       // tooltip container path
       path.attr("d", `M${-w / 2 - 10},5 H${w / 2 + 10},H ${w / 2 + 10} v ${h+20} h ${-w/2-5} l-5,5 l-5,-5 h${-w/2-5} z`)
-
-      // path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
     },
     toggleVisibility(newOpacity, id) {
       // Toggles visibility by gene and group
-      // TODO: Toggle eye one level up if all child eyes are set to on or off
-      // console.log('toggleVisibility', newOpacity, id)
-      // console.log(this.allPoints)
-      // console.log('this.group_visibility')
-      // console.log(this.group_visibility)
-
-      // const lines = d3.selectAll(`[id^='line_${id}']`)
-      // lines.transition_attributes('stroke-opacity', newOpacity)
-      
-      // console.log('this.subgroup_visibility before')
-      // console.log(this.subgroup_visibility)
       let matching_keys, bars
       if (this.grouped_by == 'Time') {
         // Group is Time
@@ -1314,34 +1161,21 @@ export default {
         matching_keys = Object.keys(this.subgroup_visibility).filter(e => e.includes(id))
         matching_keys.forEach(e => this.subgroup_visibility[e] = newOpacity)
         bars = d3.select('#bars').selectAll(`[id^='subgroup_${id}']`)
-        // console.log('matching_keys')
-        // console.log(matching_keys)
       } else if (this.grouped_by == 'Gene') {
-        // TODO: Not implemented
         // Group is Gene + TRF/ALF
         // Subgroup is Time
         matching_keys = Object.keys(this.group_visibility).filter(e => e.includes(id))
         matching_keys.forEach(e => this.group_visibility[e] = newOpacity)
         bars = d3.select('#bars').selectAll(`[id^='group_${id}']`).selectAll('.subgroup-rect')
       }
-      // console.log('this.subgroup_visibility after')
-      // console.log(this.subgroup_visibility)
-      // console.log('bars')
-      // console.log(bars)
-      // console.log('matching_keys')
-      // console.log(matching_keys)
       bars.transition_attributes('fill-opacity', newOpacity)
-
     },
     tissueClick(evt, i) {
       // Toggle visibility of Tissue data for every child gene and group
-      // console.log('tissueClick')
       const tissue_root = evt.currentTarget.parentNode
       const id = i[1][0][1][0][1][0].identifier.split('_')[0]
-      // console.log('id', id)
       const opacity = tissue_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
-
       const eyesOn = tissue_root.querySelectorAll('.eye')
       const eyesOff = tissue_root.querySelectorAll('.eye-off')
       eyesOn.forEach(e => e.setAttribute('opacity', newOpacity))
@@ -1351,11 +1185,8 @@ export default {
     },
     geneClick(evt, i) {
       // Toggle visibility of Tissue_Gene data for both groups
-      // console.log('geneClick')
       const gene_root = evt.currentTarget.parentNode
       const id = i[1][0][1][0].identifier.split('_').slice(0,-1).join('_')
-      // console.log('id', id)
-      
       const opacity = gene_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
       const eyesOn = gene_root.querySelectorAll('.eye')
@@ -1367,34 +1198,25 @@ export default {
     },
     groupnameClick(evt, i) {
       // Toggle visibility of Tissue_Gene_Groupname data
-      // console.log('groupnameClick')
       const groupname_root = evt.currentTarget.parentNode
       const id = i[1][0].identifier
-      // console.log('id', id)
-      
       const opacity = groupname_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
       const eyeOn = groupname_root.querySelector('.eye')
       const eyeOff = groupname_root.querySelector('.eye-off')
       eyeOn.setAttribute('opacity', newOpacity)
       eyeOff.setAttribute('opacity', opacity)
-
       this.toggleVisibility(newOpacity, id)
     },   
     infoTissueText(data) {
       // TODO: Add more metadata when new fields created for dataset upload page
-      // console.log('infoTissueText')
-      // console.log(data)
       const tissue = data[0].replaceAll('-', ' ')
-      // console.log(tissue)
       const table_metadata_list = this.gene_expression_data_tables.filter(e => e.tissue == tissue)
       // TODO: Possible future bug when there's more than 1 dataset for tissue
       if (table_metadata_list.length > 1) {
         console.error('WARNING: More than 1 matching table for tissue', tissue)
       }
       const table_metadata = table_metadata_list[0]
-
-      // console.log(table_metadata)
       let text = `Tissue: ${tissue}\n`
       text += `Experiment: ${table_metadata.experiment}\n`
       text += `Year: ${table_metadata.year}\n`
@@ -1407,25 +1229,19 @@ export default {
       return text
     },
     infoGeneText(data) {
-      // console.log('infoGeneText')
       let gene = data[0]
-      // console.log('gene', gene)
       const sample = data[1][0][1][0]
-      // console.log(sample)
       const table = sample.table
       const tissue = sample.tissue
 
       const gene_metadata_table = table.replace('gene_expression_data', 'gene_metadata')
-      // console.log(gene_metadata_table)
       const gene_metadata_entries = this.gene_metadata.filter(e => e.table_name == gene_metadata_table)
-      // console.log(gene_metadata_entries)
-      // let gene
+
       if (gene_metadata_entries.length > 1 ) {
         console.error('WARNING: Multiple entries in this.gene_metadata')
         gene = gene_metadata_entries.filter(e => e.gene_name == gene_name)[0]
       }
       gene = gene_metadata_entries[0].data[0]
-      // console.log(gene)
       let text = `Gene: ${gene.gene_name}\n`
       text += `Tissue: ${tissue}\n`
       text += `Gene ID: ${gene.gene_id}\n`
@@ -1443,20 +1259,13 @@ export default {
       text += `Copies: ${gene.copies}\n`
       text += `Refseq: ${gene.refseq}\n`
       
-      
       return text
     },
     infoGroupnameText(data) {
-      // console.log('infoGroupnameText')
-      // console.log(data)
       const groupname = data[0]
       const sample = data[1][0]
       const stats = data[2]
-
       const gene = sample.gene_id
-
-      // console.log(sample)
-
       let text = `Group: ${groupname}\n`
       text += `Gene: ${gene}\n`
       text += `Tissue: ${sample.tissue}\n`
@@ -1473,9 +1282,6 @@ export default {
       return text
     },
     infoHover(evt, d) {
-      // console.log('infoHover')
-      // console.log(evt)
-      // console.log(d)
       const self = evt.currentTarget
       const self_dims = self.getBoundingClientRect()
       
@@ -1492,7 +1298,6 @@ export default {
       pt.x  = self_dims.x 
       pt.y = self_dims.y
       const p = pt.matrixTransform(inverse)
-      // console.log(p)
       const pad = 3
       const pos_x = p.x - this.margin.left - pad
       const pos_y = p.y - this.margin.top + 22 + pad
@@ -1500,7 +1305,6 @@ export default {
       g.attr("transform", `translate(${pos_x},${pos_y})`);
 
       const currType = root.querySelector('text').getAttribute('class').split('_')[1]
-      // console.log('currType', currType)
       let info_text
       if (currType == 'tissue') {
         info_text = this.infoTissueText(d)
@@ -1545,9 +1349,6 @@ export default {
         .attr('y', y-pad)
         .attr('width', w+2*pad)
         .attr('height', h+2*pad)
-
-      // console.log('this.gene_expression_data_tables')
-      // console.log(this.gene_expression_data_tables)
     }
   }
 
