@@ -212,13 +212,18 @@ export default {
           // console.log('sample_data')
           // console.log(sample_data)
 
+
+          var collator = new Intl.Collator([], {numeric: true});
+
           const merged_data = expression_data.map(itm => ({
-              ...sample_data.find((item) => (item.sample_name == itm.sample_name) && item),
-              ...itm
-          }))
-          // console.log('merged_data')
-          // console.log(merged_data)
+            ...sample_data.find((item) => (item.sample_name == itm.sample_name) && item),
+            ...itm
+          })).sort((a,b) => collator.compare(a.time_point, b.time_point))
+
           e.data = merged_data
+          console.log('merged_data')
+          console.log(merged_data)
+
           e.data.forEach(itm => itm.table = table)
 
           const species = [...new Set(e.data.map(item => item.species))];
@@ -504,6 +509,7 @@ export default {
       var color2 = d3.scaleSequential(d3.interpolateWarm)
       this.color = color2
 
+
       // Create the X axis
       this.x.domain([0, d3.max(this.expression_merged, (d) => d.time_point )])
       var x = this.x
@@ -728,12 +734,11 @@ export default {
             .attr('class', 'text_info')
           text_info.append('text')
             .attr('class', 'legend_tissue_text')
-            // .text(d => d[0].replaceAll('-', ' '))
-            .text(d => d[0])
+            .text(d => d[0].replaceAll('-', ' '))
             .attr('text-anchor', 'left')
             .attr('font-size', '0.7em')
             .attr('opacity', 1)
-            // .transition_attributes('opacity', 1)
+            .transition_attributes('opacity', 1)
           text_info.append('svg:image')
             .attr('class', 'info')
             .attr("xlink:href", infoUrl)

@@ -444,6 +444,8 @@ export default {
       upload_progress: 0,
       uploading:null,
 
+      conditions_json: null,
+      genders_json: null,
     }
   },
   methods: {
@@ -583,6 +585,33 @@ export default {
         }
       }
     },
+    sample_counts(csv) {
+      console.log('sample_counts')
+      console.log(csv)
+
+      let rows = csv.split('\n')
+      let conditions = {}
+      let genders = {}
+
+      // Iterate line by line
+      for (var i = 1; i < rows.length; i++) {
+        let cols = rows[i].split(',')
+        let cond = cols[3]
+        conditions[cond] = conditions[cond] + 1 || 1
+        let gender = cols[5]
+        genders[gender] = genders[gender] + 1 || 1
+      }
+      this.conditions_json = JSON.stringify(Object.keys(conditions).map(e => {
+        return {
+          'condition' : e,
+          'count' : conditions[e]}
+      }))
+      this.genders_json = JSON.stringify(Object.keys(genders).map(e => {
+        return {
+          'gender' : e,
+          'count' : genders[e]}
+      }))
+    },
     upload_sample_metadata(e) {
       // console.log('upload_sample_metadata')
       const files = e.files
@@ -605,7 +634,6 @@ export default {
 
         this.upload_sample_metadata_error_log = error_log
         this.upload_sample_metadata_error = error_log.length
-        
         
         if (!this.upload_sample_metadata_error) {
           this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 5000});
@@ -635,6 +663,7 @@ export default {
       reader.onload = (evt) => {
         let csv = evt.target.result
         error_log = this.validateCSV(csv, col_names, col_types)
+
 
         this.upload_gene_expression_data_error_log = error_log
         this.upload_gene_expression_data_error = error_log.length
@@ -795,6 +824,8 @@ export default {
         gene_metadata_table_name: `${gene_metadata_table_name}_${this.$store.state.profileId}`,
         sample_metadata_table_name: `${sample_metadata_table_name}_${this.$store.state.profileId}`,
         gene_expression_data_table_name: `${gene_expression_data_table_name}_${this.$store.state.profileId}`,
+        gender: this.genders_json,
+        condition: this.conditions_json,
       }
 
       // formData.append('body', metadata)

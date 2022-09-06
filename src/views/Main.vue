@@ -198,7 +198,7 @@
                 :suggestions="this.genes_filtered" @complete="search_genes($event)" field="name" />
               </div>  
               <div id="get-genes" class="mt-1 text-center">
-                  <Button label="Update Chart" @click="get_gene_data" :loading="this.getting_gene_data"/>
+                  <Button label="Update Chart" @click="get_gene_data" :loading="this.getting_gene_data || this.loading_genes"/>
                 </div>
             </div>
             <div v-show="!this.got_datasets">
