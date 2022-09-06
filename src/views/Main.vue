@@ -365,6 +365,7 @@ export default {
     this.tissue_selected = [{name:'Arcuate'}]
     this.genes_selected = [{name:'Clock'}]
     await this.update_lookup_table()
+    await this.get_datasets()
 
     // Line chart at index 1
     this.index = 1
@@ -443,7 +444,7 @@ export default {
 
       if (this.genes_selected.length)
         // If user has at least one selected genes call get_gene_data 
-        //  to update chart
+        // Updates chart with selected gene data for corresponding datasets
         this.get_gene_data()
 
       const elapsed = Date.now() - start 
@@ -473,9 +474,19 @@ export default {
       }))
     },
     async get_gene_expression_data_tables(genes, tables) {
-      let genesStr = genes.map((d) => d.name).toString()
+      console.log('get_gene_expression_data_tables')
+      let genesStr = genes.map(d => d.name).toString()
+      console.log('genesStr', genesStr)
+      let gendersStr = this.gender_selected.map(d => d.name).toString()
+      console.log('gendersStr', gendersStr)
+      let conditionsStr = this.condition_selected.map(d => d.name).toString()
+      console.log('conditionsStr', conditionsStr)
       this.gene_expression_data_tables = await Promise.all(tables.map(async (t) => {
-        const result = await DataService.getExpressionDataByGenes(genesStr, t)
+        const result = await DataService
+          .getExpressionDataByGenesGendersConditions(genesStr, gendersStr, conditionsStr, t)
+        // const result = await DataService.getExpressionDataByGenes(genesStr, t)
+        console.log('result.data')
+        console.log(result.data)
         return {
           table_name: t,
           data: result.data
@@ -593,8 +604,8 @@ export default {
         })
       })
 
-      // Get datasets, update chart if genes selected
-      await this.get_datasets()
+      // Performs API calls to Database on change to filters
+      // await this.get_datasets()
 
       const elapsed = Date.now() - start 
       console.log('update_lookup_table time elapsed: ', elapsed)
