@@ -1,153 +1,234 @@
 <template>
-<div id="main" class="w-full p-3 mx-auto">
+<div id="main" class="w-full p-3 mx-auto mb-20">
+  <div id="page-title" class="pb-2 font-semibold text-3xl text-center">
+    Temporal Gene Expression
+  </div>
   
-  <div id="selection-ui" class="w-11/12 p-3 mx-auto">
+  <div id="selection-ui" class="mt-2 mx-auto">
     <Toast />
-    <div class="p-5 font-semibold text-3xl text-center">Temporal Gene Expression</div>
-    <div id="filters-ui" class="my-3 p-2 mx-auto bg-slate-100 rounded-2xl flex flex-wrap" v-if="this.speciesSelected.length || this.experimentSelected.length || this.tissueSelected.length"> 
-      <div id="filters-species" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.speciesSelected.length">
+    <div id="current-filters-ui" class="my-1 mx-3 bg-slate-100 rounded-2xl min-w-[24rem] flex flex-wrap" 
+      v-if="this.species_selected.length || this.experiment_selected.length || this.tissue_selected.length"> 
+      <div id="filters-species" v-if="this.species_selected.length"
+        class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3">
         <div class="font-semibold text-sm pl-1">Species:</div>
-        <div v-for="(item, index) in this.speciesSelected" :key="item">
-          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeSpeciesFilter(item.name)"/>
-          <span class="px-1 font-semibold" v-if="index < this.speciesSelected.length-1">or</span>
+        <div v-for="(item, index) in this.species_selected" :key="item">
+          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable 
+          @remove="remove_species_filter(item.name)"/>
+          <span class="px-1 font-semibold" v-if="index < this.species_selected.length-1">or</span>
         </div>
       </div>
-      <div id="filters-experiment" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.experimentSelected.length">
+      <div id="filters-experiment" v-if="this.experiment_selected.length"
+      class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" >
         <div class="font-semibold text-sm pl-1">Experiments:</div>
-        <div v-for="(item, index) in this.experimentSelected" :key="item" class="my-1">
-          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeExperimentFilter(item.name)"/>
-          <span class="px-1 font-semibold text-sm" v-if="index < this.experimentSelected.length-1">or</span>
+        <div v-for="(item, index) in this.experiment_selected" :key="item" class="my-1">
+          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable 
+            @remove="remove_experiment_filter(item.name)"/>
+          <span class="px-1 font-semibold text-sm" v-if="index < this.experiment_selected.length-1">or</span>
         </div>
       </div>
-      <div id="filters-tissue" class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3" v-if="this.tissueSelected.length">
+      <div id="filters-tissue" v-if="this.tissue_selected.length" 
+        class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3">
         <div class="font-semibold text-sm pl-1">Tissues:</div>
-        <div v-for="(item, index) in this.tissueSelected" :key="item">
+        <div v-for="(item, index) in this.tissue_selected" :key="item">
           <!-- content -->
-          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable @remove="removeTissueFilter(item.name)"/>
-          <span class="px-1 font-semibold text-sm" v-if="index < this.tissueSelected.length-1">or</span>
+          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable 
+            @remove="remove_tissue_filter(item.name)"/>
+          <span class="px-1 font-semibold text-sm" v-if="index < this.tissue_selected.length-1">or</span>
         </div>
       </div>
-      <div id="clear-filters" class=" my-2 flex flex-wrap align-items-center mx-3" >
-        <Chip label="Clear All Filters" class="mx-1 text-sm font-semibold" removable @remove="clearAllFilters"/>
-      </div>
-    </div>
-    <div class="flex flex-wrap mx-auto " v-if="!this.filterWarning">
-      <div class="w-1/3 px-2 border">
-        <div class="font-semibold my-2">Species</div>
-        <DataTable :value="speciesFiltered" v-model:selection="speciesSelected" 
-          class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-          :loading="loading" @row-select="speciesRowChange('select')" 
-          @row-unselect="speciesRowChange('unselect')"
-          @row-select-all="speciesRowChange('select-all')"
-          @row-unselect-all="speciesRowChange('unselect-all')">
-        <Column selectionMode="multiple" style="width: 3rem" ></Column>
-        <Column field="name" header=""></Column>
-        <Column field="count" header="#">
-          <template #body="slotProps">
-            {{getCount('species', slotProps.data.name)}}
-          </template>
-        </Column>
-        <Column field="freq" header="Freq">
-          <template #body="slotProps">
-            {{getFreq('species', slotProps.data.name)}}
-          </template>
-        </Column>
-        </DataTable>
-      </div>
-      <div class="w-1/3 px-2 border" >
-        <div class="font-semibold my-2">Experiment</div>
-        <DataTable :value="experimentFiltered" v-model:selection="experimentSelected" 
-          class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-          :loading="loading" @row-select="experimentRowChange('select')"
-          @row-unselect="experimentRowChange('unselect')"
-          @row-select-all="experimentRowChange('select-all')"
-          @row-unselect-all="experimentRowChange('unselect-all')">
-        <Column selectionMode="multiple" style="width: 3rem"></Column>
-        <Column field="name" header=""></Column>
-        <Column field="count" header="#">
-          <template #body="slotProps">
-            {{getCount('experiment', slotProps.data.name)}}
-          </template>
-        </Column>
-        <Column field="freq" header="Freq">
-          <template #body="slotProps">
-            {{getFreq('experiment', slotProps.data.name)}}
-          </template>
-        </Column>
-
-        </DataTable>
-        
-      </div>
-      <div class="w-1/3 px-2 border">
-        <div class="font-semibold my-2">Tissue</div>
-        <DataTable :value="tissueFiltered" v-model:selection="tissueSelected" 
-          class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-          :loading="loading" @row-select="tissueRowChange('select')" 
-          @row-unselect="tissueRowChange('unselect')"
-          @row-select-all="tissueRowChange('select-all')"
-          @row-unselect-all="tissueRowChange('unselect-all')">
-        <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
-        <Column field="name" header=""></Column>
-        <Column field="count" header="#">
-          <template #body="slotProps">
-            {{getCount('tissue', slotProps.data.name)}}
-          </template>
-        </Column>
-        <Column field="freq" header="Freq">
-          <template #body="slotProps">
-            {{getFreq('tissue', slotProps.data.name)}}
-          </template>
-        </Column>
-        </DataTable>
-        
-      </div>
-    </div>
-    <div v-else class="text-center font-semibold text-lg">
-      Warning: No datasets in filtered selection.  Clear filters to regain datasets for selection.
-    </div>
-
-    <div id="get-datasets" class="mx-auto my-5 text-center" >
-      <Button label="Get Datasets" class="p-button-lg" @click="getDatasets" v-if="!this.gettingDatasets"/>
-      <ProgressSpinner class="mx-auto w-1/2" v-else/>
-    </div>
-
-    <div id="selected-metadata-view" class="mx-auto" v-if="this.gotDatasets">
-      <div id="genes-view" class="my-3 w-3/4 mx-auto" >
-        <div class="font-semibold m-2">Genes</div>
-        <div v-if="this.loadingGenes">
-          <ProgressBar mode="indeterminate" />
+      <div id="filters-gender" v-if="this.gender_selected.length" 
+        class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3">
+        <div class="font-semibold text-sm pl-1">Genders:</div>
+        <div v-for="(item, index) in this.gender_selected" :key="item">
+          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable 
+            @remove="remove_gender_filter(item.name)"/>
+          <span class="px-1 font-semibold text-sm" v-if="index < this.gender_selected.length-1">or</span>
         </div>
-        <div class="flex flex-row" v-else>
-          <div class="p-fluid w-3/4" v-show="!this.loadingGenes">
-            <AutoComplete :multiple="true" v-model="this.genesSelected" 
-            :suggestions="this.genesFiltered" @complete="searchGenes($event)" field="name" />
+      </div>
+      <div id="filters-condition" v-if="this.condition_selected.length" 
+        class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3">
+        <div class="font-semibold text-sm pl-1">conditions:</div>
+        <div v-for="(item, index) in this.condition_selected" :key="item">
+          <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable 
+            @remove="remove_condition_filter(item.name)"/>
+          <span class="px-1 font-semibold text-sm" v-if="index < this.condition_selected.length-1">or</span>
+        </div>
+      </div>
+      <div id="clear-filters" class="my-2 flex flex-wrap align-items-center mx-3">
+        <Chip label="Clear All Filters" class="mx-1 text-sm font-semibold" 
+          removable @remove="clear_all_filters"/>
+      </div>
+    </div>
+    <div id="filters-graph-view" class="flex pl-3">
+      <div id="filters-boxes" class="w-1/4 mt-2 min-w-[20rem]">
+        
+        <Accordion :multiple="true" :activeIndex="[0,1,2]">
+          <AccordionTab header="Filters">
+            <div v-if="!this.datasets_filter_warning">
+              <div class="font-semibold my-1 text-sm">
+                Datasets
+              </div>
+              <div class="p-1 border my-1 rounded">
+                <DataTable :value="this.species_filtered" v-model:selection="this.species_selected" 
+                  class="p-datatable-sm p-datatable-species" stripedRows :scrollable="true" scrollHeight="200px" 
+                  :loading="loading" @row-select="update_lookup_table()" 
+                  @row-unselect="update_lookup_table()"
+                  @row-select-all="update_lookup_table()"
+                  @row-unselect-all="update_lookup_table()">
+                <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                <Column field="name" header="Species"></Column>
+                <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                  <template #body="slotProps">
+                    {{get_count('species', slotProps.data.name)}}
+                  </template>
+                </Column>
+                <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                  <template #body="slotProps">
+                    {{get_freq('species', slotProps.data.name)}}
+                  </template>
+                </Column>
+                </DataTable>
+              </div>
+              <div class="p-1 border my-1 rounded" >
+                <DataTable :value="experiment_filtered" v-model:selection="experiment_selected" 
+                  class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+                  :loading="loading" @row-select="update_lookup_table"
+                  @row-unselect="update_lookup_table"
+                  @row-select-all="update_lookup_table"
+                  @row-unselect-all="update_lookup_table">
+                <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                <Column field="name" header="Experiment"></Column>
+                <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                  <template #body="slotProps">
+                    {{get_count('experiment', slotProps.data.name)}}
+                  </template>
+                </Column>
+                <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                  <template #body="slotProps">
+                    {{get_freq('experiment', slotProps.data.name)}}
+                  </template>
+                </Column>
+                </DataTable>
+            
+              </div>
+              <div class="p-1 border my-1 rounded">
+                <DataTable :value="tissue_filtered" v-model:selection="tissue_selected" 
+                  class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+                  :loading="loading" @row-select="update_lookup_table" 
+                  @row-unselect="update_lookup_table"
+                  @row-select-all="update_lookup_table"
+                  @row-unselect-all="update_lookup_table">
+                <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                <Column field="name" header="Tissue" style="text-align:left"></Column>
+                <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                  <template #body="slotProps">
+                    {{get_count('tissue', slotProps.data.name)}}
+                  </template>
+                </Column>
+                <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                  <template #body="slotProps">
+                    {{get_freq('tissue', slotProps.data.name)}}
+                  </template>
+                </Column>
+                </DataTable>
+                
+              </div>
+              <div class="font-semibold my-1 text-sm">
+                Samples
+              </div>
+              <div class="p-1 border my-1 rounded">
+                <DataTable :value="gender_filtered" v-model:selection="this.gender_selected" 
+                  class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+                  :loading="loading" @row-select="update_lookup_table" 
+                  @row-unselect="update_lookup_table"
+                  @row-select-all="update_lookup_table"
+                  @row-unselect-all="update_lookup_table">
+                <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                <Column field="name" header="Gender" style="text-align:left"></Column>
+                <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                  <template #body="slotProps">
+                    {{get_count('gender', slotProps.data.name)}}
+                  </template>
+                </Column>
+                <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                  <template #body="slotProps">
+                    {{get_freq('gender', slotProps.data.name)}}
+                  </template>
+                </Column>
+                </DataTable>
+              </div>
+              <div class="p-1 border my-1 rounded">
+                <DataTable :value="condition_filtered" v-model:selection="this.condition_selected" 
+                  class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
+                  :loading="loading" @row-select="update_lookup_table" 
+                  @row-unselect="update_lookup_table"
+                  @row-select-all="update_lookup_table"
+                  @row-unselect-all="update_lookup_table">
+                <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                <Column field="name" header="Condition" style="text-align:left"></Column>
+                <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                  <template #body="slotProps">
+                    {{get_count('condition', slotProps.data.name)}}
+                  </template>
+                </Column>
+                <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                  <template #body="slotProps">
+                    {{get_freq('condition', slotProps.data.name)}}
+                  </template>
+                </Column>
+                </DataTable>
+              </div>
+
+              <div id="get-datasets" class="mt-1 text-center">
+                <Button label="Get Datasets" @click="get_datasets" :loading="this.getting_datasets"/>
+              </div>
+            </div>
+            <div v-else class="text-center font-semibold text-lg">
+              Warning: No datasets in filtered selection.  Clear filters to regain datasets for selection.
+            </div>
+          </AccordionTab>
+          <AccordionTab header="Genes">
+            <div id="genes-view" class="" v-show="this.got_datasets">
+              <div class="font-semibold text-sm my-1">Select Genes:</div>
+              <div v-show="this.loading_genes" class="">
+                <ProgressBar mode="indeterminate" />
+              </div>
+              <div id="gene-search" class="p-1" v-show="!this.loading_genes">
+                <AutoComplete :multiple="true" v-model="this.genes_selected" 
+                :suggestions="this.genes_filtered" @complete="search_genes($event)" field="name" />
+              </div>  
+              <div id="get-genes" class="mt-1 text-center">
+                  <Button label="Update Chart" @click="get_gene_data" :loading="this.getting_gene_data || this.loading_genes"/>
+                </div>
+            </div>
+            <div v-show="!this.got_datasets">
+              <div v-show="this.getting_datasets">
+              Loading... please wait.
+              </div>
+              <div v-show="!this.getting_datasets">
+              Please first select at least one dataset.
+              </div>
+            </div>
+          </AccordionTab>
+        </Accordion>
+      </div>
+      <div id="graphs-view" class="w-3/4 h-1/2 min-w-[50rem]">
+        <div v-if="this.got_datasets && this.got_gene_data">
+          <div class="card mt-1">
+            <div class="mx-auto w-3/4">
+              <TabMenu :model="items" v-model:activeIndex="index"/>
+            </div>
+            <div v-if="index != null" class="mx-auto px-3 ">
+              <component :is="items[index].current_component" :genes="this.genes_selected" :datasets="this.datasets"/>
+            </div>
           </div>
-          <div class="flex align-items-center">
-            <Button label="Get Gene Data" class="ml-3" @click="getGeneData" :loading="this.gettingGeneData"/>
-          </div>
         </div>
-        
-      </div>
-
-      
-
-    </div>
-
-  </div>
-  <div id="graphs-view" v-show="this.gotDatasets && this.gotGeneData">
-    <div class="card mt-2">
-      <div class="mx-auto w-3/4">
-        <TabMenu :model="items" v-model:activeIndex="index"/>
-        <!-- <TabMenu :model="items"/> -->
-      </div>
-      <div v-if="index != null" class="mx-auto w-11/12">
-        <!-- <KeepAlive > -->
-          <component :is="items[index].currentComponent" :genes="this.genesSelected" :datasets="this.datasets"/>
-        <!-- </KeepAlive> -->
+        <div v-else class="flex h-[50vh]">
+          <ProgressSpinner v-show="!(this.got_datasets && this.got_gene_data)" class="m-auto"/>
+        </div>
       </div>
     </div>
   </div>
-  
 </div>
 
 </template>
@@ -162,10 +243,10 @@ import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Chip from 'primevue/chip'
+import Accordion from 'primevue/accordion'
+import AccordionTab from 'primevue/accordiontab'
 
-// Needed?
-import Selection from "@/components/Selection.vue"
-import Prime from "@/components/Prime.vue"
+import _ from 'underscore'
 
 import BarPlot from "@/components/svg/BarPlot.vue"
 import LinePlot from "@/components/svg/LinePlot.vue"
@@ -184,8 +265,8 @@ export default {
     DataTable,
     Column,
     Chip,
-    Selection,
-    Prime,
+    Accordion,
+    AccordionTab,
 
     BarPlot,
     LinePlot,
@@ -196,52 +277,61 @@ export default {
     return {
       items: [
         {
-          label: 'Bar',
+          label: 'Histogram',
           icon: 'pi pi-fw pi-chart-bar',
-          currentComponent: 'BarPlot',
-          // to: '/main/bar',
+          current_component: 'BarPlot',
         },
         {
           label: 'Line',
           icon: 'pi pi-fw pi-chart-line',
-          currentComponent: 'LinePlot',
-          // to: '/main/line',
+          current_component: 'LinePlot',
         }
       ],
       loading: true,
-      loadingGenes: true,
-      gotDatasets: false,
-      gettingDatasets: false,
-      gotGeneData: false,
-      gettingGeneData: false, 
-      filterWarning: false,
+      loading_genes: true,
+      got_datasets: false,
+      getting_datasets: false,
+      got_gene_data: false,
+      getting_gene_data: false, 
+      datasets_filter_warning: false,
+      filter_warning: false,
 
       db_metadata: null,
-      filtered_metadata: null,
       selected_metadata: null,
-      lookup_table: null,
+      lookup_table: {},
       
-      columns: null,
-      categories: ['species', 'experiment', 'tissue'],
+      dataset_categories: ['species', 'experiment', 'tissue'],
+      sample_categories: ['gender', 'condition'],
 
-      speciesList: [], //["Mouse", "Human", "Baboon"],
-      speciesFiltered: [], // [{name: Mouse}, {name:Human}]
-      speciesSelected: [],
-      speciesSelectedFilters: [],
+      species_list: [], //["Mouse", "Human", "Baboon"],
+      species_filtered: [], // [{name: Mouse}, {name:Human}]
+      species_selected: [],
+      species_result: null,
 
-      experimentList: [], //["Mouse_TRF_2018", "Mouse_TRF_2019", "Baboon_TRF_2020", "Human_ABC_2020"],
-      experimentFiltered: [],
-      experimentSelected: [],
-      experimentSelectedFilters: [],
+      experiment_list: [], //["Mouse_TRF_2018", "Mouse_TRF_2019", "Baboon_TRF_2020", "Human_ABC_2020"],
+      experiment_filtered: [],
+      experiment_selected: [],
+      experiment_result: null,
 
-      tissueList: [], //["Liver", "Muscle", "Adipose", "Heart", "Neuron"],
-      tissueFiltered: [],     
-      tissueSelected: [],
-      tissueSelectedFilters: [],
+      tissue_list: [], //["Liver", "Muscle", "Adipose", "Heart", "Neuron"],
+      tissue_filtered: [],     
+      tissue_selected: [],
+      tissue_result: null,
 
       genes: [], // [{name:'Alb'},...]
-      genesFiltered: [],
-      genesSelected: [],
+      genes_filtered: [],
+      genes_selected: [],
+      genes_results: null,
+
+      gender: [],
+      gender_filtered: [],
+      gender_selected: [],
+      gender_result: null,
+
+      condition: [],
+      condition_filtered: [],
+      condition_selected: [], 
+      condition_result: null,
 
       gene_metadata_table_names: [],
       sample_metadata_table_names: [],
@@ -254,89 +344,85 @@ export default {
 
       datasets: null,
       index: null,
-      currentComponent: null,
-      
+      current_component: null,
     }
-  },
-  computed: {
-    speciesOnlySelected() {
-      return (this.speciesSelected.length 
-        && !this.experimentSelected.length && !this.tissueSelected.length)
-    },
-    experimentOnlySelected() {
-      return (!this.speciesSelected.length 
-        && this.experimentSelected.length && !this.tissueSelected.length)
-    },
-    tissueOnlySelected() {
-      return (!this.speciesSelected.length 
-        && !this.experimentSelected.length && this.tissueSelected.length)
-    },
-  },
-
-  created() {
-    console.log('Main created')
-
-    this.columns = [
-      {field:'name', header:''},
-      {field:'count', header:'#'},
-      {field:'freq', header:'Freq'}
-    ]
-
-    this.speciesList = this.buildList(this.speciesList)
-    this.speciesFiltered = this.speciesList
-    
-    this.experimentList = this.buildList(this.experimentList)
-    this.experimentFiltered = this.experimentList
-
-    this.tissueList = this.buildList(this.tissueList)
-    this.tissueFiltered = this.tissueList
-
-    this.genesSelected = this.buildList(this.genesSelected)
-
   },
   async mounted() {
     // Populate array with all genes
     console.log('Main mounted, await datasets metadata: ')
     const start = Date.now()
 
+    // Initialize lookup_table
+    this.dataset_categories.forEach(e => this.lookup_table[e] = {})
+    this.sample_categories.forEach(e => this.lookup_table[e] = {})
+
     // Concurrent await
     await Promise.all([
-      this.loadMetadata(), 
-      // this.loadGenes()
+      this.load_metadata(),
     ])
 
     // Testing - Remove later
-    this.tissueSelected = [{name:'BAT'}, {name:'DG'}]
-    this.tissueRowChange('select')
-    await this.getDatasets()
-    this.genesSelected = [{name:'Alb'}]
-    await this.getGeneData()
-    this.index = 0
+    this.tissue_selected = [{name:'Arcuate'}]
+    this.genes_selected = [{name:'Clock'}]
+    await this.update_lookup_table()
+    await this.get_datasets()
 
-
-    // // this.$router.push('/main/line')
+    // Line chart at index 1
+    this.index = 1
     
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
   },
-  async updated() {
-    // console.log('=============')
-    // console.log('Main updated')
-    // console.log(this.genesSelected)
-    // console.log('=============')
-  },
   methods: {
-    async getDatasets() {
-      // console.log('getDatasets')
+    async load_metadata() {
+      console.log('load_metadata')
       const start = Date.now()
-      this.gettingDatasets = true
+      this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
+      // Parse gender and condition fields
+      this.db_metadata.forEach(e => {
+        const genderStr = e.gender.replaceAll(/[']+/g, '"')
+        e.gender = JSON.parse(genderStr)
+
+        const conditionStr = e.condition.replaceAll(/[']+/g, '"')
+        e.condition = JSON.parse(conditionStr)
+      })
+
+      this.species_list = this.build_list([...new Set(this.db_metadata.map(item => item.species))])
+      this.species_filtered = this.species_list
+      console.log('this.species_filtered')
+      console.log(this.species_filtered)
+
+      this.experiment_list = this.build_list([...new Set(this.db_metadata.map(item => item.experiment))])
+      this.experiment_filtered = this.experiment_list
+
+      this.tissue_list = this.build_list([...new Set(this.db_metadata.map(item => item.tissue))])
+      this.tissue_filtered = this.tissue_list
+
+      this.gender_list = this.build_list([...new Set(this.db_metadata.map(item => 
+        [...new Set(item.gender.map(g => g.gender))]
+        ).flat())])
+      this.gender_filtered = this.gender_list
+      
+      this.condition_list = this.build_list([...new Set(this.db_metadata.map(item =>
+        [...new Set(item.condition.map(c => c.condition))]
+        ).flat())])
+      this.condition_filtered = this.condition_list
+
+      this.loading = false
+      const elapsed = Date.now() - start 
+      console.log('load_metadata time elapsed: ', elapsed)
+    },
+    async get_datasets() {
+      console.log('get_datasets')
+      const start = Date.now()
+      this.getting_datasets = true
       this.gene_metadata_table_names = []
       this.sample_metadata_table_names = []
       this.gene_expression_data_table_names = []
 
       if (!this.selected_metadata.length) {
-        this.gettingDatasets = false
-        this.gotDatasets = false
+        this.getting_datasets = false
+        this.got_datasets = false
         this.$toast.add({severity: 'error', summary: 'Error', detail: 'No datasets selected', life: 5000});
         return
       }
@@ -349,338 +435,142 @@ export default {
       })
 
       await Promise.all([
-        this.getGeneMetadataTables(this.gene_metadata_table_names), 
-        this.getSampleMetadataTables(this.sample_metadata_table_names),
+        this.get_gene_metadata_tables(this.gene_metadata_table_names), 
+        this.get_sample_metadata_tables(this.sample_metadata_table_names),
       ])
 
-      // this.genes = await DataService.getGenes()
-      // this.genes = this.genes.data.map((d) => ({name: d.gene_name}))
-      // this.loadingGenes = false
-      // this.datasets = await DataService.getDatasets
-      this.gotDatasets = true
-      this.gettingDatasets = false
+      this.got_datasets = true
+      this.getting_datasets = false
 
-      const elapsed = Date.now() - start
-      console.log('getDatasets time elapsed: ', elapsed)
+      if (this.genes_selected.length)
+        // If user has at least one selected genes call get_gene_data 
+        // Updates chart with selected gene data for corresponding datasets
+        this.get_gene_data()
+
+      const elapsed = Date.now() - start 
+      console.log('get_datasets time elapsed: ', elapsed)
     },
-    async getGeneMetadataTables(tables) {
-      // console.log('getGeneMetadataTables')
-      const start = Date.now()
-      this.loadingGenes = true
-      const results = await Promise.all(tables.map(async (t) => {
+    async get_gene_metadata_tables(tables) {
+      this.loading_genes = true
+      this.gene_metadata_tables = await Promise.all(tables.map(async (t) => {
         const result = await DataService.getGenes(t)
         return {
           table: t, 
           data: result.data.map(d => d.gene_name)
         }
       }))
-      this.gene_metadata_tables = results
-      // results = results.map(e => e.data)
-
-      let uniqGenes = [...new Set(...results.map(e => e.data))]
-      // console.log(uniqGenes) 
-      this.genes = this.buildList(uniqGenes)
-      this.genesFiltered = this.genes
-      // console.log(this.genes)
-
-      this.loadingGenes = false
-      const elapsed = Date.now() - start
-      // console.log('getGeneMetadataTables time elapsed: ', elapsed)
-      return results
+      this.genes = this.build_list([...new Set(...this.gene_metadata_tables.map(
+        e => e.data))])
+      this.genes_filtered = this.genes
+      this.loading_genes = false
     },
-    async getSampleMetadataTables(tables) {
-      // console.log('getSampleMetadataTables')
-      const start = Date.now()
-      const results = await Promise.all(tables.map(async (t) => {
+    async get_sample_metadata_tables(tables) {
+      this.sample_metadata_tables = await Promise.all(tables.map(async (t) => {
         const result = await DataService.getSampleMetadata(t)
-        // console.log('table: ', t)
-        
-        // console.log(result)
-        // let data = result.data.map(d => d.gene_name)
-        // console.log(data)
         return {
           table: t,
           data: result.data 
         }
       }))
-
-      this.sample_metadata_tables = results
-
-      const elapsed = Date.now() - start
-      // console.log('getSampleMetadataTables time elapsed: ', elapsed)
-      return results
     },
-    async getGeneExpressionDataTables(genes, tables) {
-      // console.log('getGeneExpressionDataTables')
-      const start = Date.now()
-      // console.log(genes)
-      let genesStr = genes.map((d) => d.name).toString()
-      // console.log('genesStr')
-      // console.log(genesStr)
-      
-      const results = await Promise.all(tables.map(async (t) => {
-        // const result = []
-        // if (this.gene_expression_data_tables)
-        // console.log('table: ', t)
-        // if (this.gene_expression_data_tables)
-
-        const result = await DataService.getExpressionDataByGenes(genesStr, t)
-        
-        // console.log(result)
-        // let data = result.data.map(d => d.gene_name)
-        // console.log(data)
+    async get_gene_expression_data_tables(genes, tables) {
+      console.log('get_gene_expression_data_tables')
+      let genesStr = genes.map(d => d.name).toString()
+      console.log('genesStr', genesStr)
+      let gendersStr = this.gender_selected.map(d => d.name).toString()
+      console.log('gendersStr', gendersStr)
+      let conditionsStr = this.condition_selected.map(d => d.name).toString()
+      console.log('conditionsStr', conditionsStr)
+      this.gene_expression_data_tables = await Promise.all(tables.map(async (t) => {
+        const result = await DataService
+          .getExpressionDataByGenesGendersConditions(genesStr, gendersStr, conditionsStr, t)
+        // const result = await DataService.getExpressionDataByGenes(genesStr, t)
+        console.log('result.data')
+        console.log(result.data)
         return {
           table_name: t,
           data: result.data
         }
       }))
-
-      this.gene_expression_data_tables = results
-      // console.log('gene_expression_data_tables')
-      // console.log(this.gene_expression_data_tables)
-
-      const elapsed = Date.now() - start
-      // console.log('getGeneExpressionDataTables time elapsed: ', elapsed)
-
-      return results
     },
-    async getSelectedGeneMetadata(genes, tables) {
-      // console.log('getSelectedGeneMetadata')
-      const start = Date.now()
+    async get_selected_gene_metadata(genes, tables) {
       let genesStr = genes.map((d) => d.name).toString()
-      const results = await Promise.all(tables.map(async (t) => {
+      this.selected_gene_metadata = await Promise.all(tables.map(async (t) => {
         const result = await DataService.getGeneMetadata(genesStr, t)     
         return {
           table_name: t,
           data: result.data
         }
       }))
-      this.selected_gene_metadata = results
-
-      const elapsed = Date.now() - start
-      // console.log('getSelectedGeneMetadata time elapsed: ', elapsed)
-
-      return results
     },
-    async getGeneData() {
-      // console.log('getGeneData')
+    async get_gene_data() {
+      console.log('get_gene_data')
       const start = Date.now()
-      this.gettingGeneData = true
-      if (!this.genesSelected.length) {
+      this.getting_gene_data = true
+      if (!this.genes_selected.length) {
         this.$toast.add({severity: 'error', summary: 'Error', detail: 'No genes selected', life: 5000});
-        this.gotGeneData = false
-        this.gettingGeneData = false
+        this.got_gene_data = false
+        this.getting_gene_data = false
         return
       }
       await Promise.all([
-        this.getGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names),
-        this.getSelectedGeneMetadata(this.genesSelected, this.gene_metadata_table_names)
+        this.get_gene_expression_data_tables(this.genes_selected, this.gene_expression_data_table_names),
+        this.get_selected_gene_metadata(this.genes_selected, this.gene_metadata_table_names)
       ])
-      // await this.getGeneExpressionDataTables(this.genesSelected, this.gene_expression_data_table_names)
       this.datasets = {
-        // gene_metadata_tables: this.gene_metadata_tables,
         sample_metadata_tables: this.sample_metadata_tables,
         gene_expression_data_tables: this.gene_expression_data_tables,
         gene_metadata: this.selected_gene_metadata,
       }
-      this.gotGeneData = true
-      this.gettingGeneData = false
-      const elapsed = Date.now() - start
-      console.log('getGeneData time elapsed ', elapsed)
+      this.got_gene_data = true
+      this.getting_gene_data = false
+      const elapsed = Date.now() - start 
+      console.log('get_gene_data time elapsed: ', elapsed)
     },
-    async loadGenes() {
-      // Defunct?
+    async update_lookup_table() {
+      console.log('update_lookup_table')
       const start = Date.now()
-      this.genes = await DataService.getGenes()
-      this.genes = this.genes.data.map((d) => ({name: d.gene_name}))
-      this.loadingGenes = false
-      const elapsed = Date.now() - start
-      // console.log('loadGenes time elapsed: ', elapsed)
-    },
-    async loadMetadata() {
-      const start = Date.now()
-      // this.db_metadata = await DataService.getDatabaseMetadata().then(e => e.data)
-      this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
-      this.lookup_table = this.initializeLookupTable(this.db_metadata)
-      this.filtered_metadata = this.db_metadata
-      this.selected_metadata = []
+      // Get each subset of all datasets for each filter grouping, excluding its
+      //  own additional filter conditions to prevent prematurely locking in a selection
+      this.species_result = this.filter_metadata_except('species')
+      this.experiment_result = this.filter_metadata_except('experiment')
+      this.tissue_result = this.filter_metadata_except('tissue')
+      this.gender_result = this.filter_metadata_except('gender') 
+      this.condition_result = this.filter_metadata_except('condition')
 
-      this.speciesList = this.buildList([...new Set(this.db_metadata.map(item => item.species))])
-      this.speciesFiltered = this.speciesList
+      this.species_filtered = this.build_list([...new Set(this.species_result.map(item => item.species))].sort())
+      this.experiment_filtered = this.build_list([...new Set(this.experiment_result.map(item => item.experiment))].sort())
+      this.tissue_filtered = this.build_list([...new Set(this.tissue_result.map(item => item.tissue))].sort())
 
-      this.experimentList = this.buildList([...new Set(this.db_metadata.map(item => item.experiment))])
-      this.experimentFiltered = this.experimentList
+      // Get all genders in filtered list then flatten and get unique values
+      this.gender_filtered = this.build_list([...new Set(
+        this.gender_result.map(item => 
+          [...new Set(item.gender.map(m => m.gender))]).flat()  
+        )].sort())
+      this.condition_filtered = this.build_list([...new Set(
+        this.condition_result.map(item => 
+          [...new Set(item.condition.map(m => m.condition))]).flat() 
+        )].sort())
 
-      this.tissueList = this.buildList([...new Set(this.db_metadata.map(item => item.tissue))])
-      this.tissueFiltered = this.tissueList
+      this.selected_metadata = _.intersection(
+        this.species_result, 
+        this.experiment_result,
+        this.tissue_result,
+        this.gender_result,
+        this.condition_result)
 
-      this.loading = false
-      const elapsed = Date.now() - start
-      // console.log('loadMetadata time elapsed: ', elapsed)
-    },
-    getCount(cat, value) {
-      // cat = 'species' 
-      // value = 'Human'
-      if (Object.keys(this.lookup_table[cat]).includes(value))
-        return this.lookup_table[cat][value].count
-      return null
-    },
-    getFreq(cat, value) {
-      if (Object.keys(this.lookup_table[cat]).includes(value))
-        return (this.lookup_table[cat][value].freq * 100).toFixed(2) + '%'
-      return null
-    },
-    buildList(list) {
-      // Converts array of strings to array of objects with name properties of strings
-      return list.map(object => {
-        return {'name' : object}
-    })},
-    removeSpeciesFilter(text) {
-      // console.log('removeSpeciesFilter')
-      this.speciesSelected = this.speciesSelected.filter((obj) => 
-        obj.name != text
-      );
-      let reset = false
-      if (!this.speciesSelected.length) reset = true
-      this.updateLookupTable('species', reset)
-    },
-    removeExperimentFilter(text) {
-      // console.log('removeExperimentsFilter')
-      this.experimentSelected = this.experimentSelected.filter((obj) => 
-         obj.name != text
-      );
-      let reset = false
-      if (!this.experimentSelected.length) reset = true
-      this.updateLookupTable('experiment', reset)
-    },
-    removeTissueFilter(text) {
-      // console.log('removeTissuesFilter')
-      this.tissueSelected = this.tissueSelected.filter((obj) => 
-         obj.name != text
-      );
-      let reset = false
-      if (!this.tissueSelected.length) reset = true
-      this.updateLookupTable('tissue', reset)
-    },
-    clearAllFilters() {
-      // console.log('clearAllFilters')
-      this.speciesSelected = []
-      this.experimentSelected = []
-      this.tissueSelected = []
-      this.updateLookupTable('', true)
-    },
-    initializeLookupTable(metadata) {
-      // console.log('initializeLookupTable')
-      const table = {}
-      this.categories.forEach((cat) => {
-        // species, experiment, tissue
-        table[cat] = {}
-        const uniqVal = [...new Set(metadata.map(item => item[cat]))]
-        let sum = 0
-        uniqVal.forEach((val) => {
-          // Mouse, TRF_2020, Liver, etc. 
-          table[cat][val] = {}
-          table[cat][val].count = metadata
-            .reduce((acc, cur) => cur[cat] === val ? ++acc : acc, 0)
-          sum += table[cat][val].count
-        })
-        uniqVal.forEach((val) => {
-          table[cat][val].freq = table[cat][val].count / sum
-        })
-      })
-      return table
-    },
-    updateLookupTable(origin, reset) {
-      // console.log('===========')
-      // console.log('updateLookupTable', origin, reset)
+      let uniqVal, catResult, dataset, catFiltered, sum
 
-      // Inputs are arrays of strings
-      // If array is empty then no filter is performed
-      const speciesSelectedNames = this.speciesSelected.map(el => el.name)
-      const experimentSelectedNames = this.experimentSelected.map(el => el.name)
-      const tissueSelectedNames = this.tissueSelected.map(el => el.name)
-
-      // Array of full dataset objects, to be filtered down, then intersected (ANDs of ORs)
-      let speciesResult = this.db_metadata
-      let experimentsResult = this.db_metadata
-      let tissuesResult = this.db_metadata
-
-      // Check if there are any filters selected, then filter down from full array of dataset metadata
-      if (speciesSelectedNames.length)
-        speciesResult = this.db_metadata.filter(
-          ({ species }) => speciesSelectedNames.some(
-            (s) => species.toLowerCase().includes(s.toLowerCase())))
-
-      if (experimentSelectedNames.length) 
-        experimentsResult = this.db_metadata.filter(
-          ({ experiment }) => experimentSelectedNames.some(
-            (s) => experiment.toLowerCase().includes(s.toLowerCase())))
-
-      if (tissueSelectedNames.length)
-        tissuesResult = this.db_metadata.filter(
-          ({ tissue }) => tissueSelectedNames.some(
-            (s) => tissue.toLowerCase().includes(s.toLowerCase())))
-
-      // If any filters were selected, one of the result arrays will be smaller than db_metadata 
-      // The intersection of results will be used to display remaining possible datasets to select
-      let intersection = speciesResult.filter(value => experimentsResult.includes(value));
-      intersection = intersection.filter(value => tissuesResult.includes(value));
-      this.filtered_metadata = intersection
-
-      // Assign selected_metadata to intersection if there is at least one selection
-      this.selected_metadata = []
-      if (speciesSelectedNames.length || experimentSelectedNames.length || tissueSelectedNames.length )
-        this.selected_metadata = intersection
-
-      // console.log('intersection')
-      // console.log(intersection)
-      // If no datasets in intersection, show warning
-      this.filterWarning = intersection.length == 0
-
-      // If not called from species change, update possible selections  
-      // If called from species change, and reset is true
-      // Reset is true if there are now 0 filters selected, should show all possible choices
-      if (origin != 'species' || (origin == 'species' && reset))
-        // List of unique values 
-        this.speciesFiltered = this.buildList([...new Set(intersection.map(item => item.species))])
-      if (this.speciesOnlySelected)
-        this.speciesFiltered = this.buildList([...new Set(this.db_metadata.map(item => item.species))])
-
-      if (origin != 'experiment' || (origin == 'experiment' && reset))
-        this.experimentFiltered = this.buildList([...new Set(intersection.map(item => item.experiment))])
-      if (this.experimentOnlySelected)
-        this.experimentFiltered = this.buildList([...new Set(this.db_metadata.map(item => item.experiment))])
-
-      if (origin != 'tissue' || (origin == 'tissue' && reset))
-        this.tissueFiltered = this.buildList([...new Set(intersection.map(item => item.tissue))])
-      if (this.tissueOnlySelected)
-        this.tissueFiltered = this.buildList([...new Set(this.db_metadata.map(item => item.tissue))])
-
-      this.categories.forEach((cat) => {
+      this.dataset_categories.forEach((cat) => {
         // cat = species, experiment, tissue
-        let uniqVal = [...new Set(intersection.map(item => item[cat]))]
-        // If called by current category and not resetting 
-        //  then only use the older, not updated filtered list 
-        //  Solves frequency count bug.  
-        let onlySelected = cat + 'OnlySelected'
-        let dataset = intersection
-
-        if (cat == origin && !reset) {
-          // console.log('cat == ', origin, reset)
-          let filterIdentifier = cat + 'Filtered'
-          uniqVal = this[filterIdentifier]
-        }
-        if (this[onlySelected] && reset) {
-          // console.log('only..')
-          // console.log(onlySelected )
-          uniqVal = [...new Set(this.db_metadata.map(item => item[cat]))]
-          // console.log(uniqVal)
-          dataset = this.db_metadata
-        }
-
-        let sum = 0
+        catResult = cat + '_result'
+        dataset = this[catResult]
+        catFiltered = cat + '_filtered'
+        uniqVal = this[catFiltered].map(el => el.name)
+        sum = 0
+        this.lookup_table[cat] = {}
         uniqVal.forEach((val) => {
-          // Mouse, TRF_2020, Liver, etc. 
+          // val = Mouse, TRF_2020, Liver, etc. 
           this.lookup_table[cat][val] = {}
           this.lookup_table[cat][val].count = dataset
             .reduce((acc, cur) => cur[cat] === val ? ++acc : acc, 0)
@@ -689,110 +579,153 @@ export default {
         uniqVal.forEach((val) => {
           this.lookup_table[cat][val].freq = this.lookup_table[cat][val].count / sum
         })
-        // console.log(this.lookup_table)
       })
-      // console.log('===========')
+
+      this.sample_categories.forEach((cat) => {
+        // cat = gender, condition
+        catResult = cat + '_result'
+        dataset = this[catResult]
+        catFiltered = cat + '_filtered'
+        uniqVal = this[catFiltered].map(el => el.name)
+        sum = 0
+        this.lookup_table[cat] = {}
+        uniqVal.forEach(val => {
+          // val = Male, Female, etc..
+          this.lookup_table[cat][val] = {}
+          this.lookup_table[cat][val].count = dataset
+            .reduce((acc, cur) => {
+              const reduce_result = cur[cat].reduce((a, c) => 
+                c[cat] === val ? a + c.count : a, 0)
+              return cat in cur ? acc + reduce_result : acc}, 0)
+          sum += this.lookup_table[cat][val].count
+        })
+        uniqVal.forEach((val) => {
+          this.lookup_table[cat][val].freq = this.lookup_table[cat][val].count / sum
+        })
+      })
+
+      // Performs API calls to Database on change to filters
+      // await this.get_datasets()
+
+      const elapsed = Date.now() - start 
+      console.log('update_lookup_table time elapsed: ', elapsed)
     },
-    speciesRowChange(text) {
-      // console.log('----------------')
-      // console.log('speciesRowChange')
-      let reset = this.speciesSelected.length == 0
-      if (text == 'unselect-all') {
-        this.speciesSelected = []
-        reset = true
-      } else if (text == 'select-all') {
-        this.speciesSelected = this.speciesFiltered
-        reset = false
+    filter_metadata_except(except_category) {
+      // Applies all selection filters for other categories excluding the provided category
+      // Allows for selecting more instances of a filter category without prematurely
+      //  locking in current filters, preventing adding new selections that are not 
+      //  in the intersection, e.g. selecting Heart tissue would filter down all 
+      //  datasets to only include those from Heart tissue, preventing selecting Liver, etc.
+
+      let filtered = this.db_metadata
+      if (except_category != 'species') {
+        const species_selected_names = this.species_selected.map(el => el.name)
+        // If no species selected, then skip filtering
+        if (species_selected_names.length)
+          filtered = filtered.filter(
+            ({ species }) => species_selected_names.some(
+              (s) => species.toLowerCase().includes(s.toLowerCase())))
       }
-      // console.log('----------------')
-      this.updateLookupTable('species', reset)
-    },
-    experimentRowChange(text) {
-      // console.log('----------------')
-      // console.log('experimentRowChange')
-      let reset = this.experimentSelected.length == 0
-      if (text == 'unselect-all') {
-        this.experimentSelected = []
-        reset = true
-      } else if (text == 'select-all') {
-        this.experimentSelected = this.experimentFiltered
-        reset = false
+
+      if (except_category != 'experiment') {
+        const experiment_selected_names = this.experiment_selected.map(el => el.name)
+        if (experiment_selected_names.length)
+          filtered = filtered.filter(
+            ({ experiment }) => experiment_selected_names.some(
+              (s) => experiment.toLowerCase().includes(s.toLowerCase())))
       }
-      // console.log('----------------')
-      this.updateLookupTable('experiment', reset)
 
-    },
-    tissueRowChange(text) {
-      // console.log('----------------')
-      // console.log('tissueRowChange')
-      let reset = this.tissueSelected.length == 0
-      if (text == 'unselect-all') {
-        this.tissueSelected = []
-        reset = true
-      } else if (text == 'select-all') {
-        this.tissueSelected = this.tissueFiltered
-        reset = false
+      if (except_category != 'tissue') {
+        const tissue_selected_names = this.tissue_selected.map(el => el.name)
+        if (tissue_selected_names.length)
+          filtered = filtered.filter(
+            ({ tissue }) => tissue_selected_names.some(
+              (s) => tissue.toLowerCase().includes(s.toLowerCase())))
       }
-      this.updateLookupTable('tissue', reset)
-      // console.log('----------------')
+
+      if (except_category != 'gender') {
+        const gender_selected_names = this.gender_selected.map(el => el.name)
+        if (gender_selected_names.length)
+          filtered = filtered.filter(
+            ({ gender }) => gender_selected_names.some(
+              (s) => gender.some((gend) => 
+                gend.gender.toLowerCase() == s.toLowerCase())))
+      }
+
+      if (except_category != 'condition') {
+        const condition_selected_names = this.condition_selected.map(el => el.name)
+        if (condition_selected_names.length)
+          filtered = filtered.filter(
+          ({ condition }) => condition_selected_names.some(
+            (s) => condition.some((cond) => 
+              cond.condition.toLowerCase() == s.toLowerCase())))
+      }
+
+      return filtered
     },
-    filterResults() {
-      // Defunct? 
-      //
-      // Inputs are arrays of strings
-      // If array is empty then no filter is performed
-      const speciesSelectedNames = this.speciesSelected.map(el => el.name)
-      const experimentSelectedNames = this.experimentSelected.map(el => el.name)
-      const tissueSelectedNames = this.tissueSelected.map(el => el.name)
-
-      // let result = this.db_metadata
-      let speciesResult = this.db_metadata
-      let experimentsResult = this.db_metadata
-      let tissuesResult = this.db_metadata
-
-      if (speciesSelectedNames.length)
-        speciesResult = this.db_metadata.filter(
-          ({ species }) => speciesSelectedNames.some(
-            (s) => species.toLowerCase().includes(s.toLowerCase())))
-
-      if (experimentSelectedNames.length) 
-        experimentsResult = this.db_metadata.filter(
-          ({ experiment }) => experimentSelectedNames.some(
-            (s) => experiment.toLowerCase().includes(s.toLowerCase())))
-
-      if (tissueSelectedNames.length)
-        tissuesResult = this.db_metadata.filter(
-          ({ tissue }) => tissueSelectedNames.some(
-            (s) => tissue.toLowerCase().includes(s.toLowerCase())))
-
-      // console.log('speciesResult')
-      // console.log(speciesResult)
-      // console.log('experimentsResult')
-      // console.log(experimentsResult)
-      // console.log('tissuesResult')
-      // console.log(tissuesResult)
-
-      let intersection = speciesResult.filter(value => experimentsResult.includes(value));
-      intersection = intersection.filter(value => tissuesResult.includes(value));
-      // console.log('intersection')
-      // console.log(intersection)
-
-      return intersection
+    get_count(cat, value) {
+      // cat = 'species' 
+      // value = 'Human' 
+      if (Object.keys(this.lookup_table[cat]).includes(value)) 
+        return this.lookup_table[cat][value].count
+      return null
     },
-    async searchGenes(event) {
+    get_freq(cat, value) {
+      if (Object.keys(this.lookup_table[cat]).includes(value))
+        return (this.lookup_table[cat][value].freq * 100).toFixed(2) + '%'
+      return null
+    },
+    build_list(list) {
+      // Converts array of strings to array of objects with name properties of strings
+      return list.map(object => {
+        return {'name' : object}
+    })},
+    remove_species_filter(text) {
+      this.species_selected = this.species_selected.filter((obj) => 
+         obj.name != text)
+      this.update_lookup_table()
+    },
+    remove_experiment_filter(text) {
+      this.experiment_selected = this.experiment_selected.filter((obj) => 
+         obj.name != text)
+      this.update_lookup_table()
+    },
+    remove_tissue_filter(text) {
+      this.tissue_selected = this.tissue_selected.filter((obj) => 
+         obj.name != text)
+      this.update_lookup_table()
+    },
+    remove_gender_filter(text) {
+      this.gender_selected = this.gender_selected.filter((obj) => 
+         obj.name != text)
+      this.update_lookup_table()
+    },
+    remove_condition_filter(text) {
+      this.condition_selected = this.condition_selected.filter((obj) => 
+         obj.name != text)
+      this.update_lookup_table()
+    },
+    clear_all_filters() {
+      this.species_selected = []
+      this.experiment_selected = []
+      this.tissue_selected = []
+      this.gender_selected = []
+      this.condition_selected = []
+      this.update_lookup_table()
+    },
+    async search_genes(event) {
       setTimeout(() => {
         if (!event.query.trim().length) {
-            this.genesFiltered = [...this.genes];
+            this.genes_filtered = [...this.genes];
         }
         else {
-            this.genesFiltered = this.genes.filter((gene) => {
+            this.genes_filtered = this.genes.filter((gene) => {
                 return gene.name.toLowerCase().startsWith(event.query.toLowerCase());
             });
         }
       }, 250);
     },
   },
-
 }
 </script>
 
@@ -803,6 +736,73 @@ export default {
     color: #ffffff;
 }
 
+#gene-search {
+  :deep(.p-autocomplete-token) {
+    margin-top:0.25rem !important;
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.8rem !important;
+  }
+
+}
+#filters-boxes {
+  :deep(.p-accordion-header-link ) {
+    padding:10px !important;
+  }
+
+  :deep(.p-accordion-content) {
+    padding:10px !important;
+    // font-size:0.2rem !important;
+  }
+
+  :deep(.p-datatable-wrapper) {
+    font-size:80% !important;
+  }
+
+  :deep(td) {
+    padding:2px!important;
+    
+  }
+
+  :deep(th) {
+    padding:2px !important;
+  }
+
+  :deep(.p-checkbox-box) {
+    font-size: 70% !important;
+    height: 70% !important;
+    width: 70% !important;
+    margin:auto !important;
+  }
+
+  :deep(.p-checkbox-icon) {
+    font-size: 80% !important;
+  }
+
+  :deep(.p-column-header-content) {
+    font-size: 100% !important;
+    // height: 80% !important;
+    // width: 80% !important;
+    // margin:auto !important;
+
+  }
+
+  :deep(.p-button) {
+    padding:0.4rem 0.5rem !important;
+    font-size:0.9rem !important;
+  }
+}
+
+#current-filters-ui {
+  :deep(.p-chip) {
+    margin-top: 2px !important;
+  }
+}
+
+#graphs-view {
+  :deep(.p-menuitem-link) {
+    padding: 10px !important;
+  }
+}
 
 
 </style>
