@@ -5,19 +5,61 @@
     <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
       <ProgressSpinner class="w-full mt-10" />
     </div>
+
     <div id="plot-options" class="w-3/4 mx-auto mt-1" v-show="this.complete">
+      <div class="flex flex-row mt-1">
+        <div class="mx-1 flex flex-col items-center">
+          <div class="font-semibold">Data Points</div>
+          <InputSwitch v-model="showReplicatePoints" @change="this.update_line_plot" />
+        </div>
+        <div class="mx-1 flex flex-col items-center">
+          <div class="font-semibold">Error Bars</div>
+          <InputSwitch v-model="showErrorBars" @change="this.update_line_plot" />
+        </div>
+        <div id="more-options" class="flex grow justify-end">
+          <div class="flex flex-col items-center">
+            <div class="font-semibold">Options</div>
+
+            <Button type="button" label="" icon="pi pi-cog" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu"/>
+            <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
+
+          </div>
+          
+        </div>
+      </div>
+    </div>
+
+
+    <!-- <div id="plot-options" class="w-3/4 mx-auto mt-1" v-show="this.complete">
       <div class="flex flex-row">
         <div class="flex flex-col align-items-center mx-2">
+          <ToggleButton v-model="showReplicatePoints" @change="this.update_line_plot" 
+          onLabel="Data Points" offLabel="Data Points"  onIcon="pi pi-check" offIcon="pi pi-times"/>
           <div class="font-semibold">Data Points</div>
           <InputSwitch v-model="showReplicatePoints" @change="this.update_line_plot" />
         </div>
         <div class="flex flex-col align-items-center mx-2">
+          <ToggleButton v-model="showErrorBars" @change="this.update_line_plot" 
+            onLabel="Error Bars" offLabel="Error Bars"  onIcon="pi pi-check" offIcon="pi pi-times" />
           <div class="font-semibold">Error Bars</div>
-          <InputSwitch v-model="showErrorBars" @change="this.update_line_plot" />
+          <InputSwitch v-model="showErrorBars" @change="this.update_line_plot" /> 
+        </div>
+        <div id="more-options" class="grow justify-self-end content-end">
+          <div class="mr-0 justify-self-end">
+            <div class="flex flex-col align-items-center">
+              <ToggleButton />
+              <div class="font-semibold">Options</div>
+              <div>
+                <Button type="button" label="" icon="pi pi-cog" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu"/>
+                <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       
-    </div>
+      
+    </div> -->
     <!-- <div id="plot-area" class="mt-10" v-show="this.complete"> -->
     <div id="plot-area" class="mt-10">
     </div>
@@ -26,23 +68,21 @@
 
 <script>
 import * as d3 from "d3"
+import * as svg from 'save-svg-as-png'
+
 import DataService from "@/services/DataService.js"
 
 import ProgressSpinner from 'primevue/progressspinner'
 import InputSwitch from 'primevue/inputswitch'
+import Menu from 'primevue/menu'
+import Button from 'primevue/button'
+import ToggleButton from 'primevue/togglebutton'
+
 import _ from 'underscore';
 
 import eyeUrl from '@/assets/eye.svg'
 import eyeOffUrl from '@/assets/eye-off.svg'
 import infoUrl from '@/assets/info.svg'
-
-function sleep(milliseconds) {
-  const date = Date.now();
-  let currentDate = null;
-  do {
-    currentDate = Date.now();
-  } while (currentDate - date < milliseconds);
-}
 
 const animationInterval = 250
 // Custom function, reduces redundant code for transitions
@@ -84,6 +124,9 @@ export default {
   components: {
     ProgressSpinner,
     InputSwitch,
+    Menu,
+    Button,
+    ToggleButton,
   },
   props: { 
     genes: Array,
@@ -135,6 +178,14 @@ export default {
 
       windowHeight: window.innerHeight,
       windowWidth: window.innerWidth,
+
+      menu_items: [
+        {
+          label: 'Download as PNG',
+          icon: 'pi pi-download',
+          command: () => this.downloadChart('png')
+        },
+      ]
     }
   },
   watch: {
@@ -173,6 +224,22 @@ export default {
   },
 
   methods: {
+    toggle(evt) {
+      this.$refs.menu.toggle(evt);
+    },  
+    async downloadChart(filetype) {
+      console.log('downloadChart')
+      const svgElement = document.getElementById("plot-svg")
+      const options = {
+        'modifyCss' : function(selector, properties) { 
+          selector = selector.replace('#selectors-prefixed ', ''); 
+          properties = properties.replace('green', 'blue'); 
+          return selector + '{' + properties + '}'; 
+        },
+        'backgroundColor' : "#FFFFFF"  
+      }
+      svg.saveSvgAsPng(svgElement, "diagram.png", options)
+    },
     onResize() {
       this.windowHeight = window.innerHeight
       this.windowWidth = window.innerWidth
@@ -434,6 +501,7 @@ export default {
             .attr("class", "mx-auto")
             .attr("viewBox", `0 0 ${this.width + this.margin.left + this.margin.right} ${this.height + this.margin.top + this.margin.bottom}`)
             .attr("preserveAspectRatio", "xMinYMid")
+            .attr("style", "font-family:sans-serif")
           .append("g")
             .attr("transform", `translate(${this.margin.left},${this.margin.top})`);
 
@@ -1389,6 +1457,33 @@ export default {
 }
 </script>
 
-<style>
+<style lang="scss" scoped>
+#plot-options 
+{
+  :deep(.p-button) {
+    font-size: 0.85rem !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+  }
+  
+
+  :deep(.p-inputswitch) {
+    height: 1.4rem;
+    width: 2.6rem;
+    &.p-inputswitch-checked {
+        .p-inputswitch-slider::before {
+            transform: translateX(1.1rem);
+        }
+    }
+
+    .p-inputswitch-slider::before {
+        width: 0.9rem;
+        height: 0.9rem;
+        margin-top: -0.45rem;
+    }
+  }
+}
 
 </style>

@@ -1,8 +1,8 @@
 <template>
   <div id="bar" class="mx-auto">
     <!-- <div class="text-center mb-5">Bar Plot component</div> -->
-    <!-- <div id="bar-options" class="!grid grid-cols-12 mt-3 items-center"> -->
-    <div id="bar-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
+    <!-- <div id="plot-options" class="!grid grid-cols-12 mt-3 items-center"> -->
+    <div id="plot-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
       <!-- <div id="group-by" class="col-start-1 col-span-3"> -->
       <div id="group-by" class="flex flex-col align-items-center mx-2">
         <div class="font-semibold pb-2">Group by:</div>
@@ -21,7 +21,6 @@
           <Button type="button" label="" icon="pi pi-cog" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu"/>
           <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
         </div>
-  
       </div>
 
     </div>
@@ -37,15 +36,15 @@
 </template>
 
 <script>
-import * as d3 from "d3";
-import { Canvg, presets } from 'canvg';
+import * as d3 from "d3"
+import * as svg from 'save-svg-as-png'
 
 import ProgressSpinner from 'primevue/progressspinner'
 import SelectButton from 'primevue/selectbutton'
 import InputSwitch from 'primevue/inputswitch'
 import Menu from 'primevue/menu'
 import Button from 'primevue/button'
-import _ from 'underscore';
+import _ from 'underscore'
 
 import eyeUrl from '@/assets/eye.svg'
 import eyeOffUrl from '@/assets/eye-off.svg'
@@ -165,11 +164,6 @@ export default {
           command: () => this.downloadChart('png')
 
         },
-        {
-          label: 'Download as JPG',
-          icon: 'pi pi-download',
-          command: () => this.downloadChart('jpg')
-        }
       ]
     }
   },
@@ -231,23 +225,16 @@ export default {
     },  
     async downloadChart(filetype) {
       console.log('downloadChart')
-      const canvas = new OffscreenCanvas(this.width*2, this.height*2)
-      const ctx = canvas.getContext('2d')
-      const svgEl = document.querySelector('#plot-svg').outerHTML
-      const preset = presets.offscreen()
-      const v = await Canvg.from(ctx, svgEl, preset)
-      await v.render()
-
-      const blob = await canvas.convertToBlob()
-
-      const pngUrl = URL.createObjectURL(blob)
-
-      // window.location = pngUrl
-
-      let link = document.createElement('a')
-      link.download = `RBIO_Histogram.${filetype}`
-      link.href = pngUrl
-      link.click()
+      const svgElement = document.getElementById("plot-svg")
+      const options = {
+        'modifyCss' : function(selector, properties) { 
+          selector = selector.replace('#selectors-prefixed ', ''); 
+          properties = properties.replace('green', 'blue'); 
+          return selector + '{' + properties + '}'; 
+        },
+        'backgroundColor' : "#FFFFFF"  
+      }
+      svg.saveSvgAsPng(svgElement, "diagram.png", options)
     },
     onResize() {
       this.windowHeight = window.innerHeight
@@ -516,6 +503,7 @@ export default {
             .attr("preserveAspectRatio", "xMinYMid")
             .attr("xmlns", "http://www.w3.org/2000/svg")
             .attr("xmlns:xlink", "http://www.w3.org/1999/xlink")
+            .attr("style", "font-family:sans-serif")
           .append("g")
             .attr("transform", 
               `translate(${this.margin.left},${this.margin.top})`);
@@ -1406,7 +1394,7 @@ export default {
 
 <style lang="scss" scoped>
 
-#bar-options 
+#plot-options 
 {
   :deep(.p-button) {
     font-size: 0.85rem !important;

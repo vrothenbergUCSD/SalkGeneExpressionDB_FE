@@ -65,7 +65,7 @@
         <Accordion :multiple="true" :activeIndex="[0,1,2]">
           <AccordionTab header="Filters">
             <div v-if="!this.datasets_filter_warning">
-              <div class="font-semibold my-1 text-sm">
+              <div class="font-semibold mb-1 text-sm">
                 Datasets
               </div>
               <div class="p-1 border my-1 rounded">
@@ -368,7 +368,7 @@ export default {
     await this.get_datasets()
 
     // Line chart at index 1
-    this.index = 1
+    this.index = 0
     
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
