@@ -146,9 +146,14 @@ export default {
       menu_items: [
         {
           label: 'Download as PNG',
-          icon: 'pi pi-download',
+          icon: 'pi pi-image',
           command: () => this.downloadChart('png')
         },
+        {
+          label: 'Download as CSV',
+          icon: 'pi pi-table',
+          command: () => this.downloadCSV()
+        }
       ]
     }
   },
@@ -205,6 +210,48 @@ export default {
       }
       svg.saveSvgAsPng(svgElement, "diagram.png", options)
     },
+    downloadCSV() {
+      console.log('downloadCSV')
+      console.log(this.expression_merged)
+      let arr = this.expression_merged.map(e => {
+        return {
+          gene_id: e.gene_id,
+          gene_expression: e.gene_expression,
+          data_type: e.data_type,
+          sample_name: e.sample_name,
+          time_point: e.time_point,
+          condition: e.condition,
+          species: e.species,
+          tissue: e.tissue,
+          age_months: e.age_months,
+          gender: e.gender,
+          replicate: e.replicate,
+          number_of_replicates: e.number_of_replicates,
+          experiment: e.experiment,
+          institution: e.institution,
+          year: e.year,
+          
+        }
+      })
+
+      const array = [Object.keys(arr[0])].concat(arr)
+
+      const csv = array.map(it => {
+        return Object.values(it).toString()
+      }).join('\n')
+
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      var link = document.createElement("a")
+      if (link.download !== undefined) {
+        var url = URL.createObjectURL(blob)
+        link.setAttribute("href", url)
+        link.setAttribute("download", "filtered_data.csv")
+        link.style.visibility = 'hidden'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } 
+    },
     onResize() {
       this.windowHeight = window.innerHeight
       this.windowWidth = window.innerWidth
@@ -223,6 +270,7 @@ export default {
         this.gene_expression_data_tables = JSON.parse(JSON.stringify(this.datasets.gene_expression_data_tables))
         this.gene_metadata = JSON.parse(JSON.stringify(this.datasets.gene_metadata))
         this.sample_metadata_tables = JSON.parse(JSON.stringify(this.datasets.sample_metadata_tables))
+        this.selected_metadata = JSON.parse(JSON.stringify(this.datasets.selected_metadata))
 
         this.gene_expression_data_tables.forEach((e) => {
           // console.log('this.gene_expression_data_tables.forEach')
@@ -230,20 +278,19 @@ export default {
           const table = e.table_name
           const table_split = table.split('_')
           e.owner = table_split.at(-1)
-          e.experiment = table_split.at(0)
-          e.year = table_split.at(1)          
+          const metadata = this.selected_metadata.find(obj => {
+            return obj.gene_expression_data_table_name == table
+          })
+          e.experiment = metadata.experiment
+          e.year = metadata.year
+          e.institution = metadata.institution         
           
           // "TRF_2018_Mouse_Adrenal_gene_expression_data_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"
-          // console.log('table ', table)
           let sample_table = table.replace('gene_expression_data', 'sample_metadata')
-          // console.log('sample_table', sample_table)
           let expression_data = e.data
           let sample_data = this.sample_metadata_tables.find(obj => {
             return obj.table == sample_table
           }).data
-          // console.log('sample_data')
-          // console.log(sample_data)
-
 
           var collator = new Intl.Collator([], {numeric: true});
 
@@ -253,10 +300,13 @@ export default {
           })).sort((a,b) => collator.compare(a.time_point, b.time_point))
 
           e.data = merged_data
-          console.log('merged_data')
-          console.log(merged_data)
 
-          e.data.forEach(itm => itm.table = table)
+          e.data.forEach(itm => {
+            itm.table = table
+            itm.experiment = metadata.experiment
+            itm.institution = metadata.institution
+            itm.year = metadata.year
+          })
 
           const species = [...new Set(e.data.map(item => item.species))];
           if (species.length > 1) {
@@ -293,7 +343,7 @@ export default {
           }
           e.tissue = tissue[0]
           
-          this.expression_merged = this.expression_merged.concat(merged_data)
+          this.expression_merged = this.expression_merged.concat(e.data)
         })
 
         this.expression_merged.forEach((e) => {

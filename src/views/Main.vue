@@ -489,8 +489,8 @@ export default {
         const result = await DataService
           .getExpressionDataByGenesGendersConditions(genesStr, gendersStr, conditionsStr, t)
         // const result = await DataService.getExpressionDataByGenes(genesStr, t)
-        console.log('result.data')
-        console.log(result.data)
+        // console.log('result.data')
+        // console.log(result.data)
         return {
           table_name: t,
           data: result.data
@@ -525,6 +525,7 @@ export default {
         sample_metadata_tables: this.sample_metadata_tables,
         gene_expression_data_tables: this.gene_expression_data_tables,
         gene_metadata: this.selected_gene_metadata,
+        selected_metadata: this.selected_metadata,
       }
       this.got_gene_data = true
       this.getting_gene_data = false

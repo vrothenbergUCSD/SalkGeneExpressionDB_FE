@@ -3,84 +3,85 @@
     <div id="page-title" class="pb-2 font-semibold text-3xl text-center">
       Administration
     </div>
-    <div id="admin-ui" class="">
-      <DataTable :value="owned_datasets" :paginator="true" :rows="10"
-      dataKey="sample_metadata_table_name" :rowHover="true" v-model:selection="selected_datasets"
-      v-model:filters="filters" filterDisplay="menu" :loading="loading"
-      paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown" 
-      :rowsPerPageOptions="[10,25,50]"
-      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
-      :globalFilterFields="['species','experiment','tissue','year','institution']" responsiveLayout="scroll"
-      >
-      <template #header>
-        <div class="flex justify-content-between align-items-center">
-          <h5 class="m-0">Datasets</h5>
-          <span class="p-input-icon-left mr-0">
-              <i class="pi pi-search" />
-              <InputText v-model="filters['global'].value" placeholder="Keyword Search" />
-          </span>
-        </div>
-      </template>
-      <template #empty>
-          No datasets found.
-      </template>
-      <template #loading>
-          Loading datasets. Please wait.
-      </template>
-      <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-      <Column field="species" header="Species" sortable style="min-width: 14rem">
-        <template #body="{data}">
-          {{data.species}}
-        </template>
-        <template #filter="{filterModel}">
-          <InputText type="text" v-model="filterModel.value" class="p-column-filter" 
-            placeholder="Search by species"/>
-        </template>
-      </Column>
-      <Column field="experiment" header="Experiment" sortable filterMatchMode="contains" style="min-width: 14rem">
-        <template #body="{data}">
-          {{data.experiment}}
-        </template>
-        <template #filter="{filterModel}">
-          <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Search by experiment"/>
-        </template>
-      </Column>
-      <Column field="tissue" header="Tissue" sortable style="min-width: 14rem">
-        <template #body="{data}">
-          {{data.tissue}}
-        </template>
-        <template #filter="{filterModel}">
-          <InputText type="text" v-model="filterModel.value" class="p-column-filter" 
-            placeholder="Search by tissue"/>
-        </template>
-      </Column>
-      <Column field="institution" header="Institution" sortable style="min-width: 14rem">
-        <template #body="{data}">
-          {{data.institution}}
-        </template>
-        <template #filter="{filterModel}">
-          <InputText type="text" v-model="filterModel.value" class="p-column-filter" 
-            placeholder="Search by institution"/>
-        </template>
-      </Column>
-      <Column field="year" header="Year" sortable style="min-width: 6rem">
-        <template #body="{data}">
-          {{data.year}}
-        </template>
-        <template #filter="{filterModel}">
-          <InputText type="text" v-model="filterModel.value" class="p-column-filter" 
-            placeholder="Search by year"/>
-        </template>
-      </Column>
-      <Column headerStyle="width: 4rem; text-align: center" bodyStyle="text-align: center; overflow: visible">
-        <template #body>
-            <Button type="button" icon="pi pi-cog" @click="edit_dataset"></Button>
-        </template>
-      </Column>
+    <div id="admin-ui" class="rounded-lg bg-white shadow mx-10">
+      <div class="p-3">
+        <DataTable :value="owned_datasets" :paginator="true" :rows="10"
+        dataKey="sample_metadata_table_name" :rowHover="true" v-model:selection="selected_datasets"
+        v-model:filters="filters" filterDisplay="menu" :loading="loading"
+        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown" 
+        :rowsPerPageOptions="[10,25,50]"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+        :globalFilterFields="['species','experiment','tissue','year','institution']" responsiveLayout="scroll"
+        >
+          <template #header>
+            <div class="flex justify-content-between align-items-center">
+              <h5 class="m-0">Datasets</h5>
+              <span class="p-input-icon-left mr-0">
+                  <i class="pi pi-search" />
+                  <InputText v-model="filters['global'].value" placeholder="Keyword Search" />
+              </span>
+            </div>
+          </template>
+          <template #empty>
+              No datasets found.
+          </template>
+          <template #loading>
+              Loading datasets. Please wait.
+          </template>
+          <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
+          <Column field="species" header="Species" sortable style="min-width: 10rem">
+            <template #body="{data}">
+              {{data.species}}
+            </template>
+            <template #filter="{filterModel}">
+              <InputText type="text" v-model="filterModel.value" class="p-column-filter" 
+                placeholder="Search by species"/>
+            </template>
+          </Column>
+          <Column field="experiment" header="Experiment" sortable filterMatchMode="contains" style="min-width: 12rem">
+            <template #body="{data}">
+              {{data.experiment}}
+            </template>
+            <template #filter="{filterModel}">
+              <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Search by experiment"/>
+            </template>
+          </Column>
+          <Column field="tissue" header="Tissue" sortable style="min-width: 12rem">
+            <template #body="{data}">
+              {{data.tissue}}
+            </template>
+            <template #filter="{filterModel}">
+              <InputText type="text" v-model="filterModel.value" class="p-column-filter" 
+                placeholder="Search by tissue"/>
+            </template>
+          </Column>
+          <Column field="institution" header="Institution" sortable style="min-width: 14rem">
+            <template #body="{data}">
+              {{data.institution}}
+            </template>
+            <template #filter="{filterModel}">
+              <InputText type="text" v-model="filterModel.value" class="p-column-filter" 
+                placeholder="Search by institution"/>
+            </template>
+          </Column>
+          <Column field="year" header="Year" sortable style="min-width: 6rem">
+            <template #body="{data}">
+              {{data.year}}
+            </template>
+            <template #filter="{filterModel}">
+              <InputText type="text" v-model="filterModel.value" class="p-column-filter" 
+                placeholder="Search by year"/>
+            </template>
+          </Column>
+          <Column :exportable="false" headerStyle="width: 4rem; text-align: center" 
+            bodyStyle="text-align: center; overflow: visible">
+            <template #body="slotProps">
+                <Button type="button" class="p-button-rounded" icon="pi pi-pencil" @click="editDataset(slotProps.data)" />
+            </template>
+          </Column>
+        </DataTable>
 
-
-
-      </DataTable>
+      </div>
 
 
     </div>
@@ -165,11 +166,10 @@ export default {
       this.loading = false
       
     },
-    edit_dataset(evt, d) {
-      console.log('edit_dataset')
-      console.log(evt)
+    editDataset(d) {
+      console.log('editDataset')
       console.log(d)
-
+      const dataset = {...d}
     },
     async addAdmin() {
       const addAdmin = await firebase.functions().httpsCallable("addAdminRole");

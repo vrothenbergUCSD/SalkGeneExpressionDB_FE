@@ -110,6 +110,7 @@ export default {
       gene_expression_data_tables: [],
       gene_metadata: [],
       sample_metadata_tables: [],
+      selected_metadata: null,
 
       // Statistics
       expression_merged: [],
@@ -160,11 +161,15 @@ export default {
       menu_items: [
         {
           label: 'Download as PNG',
-          icon: 'pi pi-download',
+          icon: 'pi pi-image',
           command: () => this.downloadChart('png')
-
         },
-      ]
+        {
+          label: 'Download as CSV',
+          icon: 'pi pi-table',
+          command: () => this.downloadCSV()
+        }
+      ],
     }
   },
   async mounted() {
@@ -238,6 +243,48 @@ export default {
       
       svg.saveSvgAsPng(svgElement, "diagram.png", options)
     },
+    downloadCSV() {
+      console.log('downloadCSV')
+      console.log(this.expression_merged)
+      let arr = this.expression_merged.map(e => {
+        return {
+          gene_id: e.gene_id,
+          gene_expression: e.gene_expression,
+          data_type: e.data_type,
+          sample_name: e.sample_name,
+          time_point: e.time_point,
+          condition: e.condition,
+          species: e.species,
+          tissue: e.tissue,
+          age_months: e.age_months,
+          gender: e.gender,
+          replicate: e.replicate,
+          number_of_replicates: e.number_of_replicates,
+          experiment: e.experiment,
+          institution: e.institution,
+          year: e.year,
+          
+        }
+      })
+
+      const array = [Object.keys(arr[0])].concat(arr)
+
+      const csv = array.map(it => {
+        return Object.values(it).toString()
+      }).join('\n')
+
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      var link = document.createElement("a")
+      if (link.download !== undefined) {
+        var url = URL.createObjectURL(blob)
+        link.setAttribute("href", url)
+        link.setAttribute("download", "filtered_data.csv")
+        link.style.visibility = 'hidden'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } 
+    },
     onResize() {
       this.windowHeight = window.innerHeight
       this.windowWidth = window.innerWidth
@@ -310,17 +357,24 @@ export default {
       this.genes_str_arr = this.genes.map((d) => d.name)
       if (this.datasets) {
         this.expression_merged = []
+        
         // Deep copy!  Prevents unexpected behavior when switching between Bar and Line.
         this.gene_expression_data_tables = JSON.parse(JSON.stringify(this.datasets.gene_expression_data_tables))
         this.gene_metadata = JSON.parse(JSON.stringify(this.datasets.gene_metadata))
         this.sample_metadata_tables = JSON.parse(JSON.stringify(this.datasets.sample_metadata_tables))
+        this.selected_metadata = JSON.parse(JSON.stringify(this.datasets.selected_metadata))
 
         this.gene_expression_data_tables.forEach((e) => {
           const table = e.table_name
           const table_split = table.split('_')
           e.owner = table_split.at(-1)
-          e.experiment = table_split.at(0)
-          e.year = table_split.at(1)          
+          const metadata = this.selected_metadata.find(obj => {
+            return obj.gene_expression_data_table_name == table
+          })
+
+          e.experiment = metadata.experiment
+          e.year = metadata.year
+          e.institution = metadata.institution
           let sample_table = table.replace('gene_expression_data', 'sample_metadata')
           let expression_data = e.data
           let sample_data = this.sample_metadata_tables.find(obj => {
@@ -332,44 +386,49 @@ export default {
               ...itm
           }))
           e.data = merged_data
-          e.data.forEach(itm => itm.table = table)
+          e.data.forEach(itm => {
+            itm.table = table
+            itm.experiment = metadata.experiment
+            itm.institution = metadata.institution
+            itm.year = metadata.year
+          })
 
-          const species = [...new Set(e.data.map(item => item.species))];
+          const species = [...new Set(e.data.map(item => item.species))]
           if (species.length > 1) {
             // More than 1 species in a dataset, shouldn't happen!
             console.error('WARNING: More than 1 species in ', table)
           }
           e.species = species[0]
 
-          const age_months = [...new Set(e.data.map(item => item.age_months))];
+          const age_months = [...new Set(e.data.map(item => item.age_months))]
           if (age_months.length > 1) {
             // Samples vary in age
             console.error('WARNING: More than 1 age in ', table)
           }
           e.age_months = age_months[0]
 
-          const data_type = [...new Set(e.data.map(item => item.data_type))];
+          const data_type = [...new Set(e.data.map(item => item.data_type))]
           if (data_type.length > 1) {
             // More than 1 data type
             console.error('WARNING: More than 1 data type in ', table)
           }
           e.data_type = data_type[0]
 
-          const gender = [...new Set(e.data.map(item => item.gender))];
+          const gender = [...new Set(e.data.map(item => item.gender))]
           if (gender.length > 1) {
             // More than 1 gender
             console.error('WARNING: More than 1 gender in ', table)
           }
           e.gender = gender[0]
 
-          const tissue = [...new Set(e.data.map(item => item.tissue))];
+          const tissue = [...new Set(e.data.map(item => item.tissue))]
           if (tissue.length > 1) {
             // More than 1 gender
             console.error('WARNING: More than 1 tissue in ', table)
           }
           e.tissue = tissue[0]
           
-          this.expression_merged = this.expression_merged.concat(merged_data)
+          this.expression_merged = this.expression_merged.concat(e.data)
         })
 
         this.expression_merged.forEach((e) => {
@@ -556,9 +615,7 @@ export default {
     update_grouped_bar_plot() {
       console.log('update_grouped_bar_plot')
       const start = Date.now()
-
       let data, groups, subgroups
-
       if (this.grouped_by == 'Gene') {
         this.svg.select('.x-label').text('')
         subgroups = this.time_points
