@@ -232,8 +232,10 @@ export default {
           properties = properties.replace('green', 'blue'); 
           return selector + '{' + properties + '}'; 
         },
-        'backgroundColor' : "#FFFFFF"  
+        'backgroundColor' : "#FFFFFF",
+        'encoderOptions' : 1,
       }
+      
       svg.saveSvgAsPng(svgElement, "diagram.png", options)
     },
     onResize() {

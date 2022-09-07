@@ -19,48 +19,12 @@
         <div id="more-options" class="flex grow justify-end">
           <div class="flex flex-col items-center">
             <div class="font-semibold">Options</div>
-
             <Button type="button" label="" icon="pi pi-cog" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu"/>
             <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
-
-          </div>
-          
+          </div>    
         </div>
       </div>
     </div>
-
-
-    <!-- <div id="plot-options" class="w-3/4 mx-auto mt-1" v-show="this.complete">
-      <div class="flex flex-row">
-        <div class="flex flex-col align-items-center mx-2">
-          <ToggleButton v-model="showReplicatePoints" @change="this.update_line_plot" 
-          onLabel="Data Points" offLabel="Data Points"  onIcon="pi pi-check" offIcon="pi pi-times"/>
-          <div class="font-semibold">Data Points</div>
-          <InputSwitch v-model="showReplicatePoints" @change="this.update_line_plot" />
-        </div>
-        <div class="flex flex-col align-items-center mx-2">
-          <ToggleButton v-model="showErrorBars" @change="this.update_line_plot" 
-            onLabel="Error Bars" offLabel="Error Bars"  onIcon="pi pi-check" offIcon="pi pi-times" />
-          <div class="font-semibold">Error Bars</div>
-          <InputSwitch v-model="showErrorBars" @change="this.update_line_plot" /> 
-        </div>
-        <div id="more-options" class="grow justify-self-end content-end">
-          <div class="mr-0 justify-self-end">
-            <div class="flex flex-col align-items-center">
-              <ToggleButton />
-              <div class="font-semibold">Options</div>
-              <div>
-                <Button type="button" label="" icon="pi pi-cog" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu"/>
-                <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      
-    </div> -->
-    <!-- <div id="plot-area" class="mt-10" v-show="this.complete"> -->
     <div id="plot-area" class="mt-10">
     </div>
   </div>
@@ -236,7 +200,8 @@ export default {
           properties = properties.replace('green', 'blue'); 
           return selector + '{' + properties + '}'; 
         },
-        'backgroundColor' : "#FFFFFF"  
+        'backgroundColor' : "#FFFFFF",
+        'encoderOptions' : 1,  
       }
       svg.saveSvgAsPng(svgElement, "diagram.png", options)
     },
