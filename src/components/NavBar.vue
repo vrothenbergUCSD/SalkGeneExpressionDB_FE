@@ -30,6 +30,12 @@
                   <span>Data</span>
                 </div> 
               </NavLink>
+              <NavLink v-if="user" :to="{ name: 'Admin'}">
+                <div class="">
+                  <i class="pi pi-list mr-3"></i> 
+                  <span>Admin</span>
+                </div> 
+              </NavLink>
             </div>
           </div>
         </div>
