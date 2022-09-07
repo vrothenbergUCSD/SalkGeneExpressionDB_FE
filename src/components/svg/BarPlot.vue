@@ -2,7 +2,7 @@
   <div id="bar" class="mx-auto">
     <!-- <div class="text-center mb-5">Bar Plot component</div> -->
     <!-- <div id="bar-options" class="!grid grid-cols-12 mt-3 items-center"> -->
-    <div id="bar-options" class="w-3/4 mx-auto mt-3 flex flex-row" v-show="this.complete">
+    <div id="bar-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
       <!-- <div id="group-by" class="col-start-1 col-span-3"> -->
       <div id="group-by" class="flex flex-col align-items-center mx-2">
         <div class="font-semibold pb-2">Group by:</div>
@@ -14,6 +14,14 @@
         <SelectButton v-model="time_points_selected" 
           :options="time_points_options" optionLabel="name" 
           multiple @change="updateTimePointsSelected"/>
+      </div>
+      <div id="more-options" class="flex flex-col align-items-center mx-2">
+        <div class="font-semibold pb-2">Options</div>
+        <div>
+          <Button type="button" label="" icon="pi pi-cog" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu"/>
+          <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
+        </div>
+  
       </div>
 
     </div>
@@ -30,10 +38,13 @@
 
 <script>
 import * as d3 from "d3";
+import { Canvg, presets } from 'canvg';
 
-import ProgressSpinner from 'primevue/progressspinner';
-import SelectButton from 'primevue/selectbutton';
+import ProgressSpinner from 'primevue/progressspinner'
+import SelectButton from 'primevue/selectbutton'
 import InputSwitch from 'primevue/inputswitch'
+import Menu from 'primevue/menu'
+import Button from 'primevue/button'
 import _ from 'underscore';
 
 import eyeUrl from '@/assets/eye.svg'
@@ -84,7 +95,8 @@ export default {
     ProgressSpinner,
     SelectButton,
     InputSwitch,
-    // TimeSelection,
+    Menu,
+    Button,
   },
   props: {
     genes: Array,
@@ -145,6 +157,20 @@ export default {
 
       windowHeight: window.innerHeight,
       windowWidth: window.innerWidth,
+
+      menu_items: [
+        {
+          label: 'Download as PNG',
+          icon: 'pi pi-download',
+          command: () => this.downloadChart('png')
+
+        },
+        {
+          label: 'Download as JPG',
+          icon: 'pi pi-download',
+          command: () => this.downloadChart('jpg')
+        }
+      ]
     }
   },
   async mounted() {
@@ -174,7 +200,7 @@ export default {
       this.update_datasets()
     }
 
-    const svgElem = document.getElementById('bar-plot-svg')
+    const svgElem = document.getElementById('plot-svg')
     svgElem.addEventListener('load', this.legend())
 
     // const xAxisElem = document.getElementById('myXaxis')
@@ -200,6 +226,29 @@ export default {
     }
   },
   methods: {
+    toggle(evt) {
+      this.$refs.menu.toggle(evt);
+    },  
+    async downloadChart(filetype) {
+      console.log('downloadChart')
+      const canvas = new OffscreenCanvas(this.width*2, this.height*2)
+      const ctx = canvas.getContext('2d')
+      const svgEl = document.querySelector('#plot-svg').outerHTML
+      const preset = presets.offscreen()
+      const v = await Canvg.from(ctx, svgEl, preset)
+      await v.render()
+
+      const blob = await canvas.convertToBlob()
+
+      const pngUrl = URL.createObjectURL(blob)
+
+      // window.location = pngUrl
+
+      let link = document.createElement('a')
+      link.download = `RBIO_Histogram.${filetype}`
+      link.href = pngUrl
+      link.click()
+    },
     onResize() {
       this.windowHeight = window.innerHeight
       this.windowWidth = window.innerWidth
@@ -461,13 +510,12 @@ export default {
       this.drawable_height_scale = 1
       this.svg = d3.select("#plot-area")
           .append("svg")
-            .attr("id", "bar-plot-svg")
+            .attr("id", "plot-svg")
             .attr("viewBox", 
               `0 0 ${this.width + this.margin.left + this.margin.right} ${this.height + this.margin.top + this.margin.bottom}`)
-            // .attr("width", this.width + this.margin.left + this.margin.right)
-            // .attr("height", this.height + this.margin.top + this.margin.bottom)
-            // .attr("class", "mx-auto")
             .attr("preserveAspectRatio", "xMinYMid")
+            .attr("xmlns", "http://www.w3.org/2000/svg")
+            .attr("xmlns:xlink", "http://www.w3.org/1999/xlink")
           .append("g")
             .attr("transform", 
               `translate(${this.margin.left},${this.margin.top})`);
@@ -1291,7 +1339,7 @@ export default {
         .attr('fill', d3.rgb('#222'))
         
       // Get relative position of self element within SVG
-      const svg = document.querySelector('#bar-plot-svg')
+      const svg = document.querySelector('#plot-svg')
       const inverse = svg.getScreenCTM().inverse()
       // TODO: WARNING, createSVGPoint may be deprecated
       const pt = svg.createSVGPoint()
