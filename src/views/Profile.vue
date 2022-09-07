@@ -10,7 +10,9 @@
         <!-- <p class="mt-1 max-w-2xl text-sm text-gray-500">Personal details and application.</p> -->
         <div class="mt-5 flex lg:mt-0 lg:ml-4 sm:block">
           <Button class="p-button-sm mx-2 p-button-success z-0" @click="update" v-show="editMode" label="Confirm"/>
-          <Button class="p-button-sm mx-2 z-0" @click="toggleEdit" label="Edit"/>
+          <!-- <Button class="p-button-sm mx-2 z-0" @click="toggleEdit" label="Edit"/> -->
+          <ToggleButton class="p-button-sm mx-2 z-0" @change="toggleEdit"
+            v-model="editMode" onLabel="Cancel" offLabel="Edit"/>
         </div>
 
       </div>
@@ -96,9 +98,10 @@
 </template>
 
 <script>
-import Dialog from 'primevue/dialog';
-import Button from 'primevue/button';
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
+import ToggleButton from 'primevue/togglebutton'
 import { PaperClipIcon } from '@heroicons/vue/solid'
 
 PaperClipIcon
@@ -109,6 +112,7 @@ export default {
     Dialog,
     Button,
     InputText,
+    ToggleButton,
     PaperClipIcon,
   },
   data() {
@@ -118,54 +122,76 @@ export default {
 
       editMode: false,
 
-      // firstName: null, 
+      firstName: null, 
       firstNameInvalid: null, 
-      // lastName: null, 
+      lastName: null, 
       lastNameInvalid: null, 
-      // email: null,
+      email: null,
       emailInvalid: null,
-      // institution: null,
+      institution: null,
       institutionInvalid: null,
+      admin: null,
 
     }
   },
-  computed: {
-    firstName: {
-      get() {
-        return this.$store.state.profileFirstName
-      },
-      set(payload) {
-        this.$store.commit("changeFirstName", payload)
-      }
-    },
-    lastName: {
-      get() {
-        return this.$store.state.profileLastName
-      },
-      set(payload) {
-        this.$store.commit("changeLastName", payload)
-      }
-    },
-    institution: {
-      get() {
-        return this.$store.state.profileInstitution
-      },
-      set(payload) {
-        this.$store.commit("changeInstitution", payload)
-      }
-    },
-    email() {
-      return this.$store.state.profileEmail
-    },
-    admin() {
-      return this.$store.state.profileAdmin ? 'Yes' : 'No'
-    }
+  mounted() {
+    this.getProfile()
+
+
   },
+  // computed: {
+  //   firstName: {
+  //     get() {
+  //       return this.$store.state.profileFirstName
+  //     },
+  //     // set(payload) {
+  //     //   this.$store.commit("changeFirstName", payload)
+  //     // }
+  //   },
+  //   lastName: {
+  //     get() {
+  //       return this.$store.state.profileLastName
+  //     },
+  //     // set(payload) {
+  //     //   this.$store.commit("changeLastName", payload)
+  //     // }
+  //   },
+  //   institution: {
+  //     get() {
+  //       return this.$store.state.profileInstitution
+  //     },
+  //     // set(payload) {
+  //     //   this.$store.commit("changeInstitution", payload)
+  //     // }
+  //   },
+  //   email() {
+  //     return this.$store.state.profileEmail
+  //   },
+  //   admin() {
+  //     return this.$store.state.profileAdmin ? 'Yes' : 'No'
+  //   }
+  // },
   methods: {
+    getProfile() {
+      this.firstName = this.$store.state.profileFirstName
+      this.firstNameInvalid = false
+      this.lastName = this.$store.state.profileLastName
+      this.lastNameInvalid = false
+      this.institution = this.$store.state.profileInstitution
+      this.institutionInvalid = false
+      this.email = this.$store.state.profileEmail
+      this.admin = this.$store.state.profileAdmin ? 'Yes' : 'No'
+
+    },
     toggleEdit() {
       // TODO: Toggle edit shows Cancel button.  Cancel resets changes.
       //
-      this.editMode = !this.editMode
+      // this.editMode = !this.editMode
+      console.log('toggleEdit', this.editMode)
+      if (this.editMode == false) {
+        // Reset fields to default values
+        this.getProfile()
+      }
     },
     async update() {
       // Validate firstName
@@ -194,12 +220,14 @@ export default {
 
       console.log('Validation passed')
       this.editMode = false
+      // Commit to store
+      this.$store.commit("changeFirstName", this.firstName)
+      this.$store.commit("changeLastName", this.lastName)
+      this.$store.commit("changeInstitution", this.institution)
 
       await this.$store.dispatch('updateUserSettings')
-
     }
   }
-
 }
 </script>
 
