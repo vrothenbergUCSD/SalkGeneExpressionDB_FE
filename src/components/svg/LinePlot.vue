@@ -27,6 +27,33 @@
     </div>
     <div id="plot-area" class="mt-10">
     </div>
+    <div id="table-area" class="mt-1">
+      <div class="font-semibold">Filtered Dataset</div>
+      <DataTable :value="this.expression_merged" :scrollable="true" scrollHeight="400px"
+        scrollDirection="both" class="p-datatable-sm">
+        <Column field="gene_id" header="Gene ID" style="width: 10rem"></Column>
+        <Column field="gene_expression" header="Gene Expression" style="width: 7rem">
+          <template #body="slotProps">
+            {{Math.round(slotProps.data.gene_expression * 1000)/1000}}
+          </template>
+        </Column>
+        <Column field="data_type" header="Data Type" style="width: 8rem"></Column>
+        <Column field="sample_name" header="Sample Name" style="width: 10rem"></Column>
+        <Column field="time_point" header="Time Point (ZT)" style="width: 7rem"></Column>
+        <Column field="condition" header="Condition" style="width: 7rem"></Column>
+        <Column field="species" header="Species" style="width: 8rem"></Column>
+        <Column field="tissue" header="Tissue" style="width: 8rem"></Column>
+        <Column field="age_months" header="Age (months)" style="width: 8rem"></Column>
+        <Column field="gender" header="Gender" style="width: 6rem"></Column>
+        <Column field="replicate" header="Replicate" style="width: 8rem"></Column>
+        <Column field="number_of_replicates" header="Number of Replicates" style="width: 8rem"></Column>
+        <Column field="experiment" header="Experiment" style="width: 8rem"></Column>
+        <Column field="institution" header="Institution" style="width: 8rem"></Column>
+        <Column field="year" header="Year" style="width: 4rem"></Column>
+
+      </DataTable>
+
+    </div>
   </div>
 </template>
 
@@ -352,38 +379,28 @@ export default {
           e.identifier = `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}`
         })
 
+        // Sort data points alphanumerically on sample_name 
+        const sortAlphaNum = (a, b) => a.sample_name.toString().localeCompare(b.sample_name, 'en', { numeric: true })
+        this.expression_merged.sort(sortAlphaNum)
+
         const grouped_tissue = _.groupBy(this.expression_merged, e => `${e.tissue.replaceAll(' ', '-')}`)
-        // console.log('grouped_tissue')
-        // console.log(grouped_tissue)
 
         const grouped_tissue_gene = Object.keys(grouped_tissue).map((key) => {
           return [key, _.groupBy(grouped_tissue[key], e => `${e.gene_id}`)]
         })
 
-        // console.log('grouped_tissue_gene')
-        // console.log(grouped_tissue_gene)
-
         const grouped_tissue_gene_groupname = grouped_tissue_gene.map((tissue) => {
-          // console.log(tissue)
           return [tissue[0], Object.keys(tissue[1]).map((key) => {
-            // console.log(key) // gene_id
             return [key, _.groupBy(tissue[1][key], function(e) {
-              // console.log(e)
               return `${e.group_name}`
             })]
           })]
         })
 
-        // console.log('grouped_tissue_gene_groupname')
-        // console.log(grouped_tissue_gene_groupname)
-
         grouped_tissue_gene_groupname.forEach((tissue) => {
-          // console.log(tissue[0])
           tissue[1].forEach((gene) => {
             gene[1] = Object.entries(gene[1])
             gene[1].forEach((groupname) => {
-              // console.log('STATS')
-              // console.log('groupname', groupname)
               const max = Math.max.apply(Math, groupname[1].map(
                 function(o) { return o.gene_expression; }))
               const min = Math.min.apply(Math, groupname[1].map(
@@ -396,36 +413,25 @@ export default {
                 return memo + v.gene_expression; 
               }, 0) / groupname[1].length
 
-              // console.log('mean', mean)
-
               const groupname_stats = {
                 min: min,
                 max: max, 
                 amplitude: max-min,
                 mean: mean,
               }
-              // console.log(groupname_stats)
               groupname.push(groupname_stats)
-              // console.log(groupname)
             })
           })
         })
 
         this.expression_normalized = grouped_tissue_gene_groupname
-        // console.log('this.expression_normalized')
-        // console.log(this.expression_normalized)
 
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
 
-        // console.log('this.expression_normalized_flattened')
-        // console.log(this.expression_normalized_flattened)
-
         const grouped_norm = _.groupBy(this.expression_normalized_flattened, e => 
           `${e.gene_id}_${e.tissue.replaceAll(' ', '-')}_${e.group_name}_ZT${e.time_point}`)
-        // console.log('grouped_norm')
-        // console.log(grouped_norm)
 
         this.expression_normalized_averaged = _.mapObject(grouped_norm, function(val, key) {
           let o = JSON.parse(JSON.stringify(val[0]))
@@ -440,27 +446,16 @@ export default {
           }, 0) / val.length
           o.gene_expression_norm = o.gene_expression_norm_avg
 
-          // console.log('o.avg', o.avg)
-          
-          // o.std_dev = _.reduce(val, function(memo, v) {
-          //   return memo + Math.pow((v.gene_expression_norm - o.gene_expression_norm_avg),2)
-          // }, 0) / val.length
-
           o.std_dev = Math.sqrt(_.reduce(val, function(memo, v) { 
             return memo + Math.pow((v.gene_expression_norm - o.gene_expression_norm_avg), 2); 
           }, 0) / val.length)
 
-          // console.log('o.std_dev', o.std_dev)
-
           o.std_err = o.std_dev / Math.sqrt(val.length)
-
-          // console.log('o.std_err', o.std_err)
 
           return o
         });
 
         this.expression_normalized_averaged = Object.entries(this.expression_normalized_averaged).map(e => e[1])
-        // console.log(this.expression_normalized_averaged)
         this.avgPoints = [...this.expression_normalized_averaged]
         this.avgPoints.forEach(e => e.visible = 1)
         this.errorBarsData = [...this.expression_normalized_averaged]
@@ -469,18 +464,12 @@ export default {
         this.replicatePoints.forEach(e => e.visible = (this.showReplicatePoints ? 1 : 0))
         this.allPoints = this.avgPoints.concat(this.replicatePoints)
 
-        // console.log('After mutation')
-        // console.log(this.gene_expression_data_tables)
-
         this.sumstat = d3
           .group(this.expression_normalized_averaged, 
           d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
 
         this.sumstat_visibility = Object.fromEntries(
           new Map([...this.sumstat.keys()].map(e => [e, 1])))
-
-        // console.log('this.sumstat_visibility')
-        // console.log(this.sumstat_visibility)
 
         this.categories = [...new Set(
           [...this.sumstat.keys()] 
@@ -493,7 +482,6 @@ export default {
 
         this.update_line_plot()
         this.legend()
-
       }
       
       const elapsed = Date.now() - start
@@ -596,7 +584,6 @@ export default {
       // Create the X axis
       this.x.domain([0, d3.max(this.expression_merged, (d) => d.time_point )])
       var x = this.x
-      // x.domain([0, d3.max(this.expression_merged, (d) => d.time_point )])
       this.svg.selectAll(".myXaxis").transition()
         .duration(this.animationInterval)
         .call(this.xAxis)
@@ -775,20 +762,11 @@ export default {
       
       this.voronoi_grid()
 
-      // if (this.svg) {
-      //   console.log('this.svg exists!')
-      // }
-
-      // const svgElem = document.getElementById('plot-svg')
-      // console.log('svgElem')
-      // console.log(svgElem)
-
       console.log('===================')
     },
 
     legend() {
       console.log('legend')
-      console.log(this.expression_normalized)
       const num_tissues = this.expression_normalized.length
       const num_genes = this.expression_normalized[0][1].length
       const num_groups = this.expression_normalized[0][1][0][1].length
@@ -1189,9 +1167,6 @@ export default {
     },
     popover(g, value, key) {
       // Tooltip popover 
-      // console.log('popover', key)
-      // console.log(value)
-      // console.log(g)
       if (!value) return g.style("display", "none");
       const opacity = d3.select('#avgPoints').selectAll(`#dot_${key}`).attr('fill-opacity')
       if (opacity == 0) return g.style("display", "none");
@@ -1232,14 +1207,12 @@ export default {
     },
     toggleVisibility(newOpacity, id) {
       // TODO: Toggle eye one level up if all child eyes are set to on or off
-      // console.log('toggleVisibility', newOpacity, id)
-      // console.log(this.allPoints)
+
       const lines = d3.selectAll(`[id^='line_${id}']`)
       lines.transition_attributes('stroke-opacity', newOpacity)
       const matching_keys = Object.keys(this.sumstat_visibility).filter(e => e.includes(id))
       matching_keys.forEach(e => this.sumstat_visibility[e] = newOpacity)
-      // console.log('matching_keys')
-      // console.log(matching_keys)
+
       const avgPoints = d3.select('#avgPoints').selectAll(`[id^='dot_${id}']`)
       avgPoints.transition_attributes('fill-opacity', newOpacity)
       avgPoints._groups[0].forEach(e => e.__data__.visible = newOpacity)

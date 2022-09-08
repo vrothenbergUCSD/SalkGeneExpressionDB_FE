@@ -32,6 +32,34 @@
     
     <div id="plot-area" class="mt-10">
     </div>
+
+    <div id="table-area" class="mt-1">
+      <div class="font-semibold">Filtered Dataset</div>
+      <DataTable :value="this.expression_merged" :scrollable="true" scrollHeight="400px"
+        scrollDirection="both" class="p-datatable-sm">
+        <Column field="gene_id" header="Gene ID" style="width: 10rem"></Column>
+        <Column field="gene_expression" header="Gene Expression" style="width: 7rem">
+          <template #body="slotProps">
+            {{Math.round(slotProps.data.gene_expression * 1000)/1000}}
+          </template>
+        </Column>
+        <Column field="data_type" header="Data Type" style="width: 8rem"></Column>
+        <Column field="sample_name" header="Sample Name" style="width: 10rem"></Column>
+        <Column field="time_point" header="Time Point (ZT)" style="width: 7rem"></Column>
+        <Column field="condition" header="Condition" style="width: 7rem"></Column>
+        <Column field="species" header="Species" style="width: 8rem"></Column>
+        <Column field="tissue" header="Tissue" style="width: 8rem"></Column>
+        <Column field="age_months" header="Age (months)" style="width: 8rem"></Column>
+        <Column field="gender" header="Gender" style="width: 6rem"></Column>
+        <Column field="replicate" header="Replicate" style="width: 8rem"></Column>
+        <Column field="number_of_replicates" header="Number of Replicates" style="width: 8rem"></Column>
+        <Column field="experiment" header="Experiment" style="width: 8rem"></Column>
+        <Column field="institution" header="Institution" style="width: 8rem"></Column>
+        <Column field="year" header="Year" style="width: 4rem"></Column>
+
+      </DataTable>
+
+    </div>
   </div>
 </template>
 
@@ -44,6 +72,8 @@ import SelectButton from 'primevue/selectbutton'
 import InputSwitch from 'primevue/inputswitch'
 import Menu from 'primevue/menu'
 import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 import _ from 'underscore'
 
 import eyeUrl from '@/assets/eye.svg'
@@ -96,6 +126,8 @@ export default {
     InputSwitch,
     Menu,
     Button,
+    DataTable,
+    Column,
   },
   props: {
     genes: Array,
@@ -352,6 +384,8 @@ export default {
       })
     },
     update_datasets() {
+      // Processes datasets into various arrays such as grouped by tissue, gene, condition
+      // Calculates normalization and standard error values
       console.log('update_datasets')
       const start = Date.now()
       this.genes_str_arr = this.genes.map((d) => d.name)
@@ -436,6 +470,10 @@ export default {
           e.replicate = e.sample_name.split('-').at(-1)
           e.identifier = `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}`
         })
+
+        // Sort data points alphanumerically on sample_name 
+        const sortAlphaNum = (a, b) => a.sample_name.toString().localeCompare(b.sample_name, 'en', { numeric: true })
+        this.expression_merged.sort(sortAlphaNum)
 
         const grouped_tissue = _.groupBy(this.expression_merged, e => `${e.tissue.replaceAll(' ', '-')}`)
 
