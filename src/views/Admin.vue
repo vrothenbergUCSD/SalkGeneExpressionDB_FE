@@ -81,6 +81,33 @@
           </Column>
         </DataTable>
 
+        <Dialog v-model:visible="datasetDialog" :style="{width: '450px'}" header="Dataset Details" :modal="true" class="p-fluid">
+          <div class="field">
+              <label for="species">Species</label>
+              <InputText id="species" v-model.trim="dataset.species" required="true" autofocus :class="{'p-invalid': submitted && !dataset.species}" />
+              <small class="p-error" v-if="submitted && !dataset.species">Name is required.</small>
+          </div>
+          <div class="field">
+              <label for="description">Description</label>
+              <Textarea id="description" v-model="dataset.description" required="true" rows="3" cols="20" />
+          </div>
+
+          <div class="formgrid grid">
+              <div class="field col">
+                  <label for="price">Price</label>
+                  <InputNumber id="price" v-model="dataset.price" mode="currency" currency="USD" locale="en-US" />
+              </div>
+              <div class="field col">
+                  <label for="quantity">Quantity</label>
+                  <InputNumber id="quantity" v-model="dataset.quantity" integeronly />
+              </div>
+          </div>
+          <template #footer>
+              <Button label="Cancel" icon="pi pi-times" class="p-button-text" @click="hideDialog"/>
+              <Button label="Save" icon="pi pi-check" class="p-button-text" @click="saveDataset" />
+          </template>
+        </Dialog>
+
       </div>
 
 
@@ -97,12 +124,13 @@ import {FilterMatchMode,FilterOperator} from 'primevue/api';
 import Toast from 'primevue/toast'
 import ProgressBar from 'primevue/progressbar'
 import ProgressSpinner from 'primevue/progressspinner'
-import AutoComplete from "primevue/autocomplete"
-import TabMenu from 'primevue/tabmenu'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
+import Textarea from 'primevue/textarea'
+import InputNumber from 'primevue/inputnumber'
+import Dialog from 'primevue/dialog'
 
 
 import _ from 'underscore'
@@ -116,6 +144,9 @@ export default {
     Column,
     InputText,
     Button,
+    Textarea,
+    InputNumber,
+    Dialog,
 
   },
   data() {
@@ -126,6 +157,8 @@ export default {
       db_metadata: null,
       owned_datasets: null,
       selected_datasets: null,
+      dataset: {},
+
       filters: {
         'global': {value: null, matchMode: FilterMatchMode.CONTAINS},
         'species': {operator: FilterOperator.AND, constraints: [{value: null, matchMode: FilterMatchMode.STARTS_WITH}]},
@@ -138,6 +171,8 @@ export default {
         // 'verified': {value: null, matchMode: FilterMatchMode.EQUALS}
       },
       loading: true,
+      submitted: false,
+      datasetDialog: false,
     };
   },
   mounted() {
@@ -158,18 +193,30 @@ export default {
         const conditionStr = e.condition.replaceAll(/[']+/g, '"')
         e.condition = JSON.parse(conditionStr)
       })
-
-      console.log(this.db_metadata)
       const userId = this.$store.state.profileId
       this.owned_datasets = this.db_metadata.filter(e => e.owner == userId)
-      console.log(this.owned_datasets)
       this.loading = false
-      
     },
     editDataset(d) {
       console.log('editDataset')
       console.log(d)
-      const dataset = {...d}
+      this.datasetDialog = true
+      this.dataset = {...d}
+      console.log('this.dataset')
+      console.log(this.dataset)
+    },
+    hideDialog() {
+      this.datasetDialog = false;
+      this.submitted = false;
+    },
+    saveDataset() {
+      this.submitted = true;
+
+      if (this.dataset.species.trim()) {
+
+      this.datasetDialog = false;
+      this.dataset = {};
+      }
     },
     async addAdmin() {
       const addAdmin = await firebase.functions().httpsCallable("addAdminRole");
@@ -188,27 +235,27 @@ export default {
 }
 
 :deep(.p-datatable) {
-    .p-datatable-header {
-        padding: 1rem;
-        text-align: left;
-        font-size: 1.5rem;
-    }
+  .p-datatable-header {
+      padding: 1rem;
+      text-align: left;
+      font-size: 1.5rem;
+  }
 
-    .p-paginator {
-        padding: 1rem;
-    }
+  .p-paginator {
+      padding: 1rem;
+  }
 
-    .p-datatable-thead > tr > th {
-        text-align: left;
-    }
+  .p-datatable-thead > tr > th {
+      text-align: left;
+  }
 
-    .p-datatable-tbody > tr > td {
-        cursor: auto;
-    }
+  .p-datatable-tbody > tr > td {
+      cursor: auto;
+  }
 
-    .p-dropdown-label:not(.p-placeholder) {
-        text-transform: uppercase;
-    }
+  .p-dropdown-label:not(.p-placeholder) {
+      text-transform: uppercase;
+  }
 }
 
 
