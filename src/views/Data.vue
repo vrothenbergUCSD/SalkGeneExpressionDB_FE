@@ -23,7 +23,7 @@
             </div>
           </div>
 
-          <div class="p-fluid grid ">
+          <div class="p-fluid grid">
             <div class="field col-7 pr-2">
               <label for="institution" class="block text-900 font-medium mb-2">Institution name</label>
               <InputText v-model="institution" type="text" class="w-full mb-2" :class="{ 'p-invalid': institutionInvalid }" />
@@ -898,38 +898,61 @@ export default {
       const sample_metadata_table_name = `${this.databaseTablePrefix}_sample_metadata`
       const gene_expression_data_table_name = `${this.databaseTablePrefix}_gene_expression_data`
 
-      const auth = getAuth()
-      const datasetsCollectionRef = collection(firestore, 'datasets')
+      // const auth = getAuth()
+      // const datasetsCollectionRef = collection(firestore, 'datasets')
 
-      const newDocRef = doc(firestore, 'datasets', this.databaseTablePrefix)
+      // const newDocRef = doc(firestore, 'datasets', this.databaseTablePrefix)
       // console.log('newDocRef')
       // console.log(newDocRef)
 
-      const docSnap = await getDoc(newDocRef);
+      const docRef = await addDoc(collection(firestore, 'datasets'), {
+        owner: this.$store.state.profileId,
+        experiment: this.experiment || 'TestExp', 
+        institution: this.institution || 'Inst', 
+        species: this.species || 'Human', 
+        tissue: this.tissue || 'Brain', 
+        year: this.year || '2022', 
+        doi : this.doi || 'https://doi.org/10.1016/S0092-8674(02)00722-5',
+        otherInformation: this.other,
+        permissionGroups: [],
+        gene_metadata_table_name: gene_metadata_table_name,
+        sample_metadata_table_name: sample_metadata_table_name,
+        gene_expression_data_table_name: gene_expression_data_table_name,
+      })
 
-      if (docSnap.exists()) {
-        console.log('ERROR: Dataset already exists.')
-        this.upload_files_error = true 
-        this.upload_files_error_log.push(`ERROR: Dataset ${this.databaseTablePrefix} already exists in database.
-        \nIf you are the owner of the dataset you can modify its tables here: [NOT IMPLEMENTED]`)
-      } else {
-        await setDoc(newDocRef, {
-          owner: this.$store.state.profileId,
-          experiment: this.experiment || 'TestExp', 
-          institution: this.institution || 'Inst', 
-          species: this.species || 'Human', 
-          tissue: this.tissue || 'Brain', 
-          year: this.year || '2022', 
-          doi : this.doi || 'https://doi.org/10.1016/S0092-8674(02)00722-5',
-          otherInformation: this.other,
-          permittedUsers: [],
-          gene_metadata_table_name: gene_metadata_table_name,
-          sample_metadata_table_name: sample_metadata_table_name,
-          gene_expression_data_table_name: gene_expression_data_table_name,
-        }).catch((err) => {
-          console.log('Fail after await setDoc')
-          console.log(err)
-        })
+      console.log('docRef')
+      console.log(docRef)
+
+      
+      
+      
+
+      // const docSnap = await getDoc(newDocRef);
+
+      // if (docSnap.exists()) {
+      //   console.log('ERROR: Dataset already exists.')
+      //   this.upload_files_error = true 
+      //   this.upload_files_error_log.push(`ERROR: Dataset ${this.databaseTablePrefix} already exists in database.
+      //   \nIf you are the owner of the dataset you can modify its tables here: [NOT IMPLEMENTED]`)
+      // } else {
+      //   await setDoc(newDocRef, {
+      //     owner: this.$store.state.profileId,
+      //     experiment: this.experiment || 'TestExp', 
+      //     institution: this.institution || 'Inst', 
+      //     species: this.species || 'Human', 
+      //     tissue: this.tissue || 'Brain', 
+      //     year: this.year || '2022', 
+      //     doi : this.doi || 'https://doi.org/10.1016/S0092-8674(02)00722-5',
+      //     otherInformation: this.other,
+      //     permittedUsers: [],
+      //     gene_metadata_table_name: gene_metadata_table_name,
+      //     sample_metadata_table_name: sample_metadata_table_name,
+      //     gene_expression_data_table_name: gene_expression_data_table_name,
+      //   }).catch((err) => {
+      //     console.log('Fail after await setDoc')
+      //     console.log(err)
+      //   })
+      if (docRef.exists()) {
         console.log('Firestore: Successfully uploaded dataset metadata.')
 
         let api_result = await this.post_dataset()

@@ -68,7 +68,7 @@
               <div class="font-semibold mb-1 text-sm">
                 Datasets
               </div>
-              <div class="p-1 border my-1 rounded">
+              <div class="p-1 border my-2 rounded">
                 <DataTable :value="this.species_filtered" v-model:selection="this.species_selected" 
                   class="p-datatable-sm p-datatable-species" stripedRows :scrollable="true" scrollHeight="200px" 
                   :loading="loading" selectionMode="multiple" :metaKeySelection="false"
@@ -90,7 +90,7 @@
                 </Column>
                 </DataTable>
               </div>
-              <div class="p-1 border my-1 rounded" >
+              <div class="p-1 border my-2 rounded" >
                 <DataTable :value="experiment_filtered" v-model:selection="experiment_selected" 
                   class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
                   :loading="loading" selectionMode="multiple" :metaKeySelection="false"
@@ -113,7 +113,7 @@
                 </DataTable>
             
               </div>
-              <div class="p-1 border my-1 rounded">
+              <div class="p-1 border my-2 rounded">
                 <DataTable :value="tissue_filtered" v-model:selection="tissue_selected" 
                   class="p-datatable-sm" stripedRows selectionMode="multiple" :metaKeySelection="false"
                   :scrollable="true" scrollHeight="200px" :loading="loading" 
@@ -139,7 +139,7 @@
               <div class="font-semibold my-1 text-sm">
                 Samples
               </div>
-              <div class="p-1 border my-1 rounded">
+              <div class="p-1 border my-2 rounded">
                 <DataTable :value="gender_filtered" v-model:selection="this.gender_selected" 
                   class="p-datatable-sm" stripedRows selectionMode="multiple" :metaKeySelection="false" 
                   :scrollable="true" scrollHeight="200px" :loading="loading" @row-select="update_lookup_table" 
@@ -160,7 +160,7 @@
                 </Column>
                 </DataTable>
               </div>
-              <div class="p-1 border my-1 rounded">
+              <div class="p-1 border my-2 rounded">
                 <DataTable :value="condition_filtered" v-model:selection="this.condition_selected" 
                   class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
                   :loading="loading" selectionMode="multiple" :metaKeySelection="false"
