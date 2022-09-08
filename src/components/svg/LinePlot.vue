@@ -68,6 +68,8 @@ import InputSwitch from 'primevue/inputswitch'
 import Menu from 'primevue/menu'
 import Button from 'primevue/button'
 import ToggleButton from 'primevue/togglebutton'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 
 import _ from 'underscore';
 
@@ -118,6 +120,8 @@ export default {
     Menu,
     Button,
     ToggleButton,
+    DataTable,
+    Column,
   },
   props: { 
     genes: Array,
