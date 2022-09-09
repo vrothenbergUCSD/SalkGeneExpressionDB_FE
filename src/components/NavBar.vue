@@ -4,7 +4,7 @@
     <div class="mx-auto px-2">
       <div class="relative flex items-center justify-start h-16">
         <div class="flex-1 flex items-center justify-start">
-          <div class="hidden sm:block sm:ml-6">
+          <div class="">
             <div class="flex space-x-4">
               <NavLink :to="{name: 'Home'}">
                 <div class="">
@@ -114,7 +114,6 @@ export default {
     return {
       test: null, 
       dropdown: false,
-
     }
   },
   computed: {
