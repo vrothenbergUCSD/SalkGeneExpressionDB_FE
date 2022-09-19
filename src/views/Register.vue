@@ -177,7 +177,6 @@ export default {
 
       const newDoc = doc(firestore, 'users', userId)
 
-
       await setDoc(doc(firestore, 'users', userId), {
         firstName: this.firstName,
         lastName: this.lastName,
@@ -191,10 +190,8 @@ export default {
       
       this.$router.push({ name: "Main" });
       return
-
     },
   }
-
 }
 </script>
 

@@ -11,7 +11,8 @@
           paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown" 
           :rowsPerPageOptions="[10,25,50]"
           currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
-          :globalFilterFields="['name', 'description', 'admins']" responsiveLayout="scroll"
+          :globalFilterFields="['name', 'description', 'admins']" 
+          responsiveLayout="scroll"
         >
           <template #header>
             <div class="flex justify-content-between align-items-center">
@@ -234,8 +235,10 @@
             </div>
           </div>
           <template #footer>
-              <Button label="Cancel" icon="pi pi-times" class="p-button-text" @click="hideEditPermissionGroupDialog"/>
-              <Button label="Save" icon="pi pi-check" class="p-button-text" @click="updatePermissionGroup($event)" />
+              <Button label="Cancel" icon="pi pi-times" class="p-button-text" 
+                @click="hideEditPermissionGroupDialog" :disabled="editPermissionSubmitted"/>
+              <Button label="Save" icon="pi pi-check" class="p-button-text" 
+                @click="updatePermissionGroup($event)" :loading="editPermissionSubmitted"/>
           </template>
 
 
@@ -249,7 +252,8 @@
           paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown" 
           :rowsPerPageOptions="[10,25,50]"
           currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
-          :globalFilterFields="['species','experiment','tissue','year','institution']" responsiveLayout="scroll"
+          :globalFilterFields="['species','experiment','tissue','year','institution']" 
+          responsiveLayout="scroll"
         >
           <template #header>
             <div class="flex justify-content-between align-items-center">
@@ -287,7 +291,8 @@
               {{data.experiment}}
             </template>
             <template #filter="{filterModel}">
-              <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Search by experiment"/>
+              <InputText type="text" v-model="filterModel.value" class="p-column-filter" 
+                placeholder="Search by experiment"/>
             </template>
           </Column>
           <Column field="tissue" header="Tissue" sortable style="min-width: 12rem">
@@ -361,6 +366,29 @@
             <small class="p-error" v-if="submitted && dataset.institution.length > 100">
               Institution must be less than 100 characters.</small>
           </div>
+          <div id="gene_expression" class="field">
+            <div id="upload_gene_expression_data_error_panel" v-show="this.upload_gene_expression_data_error" class="my-3">
+              <Panel header="Gene Expression Data Error Log" class="p-error">
+                <ScrollPanel style="width: 100%; height: 200px" class="custom">
+                  <li v-for="error in this.upload_gene_expression_data_error_log">
+                    {{ error }}
+                  </li>
+                </ScrollPanel>
+              </Panel>
+            </div>
+
+            <div class="flex items-center content-center my-1">
+              <div class="text-lg align-middle font-medium">Select gene expression CSV</div>
+              <div class="ml-5">
+                <FileUpload mode="basic" :class="{ 'p-button-warning': upload_gene_metadata_highlight }"
+                  name="upload_gene_expression_data" 
+                  :chooseLabel="upload_gene_expression_data_filename" :auto="true" 
+                  :customUpload="true" accept=".csv" :maxFileSize="100000000" 
+                  @uploader="upload_gene_expression_data" />
+              </div>
+            </div>
+
+          </div>
           <div class="flex flex-row items-center">
             <div class="basis-2/3">
               <label for="permissionGroups">Permission Groups</label>
@@ -372,10 +400,6 @@
                     <div class="flex flex-row items-center">
                       <div class="font-semibold pl-2 basis-4/12 min-w[30px]">{{slotProps.option.name}}</div> 
                       <div class="text-sm basis-6/12 text-right truncate">{{slotProps.option.description}}</div>
-                      <!-- <div class="text-sm basis-1/12 text-right" 
-                        :class="{ 'text-green-300': slotProps.option.read, 'text-red-300' :!slotProps.option.read }">Read</div>
-                      <div class="text-sm basis-1/12 text-right" 
-                        :class="{ 'text-green-300': slotProps.option.edit, 'text-red-300': !slotProps.option.edit }">Edit</div> -->
                     </div>
                   </div>
                 </template>
@@ -570,6 +594,9 @@ import InputNumber from 'primevue/inputnumber'
 import Dialog from 'primevue/dialog'
 import MultiSelect from 'primevue/multiselect'
 import InputSwitch from 'primevue/inputswitch'
+import FileUpload from 'primevue/fileupload'
+import Panel from 'primevue/panel'
+import ScrollPanel from 'primevue/scrollpanel'
 
 import _ from 'underscore'
 
@@ -590,6 +617,9 @@ export default {
     Dialog,
     MultiSelect,
     InputSwitch,
+    FileUpload,
+    Panel,
+    ScrollPanel,
 
   },
   data() {
@@ -604,28 +634,24 @@ export default {
 
       filters: {
         'global': {value: null, matchMode: FilterMatchMode.CONTAINS},
-        'species': {operator: FilterOperator.AND, constraints: [{value: null, matchMode: FilterMatchMode.STARTS_WITH}]},
-        'experiment': {operator: FilterOperator.AND, constraints: [{value: null, matchMode: FilterMatchMode.STARTS_WITH}]},
-        // 'representative': {value: null, matchMode: FilterMatchMode.IN},
-        // 'date': {operator: FilterOperator.AND, constraints: [{value: null, matchMode: FilterMatchMode.DATE_IS}]},
-        // 'balance': {operator: FilterOperator.AND, constraints: [{value: null, matchMode: FilterMatchMode.EQUALS}]},
-        // 'status': {operator: FilterOperator.OR, constraints: [{value: null, matchMode: FilterMatchMode.EQUALS}]},
-        // 'activity': {value: null, matchMode: FilterMatchMode.BETWEEN},
-        // 'verified': {value: null, matchMode: FilterMatchMode.EQUALS}
+        'species': {operator: FilterOperator.AND, constraints: [{value: null, matchMode: FilterMatchMode.CONTAINS}]},
+        'experiment': {operator: FilterOperator.AND, constraints: [{value: null, matchMode: FilterMatchMode.CONTAINS}]},
+        'tissue': {operator: FilterOperator.AND, constraints: [{value: null, matchMode: FilterMatchMode.CONTAINS}]}, 
+        'institution': {operator: FilterOperator.AND, constraints: [{value: null, matchMode: FilterMatchMode.CONTAINS}]},
+        'year': {operator: FilterOperator.AND, constraints: [{value: null, matchMode: FilterMatchMode.CONTAINS}]}, 
       },
       loading: true,
       owned_groups: null,
       selected_groups: null,
 
-
-
-
       submitted: false,
-
       datasetDialog: false,
-
-      
       selectedPermissionGroups: null,
+
+      upload_gene_expression_data_error: null,
+      upload_gene_expression_data_error_log: null,
+      upload_gene_expression_data_filename: null,
+
 
       permissionGroupDialog: false,
       permissionGroup: {},
@@ -678,7 +704,6 @@ export default {
         const conditionStr = e.condition.replaceAll(/[']+/g, '"')
         e.condition = JSON.parse(conditionStr)
         e.year = parseInt(e.year)
-      
       })
       const userId = this.$store.state.profileId
       this.owned_datasets = this.db_metadata.filter(e => e.owner == userId)
@@ -748,9 +773,6 @@ export default {
       })
 
 
-
-      
-
       this.permissionSubmitted = false
       await Promise.all([
         this.getGroups(),
@@ -789,6 +811,13 @@ export default {
         // Description too long
         return 
       }
+
+      // Update user information, set roles 
+      this.permissionGroup.admins.forEach((u) => {
+        console.log('admin: ', u)
+        console.log(u)
+      })
+      
       
       // Save to Firestore
       const docRef = await addDoc(collection(firestore, 'permission_groups'), {
@@ -801,6 +830,7 @@ export default {
         editorGroups: this.permissionGroup.editorGroups,
         readers: this.permissionGroup.readers,
         readerGroups: this.permissionGroup.readerGroups, 
+        owner: this.$store.state.profileId,
       })
 
       this.permissionSubmitted = false
@@ -841,6 +871,7 @@ export default {
     },
     async getOwnedGroups() {
       console.log('getOwnedGroups')
+      // TODO: Check if admin group is in permission group
       const q = query(collection(firestore, "permission_groups"), 
         where('admins', 'array-contains', this.$store.state.profileId))
       const querySnapshot = await getDocs(q);
@@ -855,37 +886,30 @@ export default {
       });
     },
     convertUserIDs(arr) {
-      // console.log('convertUserIDs')
-      // console.log(arr)
+      if (!arr) return []
       const filtered_users = this.users.filter(user => arr.includes(user.uid))
         .map(user => `${user.firstName}`)
-      // console.log('filtered_users')
-      // console.log(filtered_users)
-      // const user_map = filtered_users.map(user => `${user.firstName} ${user.lastName}`)
       return filtered_users
     },
     convertGroupIDs(arr) {
-      // console.log('convertGroupIDs')
-      // console.log(arr)
       if (!arr) return []
       const filtered_groups = this.groups.filter(group => arr.includes(group.group_id))
         .map(group => group.name)
-      // console.log('filtered_groups')
-      // console.log(filtered_groups)
       return filtered_groups
     },
     editPermissionGroup(d) {
+      console.log('editPermissionGroup')
       this.editPermissionGroupDialog = true 
       this.permissionGroup = {...d}
       console.log('this.permissionGroup')
       console.log(this.permissionGroup)
       // TODO: Possible performance issues when filtering and users array is large, O(n*m)
       this.selectedAdmins = this.users.filter(user => this.permissionGroup.admins.includes(user.uid))
-      this.selectedAdminGroups = this.permissionGroup.adminGroups
+      this.selectedAdminGroups = this.groups.filter(group => this.permissionGroup.adminGroups.includes(group.group_id))
       this.selectedEditors = this.users.filter(user => this.permissionGroup.editors.includes(user.uid))
-      this.selectedEditorGroups = this.permissionGroup.editorGroups
+      this.selectedEditorGroups = this.groups.filter(group => this.permissionGroup.editorGroups.includes(group.group_id))
       this.selectedReaders = this.users.filter(user => this.permissionGroup.readers.includes(user.uid))
-      this.selectedReaderGroups = this.permissionGroup.readerGroups
+      this.selectedReaderGroups = this.groups.filter(group => this.permissionGroup.readerGroups.includes(group.group_id))
     },
     hideEditPermissionGroupDialog() {
       this.editPermissionGroupDialog = false 
@@ -907,11 +931,20 @@ export default {
       console.log('this.permissionGroup')
       console.log(this.permissionGroup)
 
-      
+      console.log('this.selectedReaderGroups')
+      console.log(this.selectedReaderGroups)
+      console.log('this.selectedEditors')
+      console.log(this.selectedEditors)
+
+      this.selectedAdmins.forEach(user => {
+        // Add permission group ID if it does not already exist
+        user.admin.indexOf()
+      })
 
       const docRef = doc(firestore, "permission_groups", this.permissionGroup.group_id)
       await updateDoc(docRef, {
         name: this.permissionGroup.name,
+        group_id: this.permissionGroup.group_id,
         description: this.permissionGroup.description, 
         datasets: this.permissionGroup.datasets,
         admins: this.selectedAdmins.map(user => user.uid), 
@@ -928,6 +961,9 @@ export default {
       ])
       
       this.hideEditPermissionGroupDialog()
+
+    },
+    updateUserPermissions() {
 
     }
   },
@@ -979,6 +1015,7 @@ export default {
     background-color: lightblue;
     color: white;
   }
+
 }
 
 
