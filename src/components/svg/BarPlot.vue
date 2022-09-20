@@ -1,8 +1,8 @@
 <template>
   <div id="bar" class="mx-auto">
     <!-- <div class="text-center mb-5">Bar Plot component</div> -->
-    <!-- <div id="bar-options" class="!grid grid-cols-12 mt-3 items-center"> -->
-    <div id="bar-options" class="w-3/4 mx-auto mt-3 flex flex-row" v-show="this.complete">
+    <!-- <div id="plot-options" class="!grid grid-cols-12 mt-3 items-center"> -->
+    <div id="plot-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
       <!-- <div id="group-by" class="col-start-1 col-span-3"> -->
       <div id="group-by" class="flex flex-col align-items-center mx-2">
         <div class="font-semibold pb-2">Group by:</div>
@@ -15,6 +15,13 @@
           :options="time_points_options" optionLabel="name" 
           multiple @change="updateTimePointsSelected"/>
       </div>
+      <div id="more-options" class="flex flex-col align-items-center mx-2">
+        <div class="font-semibold pb-2">Options</div>
+        <div>
+          <Button type="button" label="" icon="pi pi-cog" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu"/>
+          <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
+        </div>
+      </div>
 
     </div>
 
@@ -25,16 +32,49 @@
     
     <div id="plot-area" class="mt-10">
     </div>
+
+    <div id="table-area" class="mt-1">
+      <div class="font-semibold">Filtered Dataset</div>
+      <DataTable :value="this.expression_merged" :scrollable="true" scrollHeight="400px"
+        scrollDirection="both" class="p-datatable-sm">
+        <Column field="gene_id" header="Gene ID" style="width: 10rem"></Column>
+        <Column field="gene_expression" header="Gene Expression" style="width: 7rem">
+          <template #body="slotProps">
+            {{Math.round(slotProps.data.gene_expression * 1000)/1000}}
+          </template>
+        </Column>
+        <Column field="data_type" header="Data Type" style="width: 8rem"></Column>
+        <Column field="sample_name" header="Sample Name" style="width: 10rem"></Column>
+        <Column field="time_point" header="Time Point (ZT)" style="width: 7rem"></Column>
+        <Column field="condition" header="Condition" style="width: 7rem"></Column>
+        <Column field="species" header="Species" style="width: 8rem"></Column>
+        <Column field="tissue" header="Tissue" style="width: 8rem"></Column>
+        <Column field="age_months" header="Age (months)" style="width: 8rem"></Column>
+        <Column field="gender" header="Gender" style="width: 6rem"></Column>
+        <Column field="replicate" header="Replicate" style="width: 8rem"></Column>
+        <Column field="number_of_replicates" header="Number of Replicates" style="width: 8rem"></Column>
+        <Column field="experiment" header="Experiment" style="width: 8rem"></Column>
+        <Column field="institution" header="Institution" style="width: 8rem"></Column>
+        <Column field="year" header="Year" style="width: 4rem"></Column>
+
+      </DataTable>
+
+    </div>
   </div>
 </template>
 
 <script>
-import * as d3 from "d3";
+import * as d3 from "d3"
+import * as svg from 'save-svg-as-png'
 
-import ProgressSpinner from 'primevue/progressspinner';
-import SelectButton from 'primevue/selectbutton';
+import ProgressSpinner from 'primevue/progressspinner'
+import SelectButton from 'primevue/selectbutton'
 import InputSwitch from 'primevue/inputswitch'
-import _ from 'underscore';
+import Menu from 'primevue/menu'
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import _ from 'underscore'
 
 import eyeUrl from '@/assets/eye.svg'
 import eyeOffUrl from '@/assets/eye-off.svg'
@@ -84,7 +124,10 @@ export default {
     ProgressSpinner,
     SelectButton,
     InputSwitch,
-    // TimeSelection,
+    Menu,
+    Button,
+    DataTable,
+    Column,
   },
   props: {
     genes: Array,
@@ -99,6 +142,7 @@ export default {
       gene_expression_data_tables: [],
       gene_metadata: [],
       sample_metadata_tables: [],
+      selected_metadata: null,
 
       // Statistics
       expression_merged: [],
@@ -145,6 +189,19 @@ export default {
 
       windowHeight: window.innerHeight,
       windowWidth: window.innerWidth,
+
+      menu_items: [
+        {
+          label: 'Download as PNG',
+          icon: 'pi pi-image',
+          command: () => this.downloadChart('png')
+        },
+        {
+          label: 'Download as CSV',
+          icon: 'pi pi-table',
+          command: () => this.downloadCSV()
+        }
+      ],
     }
   },
   async mounted() {
@@ -174,7 +231,7 @@ export default {
       this.update_datasets()
     }
 
-    const svgElem = document.getElementById('bar-plot-svg')
+    const svgElem = document.getElementById('plot-svg')
     svgElem.addEventListener('load', this.legend())
 
     // const xAxisElem = document.getElementById('myXaxis')
@@ -200,6 +257,66 @@ export default {
     }
   },
   methods: {
+    toggle(evt) {
+      this.$refs.menu.toggle(evt);
+    },  
+    async downloadChart(filetype) {
+      console.log('downloadChart')
+      const svgElement = document.getElementById("plot-svg")
+      const options = {
+        'modifyCss' : function(selector, properties) { 
+          selector = selector.replace('#selectors-prefixed ', ''); 
+          properties = properties.replace('green', 'blue'); 
+          return selector + '{' + properties + '}'; 
+        },
+        'backgroundColor' : "#FFFFFF",
+        'encoderOptions' : 1,
+      }
+      
+      svg.saveSvgAsPng(svgElement, "diagram.png", options)
+    },
+    downloadCSV() {
+      console.log('downloadCSV')
+      console.log(this.expression_merged)
+      let arr = this.expression_merged.map(e => {
+        return {
+          gene_id: e.gene_id,
+          gene_expression: e.gene_expression,
+          data_type: e.data_type,
+          sample_name: e.sample_name,
+          time_point: e.time_point,
+          condition: e.condition,
+          species: e.species,
+          tissue: e.tissue,
+          age_months: e.age_months,
+          gender: e.gender,
+          replicate: e.replicate,
+          number_of_replicates: e.number_of_replicates,
+          experiment: e.experiment,
+          institution: e.institution,
+          year: e.year,
+          
+        }
+      })
+
+      const array = [Object.keys(arr[0])].concat(arr)
+
+      const csv = array.map(it => {
+        return Object.values(it).toString()
+      }).join('\n')
+
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      var link = document.createElement("a")
+      if (link.download !== undefined) {
+        var url = URL.createObjectURL(blob)
+        link.setAttribute("href", url)
+        link.setAttribute("download", "filtered_data.csv")
+        link.style.visibility = 'hidden'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } 
+    },
     onResize() {
       this.windowHeight = window.innerHeight
       this.windowWidth = window.innerWidth
@@ -267,22 +384,31 @@ export default {
       })
     },
     update_datasets() {
+      // Processes datasets into various arrays such as grouped by tissue, gene, condition
+      // Calculates normalization and standard error values
       console.log('update_datasets')
       const start = Date.now()
       this.genes_str_arr = this.genes.map((d) => d.name)
       if (this.datasets) {
         this.expression_merged = []
+        
         // Deep copy!  Prevents unexpected behavior when switching between Bar and Line.
         this.gene_expression_data_tables = JSON.parse(JSON.stringify(this.datasets.gene_expression_data_tables))
         this.gene_metadata = JSON.parse(JSON.stringify(this.datasets.gene_metadata))
         this.sample_metadata_tables = JSON.parse(JSON.stringify(this.datasets.sample_metadata_tables))
+        this.selected_metadata = JSON.parse(JSON.stringify(this.datasets.selected_metadata))
 
         this.gene_expression_data_tables.forEach((e) => {
           const table = e.table_name
           const table_split = table.split('_')
           e.owner = table_split.at(-1)
-          e.experiment = table_split.at(0)
-          e.year = table_split.at(1)          
+          const metadata = this.selected_metadata.find(obj => {
+            return obj.gene_expression_data_table_name == table
+          })
+
+          e.experiment = metadata.experiment
+          e.year = metadata.year
+          e.institution = metadata.institution
           let sample_table = table.replace('gene_expression_data', 'sample_metadata')
           let expression_data = e.data
           let sample_data = this.sample_metadata_tables.find(obj => {
@@ -294,44 +420,49 @@ export default {
               ...itm
           }))
           e.data = merged_data
-          e.data.forEach(itm => itm.table = table)
+          e.data.forEach(itm => {
+            itm.table = table
+            itm.experiment = metadata.experiment
+            itm.institution = metadata.institution
+            itm.year = metadata.year
+          })
 
-          const species = [...new Set(e.data.map(item => item.species))];
+          const species = [...new Set(e.data.map(item => item.species))]
           if (species.length > 1) {
             // More than 1 species in a dataset, shouldn't happen!
             console.error('WARNING: More than 1 species in ', table)
           }
           e.species = species[0]
 
-          const age_months = [...new Set(e.data.map(item => item.age_months))];
+          const age_months = [...new Set(e.data.map(item => item.age_months))]
           if (age_months.length > 1) {
             // Samples vary in age
             console.error('WARNING: More than 1 age in ', table)
           }
           e.age_months = age_months[0]
 
-          const data_type = [...new Set(e.data.map(item => item.data_type))];
+          const data_type = [...new Set(e.data.map(item => item.data_type))]
           if (data_type.length > 1) {
             // More than 1 data type
             console.error('WARNING: More than 1 data type in ', table)
           }
           e.data_type = data_type[0]
 
-          const gender = [...new Set(e.data.map(item => item.gender))];
+          const gender = [...new Set(e.data.map(item => item.gender))]
           if (gender.length > 1) {
             // More than 1 gender
             console.error('WARNING: More than 1 gender in ', table)
           }
           e.gender = gender[0]
 
-          const tissue = [...new Set(e.data.map(item => item.tissue))];
+          const tissue = [...new Set(e.data.map(item => item.tissue))]
           if (tissue.length > 1) {
             // More than 1 gender
             console.error('WARNING: More than 1 tissue in ', table)
           }
           e.tissue = tissue[0]
           
-          this.expression_merged = this.expression_merged.concat(merged_data)
+          this.expression_merged = this.expression_merged.concat(e.data)
         })
 
         this.expression_merged.forEach((e) => {
@@ -339,6 +470,10 @@ export default {
           e.replicate = e.sample_name.split('-').at(-1)
           e.identifier = `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}`
         })
+
+        // Sort data points alphanumerically on sample_name 
+        const sortAlphaNum = (a, b) => a.sample_name.toString().localeCompare(b.sample_name, 'en', { numeric: true })
+        this.expression_merged.sort(sortAlphaNum)
 
         const grouped_tissue = _.groupBy(this.expression_merged, e => `${e.tissue.replaceAll(' ', '-')}`)
 
@@ -461,13 +596,13 @@ export default {
       this.drawable_height_scale = 1
       this.svg = d3.select("#plot-area")
           .append("svg")
-            .attr("id", "bar-plot-svg")
+            .attr("id", "plot-svg")
             .attr("viewBox", 
               `0 0 ${this.width + this.margin.left + this.margin.right} ${this.height + this.margin.top + this.margin.bottom}`)
-            // .attr("width", this.width + this.margin.left + this.margin.right)
-            // .attr("height", this.height + this.margin.top + this.margin.bottom)
-            // .attr("class", "mx-auto")
             .attr("preserveAspectRatio", "xMinYMid")
+            .attr("xmlns", "http://www.w3.org/2000/svg")
+            .attr("xmlns:xlink", "http://www.w3.org/1999/xlink")
+            .attr("style", "font-family:sans-serif")
           .append("g")
             .attr("transform", 
               `translate(${this.margin.left},${this.margin.top})`);
@@ -518,9 +653,7 @@ export default {
     update_grouped_bar_plot() {
       console.log('update_grouped_bar_plot')
       const start = Date.now()
-
       let data, groups, subgroups
-
       if (this.grouped_by == 'Gene') {
         this.svg.select('.x-label').text('')
         subgroups = this.time_points
@@ -1291,7 +1424,7 @@ export default {
         .attr('fill', d3.rgb('#222'))
         
       // Get relative position of self element within SVG
-      const svg = document.querySelector('#bar-plot-svg')
+      const svg = document.querySelector('#plot-svg')
       const inverse = svg.getScreenCTM().inverse()
       // TODO: WARNING, createSVGPoint may be deprecated
       const pt = svg.createSVGPoint()
@@ -1358,7 +1491,7 @@ export default {
 
 <style lang="scss" scoped>
 
-#bar-options 
+#plot-options 
 {
   :deep(.p-button) {
     font-size: 0.85rem !important;

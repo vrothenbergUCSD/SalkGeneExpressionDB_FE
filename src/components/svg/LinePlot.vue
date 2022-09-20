@@ -5,44 +5,77 @@
     <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
       <ProgressSpinner class="w-full mt-10" />
     </div>
+
     <div id="plot-options" class="w-3/4 mx-auto mt-1" v-show="this.complete">
-      <div class="flex flex-row">
-        <div class="flex flex-col align-items-center mx-2">
+      <div class="flex flex-row mt-1">
+        <div class="mx-1 flex flex-col items-center">
           <div class="font-semibold">Data Points</div>
           <InputSwitch v-model="showReplicatePoints" @change="this.update_line_plot" />
         </div>
-        <div class="flex flex-col align-items-center mx-2">
+        <div class="mx-1 flex flex-col items-center">
           <div class="font-semibold">Error Bars</div>
           <InputSwitch v-model="showErrorBars" @change="this.update_line_plot" />
         </div>
+        <div id="more-options" class="flex grow justify-end">
+          <div class="flex flex-col items-center">
+            <div class="font-semibold">Options</div>
+            <Button type="button" label="" icon="pi pi-cog" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu"/>
+            <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
+          </div>    
+        </div>
       </div>
-      
     </div>
-    <!-- <div id="plot-area" class="mt-10" v-show="this.complete"> -->
     <div id="plot-area" class="mt-10">
+    </div>
+    <div id="table-area" class="mt-1">
+      <div class="font-semibold">Filtered Dataset</div>
+      <DataTable :value="this.expression_merged" :scrollable="true" scrollHeight="400px"
+        scrollDirection="both" class="p-datatable-sm">
+        <Column field="gene_id" header="Gene ID" style="width: 10rem"></Column>
+        <Column field="gene_expression" header="Gene Expression" style="width: 7rem">
+          <template #body="slotProps">
+            {{Math.round(slotProps.data.gene_expression * 1000)/1000}}
+          </template>
+        </Column>
+        <Column field="data_type" header="Data Type" style="width: 8rem"></Column>
+        <Column field="sample_name" header="Sample Name" style="width: 10rem"></Column>
+        <Column field="time_point" header="Time Point (ZT)" style="width: 7rem"></Column>
+        <Column field="condition" header="Condition" style="width: 7rem"></Column>
+        <Column field="species" header="Species" style="width: 8rem"></Column>
+        <Column field="tissue" header="Tissue" style="width: 8rem"></Column>
+        <Column field="age_months" header="Age (months)" style="width: 8rem"></Column>
+        <Column field="gender" header="Gender" style="width: 6rem"></Column>
+        <Column field="replicate" header="Replicate" style="width: 8rem"></Column>
+        <Column field="number_of_replicates" header="Number of Replicates" style="width: 8rem"></Column>
+        <Column field="experiment" header="Experiment" style="width: 8rem"></Column>
+        <Column field="institution" header="Institution" style="width: 8rem"></Column>
+        <Column field="year" header="Year" style="width: 4rem"></Column>
+
+      </DataTable>
+
     </div>
   </div>
 </template>
 
 <script>
 import * as d3 from "d3"
+import * as svg from 'save-svg-as-png'
+
 import DataService from "@/services/DataService.js"
 
 import ProgressSpinner from 'primevue/progressspinner'
 import InputSwitch from 'primevue/inputswitch'
+import Menu from 'primevue/menu'
+import Button from 'primevue/button'
+import ToggleButton from 'primevue/togglebutton'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+
 import _ from 'underscore';
 
 import eyeUrl from '@/assets/eye.svg'
 import eyeOffUrl from '@/assets/eye-off.svg'
 import infoUrl from '@/assets/info.svg'
-
-function sleep(milliseconds) {
-  const date = Date.now();
-  let currentDate = null;
-  do {
-    currentDate = Date.now();
-  } while (currentDate - date < milliseconds);
-}
 
 const animationInterval = 250
 // Custom function, reduces redundant code for transitions
@@ -84,6 +117,11 @@ export default {
   components: {
     ProgressSpinner,
     InputSwitch,
+    Menu,
+    Button,
+    ToggleButton,
+    DataTable,
+    Column,
   },
   props: { 
     genes: Array,
@@ -135,6 +173,19 @@ export default {
 
       windowHeight: window.innerHeight,
       windowWidth: window.innerWidth,
+
+      menu_items: [
+        {
+          label: 'Download as PNG',
+          icon: 'pi pi-image',
+          command: () => this.downloadChart('png')
+        },
+        {
+          label: 'Download as CSV',
+          icon: 'pi pi-table',
+          command: () => this.downloadCSV()
+        }
+      ]
     }
   },
   watch: {
@@ -173,6 +224,65 @@ export default {
   },
 
   methods: {
+    toggle(evt) {
+      this.$refs.menu.toggle(evt);
+    },  
+    async downloadChart(filetype) {
+      console.log('downloadChart')
+      const svgElement = document.getElementById("plot-svg")
+      const options = {
+        'modifyCss' : function(selector, properties) { 
+          selector = selector.replace('#selectors-prefixed ', ''); 
+          properties = properties.replace('green', 'blue'); 
+          return selector + '{' + properties + '}'; 
+        },
+        'backgroundColor' : "#FFFFFF",
+        'encoderOptions' : 1,  
+      }
+      svg.saveSvgAsPng(svgElement, "diagram.png", options)
+    },
+    downloadCSV() {
+      console.log('downloadCSV')
+      console.log(this.expression_merged)
+      let arr = this.expression_merged.map(e => {
+        return {
+          gene_id: e.gene_id,
+          gene_expression: e.gene_expression,
+          data_type: e.data_type,
+          sample_name: e.sample_name,
+          time_point: e.time_point,
+          condition: e.condition,
+          species: e.species,
+          tissue: e.tissue,
+          age_months: e.age_months,
+          gender: e.gender,
+          replicate: e.replicate,
+          number_of_replicates: e.number_of_replicates,
+          experiment: e.experiment,
+          institution: e.institution,
+          year: e.year,
+          
+        }
+      })
+
+      const array = [Object.keys(arr[0])].concat(arr)
+
+      const csv = array.map(it => {
+        return Object.values(it).toString()
+      }).join('\n')
+
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      var link = document.createElement("a")
+      if (link.download !== undefined) {
+        var url = URL.createObjectURL(blob)
+        link.setAttribute("href", url)
+        link.setAttribute("download", "filtered_data.csv")
+        link.style.visibility = 'hidden'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } 
+    },
     onResize() {
       this.windowHeight = window.innerHeight
       this.windowWidth = window.innerWidth
@@ -191,6 +301,7 @@ export default {
         this.gene_expression_data_tables = JSON.parse(JSON.stringify(this.datasets.gene_expression_data_tables))
         this.gene_metadata = JSON.parse(JSON.stringify(this.datasets.gene_metadata))
         this.sample_metadata_tables = JSON.parse(JSON.stringify(this.datasets.sample_metadata_tables))
+        this.selected_metadata = JSON.parse(JSON.stringify(this.datasets.selected_metadata))
 
         this.gene_expression_data_tables.forEach((e) => {
           // console.log('this.gene_expression_data_tables.forEach')
@@ -198,20 +309,19 @@ export default {
           const table = e.table_name
           const table_split = table.split('_')
           e.owner = table_split.at(-1)
-          e.experiment = table_split.at(0)
-          e.year = table_split.at(1)          
+          const metadata = this.selected_metadata.find(obj => {
+            return obj.gene_expression_data_table_name == table
+          })
+          e.experiment = metadata.experiment
+          e.year = metadata.year
+          e.institution = metadata.institution         
           
           // "TRF_2018_Mouse_Adrenal_gene_expression_data_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"
-          // console.log('table ', table)
           let sample_table = table.replace('gene_expression_data', 'sample_metadata')
-          // console.log('sample_table', sample_table)
           let expression_data = e.data
           let sample_data = this.sample_metadata_tables.find(obj => {
             return obj.table == sample_table
           }).data
-          // console.log('sample_data')
-          // console.log(sample_data)
-
 
           var collator = new Intl.Collator([], {numeric: true});
 
@@ -221,10 +331,13 @@ export default {
           })).sort((a,b) => collator.compare(a.time_point, b.time_point))
 
           e.data = merged_data
-          console.log('merged_data')
-          console.log(merged_data)
 
-          e.data.forEach(itm => itm.table = table)
+          e.data.forEach(itm => {
+            itm.table = table
+            itm.experiment = metadata.experiment
+            itm.institution = metadata.institution
+            itm.year = metadata.year
+          })
 
           const species = [...new Set(e.data.map(item => item.species))];
           if (species.length > 1) {
@@ -261,7 +374,7 @@ export default {
           }
           e.tissue = tissue[0]
           
-          this.expression_merged = this.expression_merged.concat(merged_data)
+          this.expression_merged = this.expression_merged.concat(e.data)
         })
 
         this.expression_merged.forEach((e) => {
@@ -270,38 +383,28 @@ export default {
           e.identifier = `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}`
         })
 
+        // Sort data points alphanumerically on sample_name 
+        const sortAlphaNum = (a, b) => a.sample_name.toString().localeCompare(b.sample_name, 'en', { numeric: true })
+        this.expression_merged.sort(sortAlphaNum)
+
         const grouped_tissue = _.groupBy(this.expression_merged, e => `${e.tissue.replaceAll(' ', '-')}`)
-        // console.log('grouped_tissue')
-        // console.log(grouped_tissue)
 
         const grouped_tissue_gene = Object.keys(grouped_tissue).map((key) => {
           return [key, _.groupBy(grouped_tissue[key], e => `${e.gene_id}`)]
         })
 
-        // console.log('grouped_tissue_gene')
-        // console.log(grouped_tissue_gene)
-
         const grouped_tissue_gene_groupname = grouped_tissue_gene.map((tissue) => {
-          // console.log(tissue)
           return [tissue[0], Object.keys(tissue[1]).map((key) => {
-            // console.log(key) // gene_id
             return [key, _.groupBy(tissue[1][key], function(e) {
-              // console.log(e)
               return `${e.group_name}`
             })]
           })]
         })
 
-        // console.log('grouped_tissue_gene_groupname')
-        // console.log(grouped_tissue_gene_groupname)
-
         grouped_tissue_gene_groupname.forEach((tissue) => {
-          // console.log(tissue[0])
           tissue[1].forEach((gene) => {
             gene[1] = Object.entries(gene[1])
             gene[1].forEach((groupname) => {
-              // console.log('STATS')
-              // console.log('groupname', groupname)
               const max = Math.max.apply(Math, groupname[1].map(
                 function(o) { return o.gene_expression; }))
               const min = Math.min.apply(Math, groupname[1].map(
@@ -314,36 +417,25 @@ export default {
                 return memo + v.gene_expression; 
               }, 0) / groupname[1].length
 
-              // console.log('mean', mean)
-
               const groupname_stats = {
                 min: min,
                 max: max, 
                 amplitude: max-min,
                 mean: mean,
               }
-              // console.log(groupname_stats)
               groupname.push(groupname_stats)
-              // console.log(groupname)
             })
           })
         })
 
         this.expression_normalized = grouped_tissue_gene_groupname
-        // console.log('this.expression_normalized')
-        // console.log(this.expression_normalized)
 
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
 
-        // console.log('this.expression_normalized_flattened')
-        // console.log(this.expression_normalized_flattened)
-
         const grouped_norm = _.groupBy(this.expression_normalized_flattened, e => 
           `${e.gene_id}_${e.tissue.replaceAll(' ', '-')}_${e.group_name}_ZT${e.time_point}`)
-        // console.log('grouped_norm')
-        // console.log(grouped_norm)
 
         this.expression_normalized_averaged = _.mapObject(grouped_norm, function(val, key) {
           let o = JSON.parse(JSON.stringify(val[0]))
@@ -358,27 +450,16 @@ export default {
           }, 0) / val.length
           o.gene_expression_norm = o.gene_expression_norm_avg
 
-          // console.log('o.avg', o.avg)
-          
-          // o.std_dev = _.reduce(val, function(memo, v) {
-          //   return memo + Math.pow((v.gene_expression_norm - o.gene_expression_norm_avg),2)
-          // }, 0) / val.length
-
           o.std_dev = Math.sqrt(_.reduce(val, function(memo, v) { 
             return memo + Math.pow((v.gene_expression_norm - o.gene_expression_norm_avg), 2); 
           }, 0) / val.length)
 
-          // console.log('o.std_dev', o.std_dev)
-
           o.std_err = o.std_dev / Math.sqrt(val.length)
-
-          // console.log('o.std_err', o.std_err)
 
           return o
         });
 
         this.expression_normalized_averaged = Object.entries(this.expression_normalized_averaged).map(e => e[1])
-        // console.log(this.expression_normalized_averaged)
         this.avgPoints = [...this.expression_normalized_averaged]
         this.avgPoints.forEach(e => e.visible = 1)
         this.errorBarsData = [...this.expression_normalized_averaged]
@@ -387,18 +468,12 @@ export default {
         this.replicatePoints.forEach(e => e.visible = (this.showReplicatePoints ? 1 : 0))
         this.allPoints = this.avgPoints.concat(this.replicatePoints)
 
-        // console.log('After mutation')
-        // console.log(this.gene_expression_data_tables)
-
         this.sumstat = d3
           .group(this.expression_normalized_averaged, 
           d => `${d.tissue.replaceAll(' ', '-')}_${d.gene_id}_${d.group_name}`);
 
         this.sumstat_visibility = Object.fromEntries(
           new Map([...this.sumstat.keys()].map(e => [e, 1])))
-
-        // console.log('this.sumstat_visibility')
-        // console.log(this.sumstat_visibility)
 
         this.categories = [...new Set(
           [...this.sumstat.keys()] 
@@ -411,7 +486,6 @@ export default {
 
         this.update_line_plot()
         this.legend()
-
       }
       
       const elapsed = Date.now() - start
@@ -434,6 +508,7 @@ export default {
             .attr("class", "mx-auto")
             .attr("viewBox", `0 0 ${this.width + this.margin.left + this.margin.right} ${this.height + this.margin.top + this.margin.bottom}`)
             .attr("preserveAspectRatio", "xMinYMid")
+            .attr("style", "font-family:sans-serif")
           .append("g")
             .attr("transform", `translate(${this.margin.left},${this.margin.top})`);
 
@@ -513,7 +588,6 @@ export default {
       // Create the X axis
       this.x.domain([0, d3.max(this.expression_merged, (d) => d.time_point )])
       var x = this.x
-      // x.domain([0, d3.max(this.expression_merged, (d) => d.time_point )])
       this.svg.selectAll(".myXaxis").transition()
         .duration(this.animationInterval)
         .call(this.xAxis)
@@ -692,20 +766,11 @@ export default {
       
       this.voronoi_grid()
 
-      // if (this.svg) {
-      //   console.log('this.svg exists!')
-      // }
-
-      // const svgElem = document.getElementById('plot-svg')
-      // console.log('svgElem')
-      // console.log(svgElem)
-
       console.log('===================')
     },
 
     legend() {
       console.log('legend')
-      console.log(this.expression_normalized)
       const num_tissues = this.expression_normalized.length
       const num_genes = this.expression_normalized[0][1].length
       const num_groups = this.expression_normalized[0][1][0][1].length
@@ -1106,9 +1171,6 @@ export default {
     },
     popover(g, value, key) {
       // Tooltip popover 
-      // console.log('popover', key)
-      // console.log(value)
-      // console.log(g)
       if (!value) return g.style("display", "none");
       const opacity = d3.select('#avgPoints').selectAll(`#dot_${key}`).attr('fill-opacity')
       if (opacity == 0) return g.style("display", "none");
@@ -1149,14 +1211,12 @@ export default {
     },
     toggleVisibility(newOpacity, id) {
       // TODO: Toggle eye one level up if all child eyes are set to on or off
-      // console.log('toggleVisibility', newOpacity, id)
-      // console.log(this.allPoints)
+
       const lines = d3.selectAll(`[id^='line_${id}']`)
       lines.transition_attributes('stroke-opacity', newOpacity)
       const matching_keys = Object.keys(this.sumstat_visibility).filter(e => e.includes(id))
       matching_keys.forEach(e => this.sumstat_visibility[e] = newOpacity)
-      // console.log('matching_keys')
-      // console.log(matching_keys)
+
       const avgPoints = d3.select('#avgPoints').selectAll(`[id^='dot_${id}']`)
       avgPoints.transition_attributes('fill-opacity', newOpacity)
       avgPoints._groups[0].forEach(e => e.__data__.visible = newOpacity)
@@ -1389,6 +1449,33 @@ export default {
 }
 </script>
 
-<style>
+<style lang="scss" scoped>
+#plot-options 
+{
+  :deep(.p-button) {
+    font-size: 0.85rem !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+  }
+  
+
+  :deep(.p-inputswitch) {
+    height: 1.4rem;
+    width: 2.6rem;
+    &.p-inputswitch-checked {
+        .p-inputswitch-slider::before {
+            transform: translateX(1.1rem);
+        }
+    }
+
+    .p-inputswitch-slider::before {
+        width: 0.9rem;
+        height: 0.9rem;
+        margin-top: -0.45rem;
+    }
+  }
+}
 
 </style>

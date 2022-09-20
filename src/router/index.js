@@ -65,7 +65,6 @@ const routes = [
           onNavbar: false,
         }
       }
-
     ]
   },
   {
@@ -105,7 +104,7 @@ const routes = [
     meta: {
       title: "Administration",
       requiresAuth: true,
-      requiresAdmin: true,
+      // requiresAdmin: true,
       onNavbar: false,
     }
   }

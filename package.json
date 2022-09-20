@@ -23,6 +23,7 @@
     "primeicons": "^5.0.0",
     "primevue": "^3.15.0",
     "sass": "^1.53.0",
+    "save-svg-as-png": "^1.4.17",
     "serve": "^14.0.1",
     "underscore": "^1.13.4",
     "vue": "^3.2.25",

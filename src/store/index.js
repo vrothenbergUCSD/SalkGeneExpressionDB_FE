@@ -108,20 +108,5 @@ export default createStore({
         console.log(`User id does not exist: ${state.profileId}`)
       }
     },
-    async getStuff({ commit }) {
-      // console.log('In getStuff')
-      // console.log(firestore)
-      const docSnap = await getDoc(doc(firestore, 'users', 'test12'))
-      if (docSnap.exists()) {
-        // console.log('docSnap: ')
-        // console.log(docSnap)
-        // console.log(docSnap.id)
-        // console.log(docSnap.data())
-        return docSnap
-      } else {
-        console.log('ERROR: Document does not exist.')
-        return null
-      }
-    }
   }
 })

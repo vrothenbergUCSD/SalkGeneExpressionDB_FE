@@ -24,8 +24,8 @@ class DataService {
   async getExpressionDataByGenes(genes, table) {
     //http://127.0.0.1:8000/expression_data/gene_name/0610009B22Rik,Agrn
     return http.get(`gene_expression/gene_names?gene_names=${genes}&table=${table}`)
-
-  } async getExpressionDataByGenesGendersConditions(genes, genders, conditions, table) {
+  }
+  async getExpressionDataByGenesGendersConditions(genes, genders, conditions, table) {
     let url = `gene_expression/gene_names_genders_conditions?gene_names=${genes}`
     if (genders.length)
       url += `&genders=${genders}`

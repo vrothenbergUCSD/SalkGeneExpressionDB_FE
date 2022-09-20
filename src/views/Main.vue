@@ -65,13 +65,14 @@
         <Accordion :multiple="true" :activeIndex="[0,1,2]">
           <AccordionTab header="Filters">
             <div v-if="!this.datasets_filter_warning">
-              <div class="font-semibold my-1 text-sm">
+              <div class="font-semibold mb-1 text-sm">
                 Datasets
               </div>
-              <div class="p-1 border my-1 rounded">
+              <div class="p-1 border my-2 rounded">
                 <DataTable :value="this.species_filtered" v-model:selection="this.species_selected" 
                   class="p-datatable-sm p-datatable-species" stripedRows :scrollable="true" scrollHeight="200px" 
-                  :loading="loading" @row-select="update_lookup_table()" 
+                  :loading="loading" selectionMode="multiple" :metaKeySelection="false"
+                  @row-select="update_lookup_table()" 
                   @row-unselect="update_lookup_table()"
                   @row-select-all="update_lookup_table()"
                   @row-unselect-all="update_lookup_table()">
@@ -89,10 +90,11 @@
                 </Column>
                 </DataTable>
               </div>
-              <div class="p-1 border my-1 rounded" >
+              <div class="p-1 border my-2 rounded" >
                 <DataTable :value="experiment_filtered" v-model:selection="experiment_selected" 
                   class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-                  :loading="loading" @row-select="update_lookup_table"
+                  :loading="loading" selectionMode="multiple" :metaKeySelection="false"
+                  @row-select="update_lookup_table"
                   @row-unselect="update_lookup_table"
                   @row-select-all="update_lookup_table"
                   @row-unselect-all="update_lookup_table">
@@ -111,10 +113,11 @@
                 </DataTable>
             
               </div>
-              <div class="p-1 border my-1 rounded">
+              <div class="p-1 border my-2 rounded">
                 <DataTable :value="tissue_filtered" v-model:selection="tissue_selected" 
-                  class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-                  :loading="loading" @row-select="update_lookup_table" 
+                  class="p-datatable-sm" stripedRows selectionMode="multiple" :metaKeySelection="false"
+                  :scrollable="true" scrollHeight="200px" :loading="loading" 
+                  @row-select="update_lookup_table" 
                   @row-unselect="update_lookup_table"
                   @row-select-all="update_lookup_table"
                   @row-unselect-all="update_lookup_table">
@@ -136,10 +139,10 @@
               <div class="font-semibold my-1 text-sm">
                 Samples
               </div>
-              <div class="p-1 border my-1 rounded">
+              <div class="p-1 border my-2 rounded">
                 <DataTable :value="gender_filtered" v-model:selection="this.gender_selected" 
-                  class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-                  :loading="loading" @row-select="update_lookup_table" 
+                  class="p-datatable-sm" stripedRows selectionMode="multiple" :metaKeySelection="false" 
+                  :scrollable="true" scrollHeight="200px" :loading="loading" @row-select="update_lookup_table" 
                   @row-unselect="update_lookup_table"
                   @row-select-all="update_lookup_table"
                   @row-unselect-all="update_lookup_table">
@@ -157,10 +160,11 @@
                 </Column>
                 </DataTable>
               </div>
-              <div class="p-1 border my-1 rounded">
+              <div class="p-1 border my-2 rounded">
                 <DataTable :value="condition_filtered" v-model:selection="this.condition_selected" 
                   class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
-                  :loading="loading" @row-select="update_lookup_table" 
+                  :loading="loading" selectionMode="multiple" :metaKeySelection="false"
+                  @row-select="update_lookup_table" 
                   @row-unselect="update_lookup_table"
                   @row-select-all="update_lookup_table"
                   @row-unselect-all="update_lookup_table">
@@ -368,7 +372,7 @@ export default {
     await this.get_datasets()
 
     // Line chart at index 1
-    this.index = 1
+    this.index = 0
     
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
@@ -485,8 +489,8 @@ export default {
         const result = await DataService
           .getExpressionDataByGenesGendersConditions(genesStr, gendersStr, conditionsStr, t)
         // const result = await DataService.getExpressionDataByGenes(genesStr, t)
-        console.log('result.data')
-        console.log(result.data)
+        // console.log('result.data')
+        // console.log(result.data)
         return {
           table_name: t,
           data: result.data
@@ -521,6 +525,7 @@ export default {
         sample_metadata_tables: this.sample_metadata_tables,
         gene_expression_data_tables: this.gene_expression_data_tables,
         gene_metadata: this.selected_gene_metadata,
+        selected_metadata: this.selected_metadata,
       }
       this.got_gene_data = true
       this.getting_gene_data = false

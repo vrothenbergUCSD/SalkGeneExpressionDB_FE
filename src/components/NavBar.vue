@@ -4,7 +4,7 @@
     <div class="mx-auto px-2">
       <div class="relative flex items-center justify-start h-16">
         <div class="flex-1 flex items-center justify-start">
-          <div class="hidden sm:block sm:ml-6">
+          <div class="">
             <div class="flex space-x-4">
               <NavLink :to="{name: 'Home'}">
                 <div class="">
@@ -28,6 +28,12 @@
                 <div class="">
                   <i class="pi pi-database mr-3"></i> 
                   <span>Data</span>
+                </div> 
+              </NavLink>
+              <NavLink v-if="user" :to="{ name: 'Admin'}">
+                <div class="">
+                  <i class="pi pi-list mr-3"></i> 
+                  <span>Admin</span>
                 </div> 
               </NavLink>
             </div>
@@ -108,7 +114,6 @@ export default {
     return {
       test: null, 
       dropdown: false,
-
     }
   },
   computed: {
