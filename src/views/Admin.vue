@@ -3,6 +3,7 @@
     <div id="page-title" class="pb-2 font-semibold text-3xl text-center">
       Administration
     </div>
+    <Toast />
     <div id="admin-ui" class="rounded-lg bg-white shadow mx-10">
       <div id="owned-groups-datatable" class="p-3" v-if="owned_groups">
         <DataTable :value="owned_groups" :paginator="true" :rows="10"
@@ -11,7 +12,7 @@
           paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown" 
           :rowsPerPageOptions="[10,25,50]"
           currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
-          :globalFilterFields="['name', 'description', 'admins']" 
+          :globalFilterFields="['name', 'description', 'admin_users']" 
           responsiveLayout="scroll"
         >
           <template #header>
@@ -53,34 +54,34 @@
               <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Search by description"/>
             </template>
           </Column>
-          <Column field="admins" header="Admins" style="min-width: 12rem">
+          <Column field="admin_users" header="Admins" style="min-width: 12rem">
             <template #body="{data}">
-              {{convertUserIDs(data.admins).join(", ")}}
+              {{convertUserIDs(data.admin_users).join(", ")}}
             </template>
           </Column>
           <Column field="admin-groups" header="Admin Groups" style="min-width: 12rem">
             <template #body="{data}">
-              {{convertGroupIDs(data.adminGroups).join(", ")}}
+              {{convertGroupIDs(data.admin_groups).join(", ")}}
             </template>
           </Column>
-          <Column field="editors" header="Editors" style="min-width: 14rem">
+          <Column field="editor_users" header="Editors" style="min-width: 14rem">
             <template #body="{data}">
-              {{convertUserIDs(data.editors).join(", ")}}
+              {{convertUserIDs(data.editor_users).join(", ")}}
             </template>
           </Column>
           <Column field="editor-groups" header="Editor Groups" style="min-width: 12rem">
             <template #body="{data}">
-              {{convertGroupIDs(data.editorGroups).join(", ")}}
+              {{convertGroupIDs(data.editor_groups).join(", ")}}
             </template>
           </Column>
-          <Column field="readers" header="Readers" style="min-width: 6rem">
+          <Column field="reader_users" header="Readers" style="min-width: 6rem">
             <template #body="{data}">
-              {{convertUserIDs(data.readers).join(", ")}}
+              {{convertUserIDs(data.reader_users).join(", ")}}
             </template>
           </Column>
           <Column field="reader-groups" header="Reader Groups" style="min-width: 12rem">
             <template #body="{data}">
-              {{convertGroupIDs(data.readerGroups).join(", ")}}
+              {{convertGroupIDs(data.reader_groups).join(", ")}}
             </template>
           </Column>
           
@@ -108,8 +109,16 @@
           </div>
           <div class="formgrid grid">
             <div class="field col">
-              <label for="admins">Admins</label>
-              <MultiSelect v-model="selectedAdmins" :options="users"
+              <div class="font-semibold">Add Users</div>
+            </div>
+            <div class="field col">
+              <div class="font-semibold">Inherit from Groups</div>
+            </div>
+          </div>
+          <div class="formgrid grid">
+            <div class="field col">
+              <label for="admin_users">Admins</label>
+              <MultiSelect v-model="selected_admin_users" :options="users"
                 optionLabel="name" placeholder="Select Admins" class="multiselect-custom max-w-[400px]"
                 :filter="true" display="chip">
                 <template #value="slotProps">
@@ -128,8 +137,8 @@
               </MultiSelect>
             </div>
             <div class="field col">
-              <label for="adminGroups">Admin Groups</label>
-              <MultiSelect v-model="selectedAdminGroups" :options="groups"
+              <label for="admin_groups">Admin Groups</label>
+              <MultiSelect v-model="selected_admin_groups" :options="groups"
                 optionLabel="name" placeholder="Select Admin Groups" class="multiselect-custom max-w-[400px]"
                 :filter="true" display="chip">
                 <template #value="slotProps">
@@ -150,8 +159,8 @@
           </div>
           <div class="formgrid grid">
             <div class="field col">
-              <label for="editors">Editors</label>
-              <MultiSelect v-model="selectedEditors" :options="users"
+              <label for="editor_users">Editors</label>
+              <MultiSelect v-model="selected_editor_users" :options="users"
                 optionLabel="name" placeholder="Select Editors" class="multiselect-custom max-w-[400px]"
                 :filter="true" display="chip">
                 <template #value="slotProps">
@@ -171,8 +180,8 @@
               </MultiSelect>
             </div>
             <div class="field col">
-              <label for="editorGroups">Editor Groups</label>
-              <MultiSelect v-model="selectedEditorGroups" :options="groups"
+              <label for="editor_groups">Editor Groups</label>
+              <MultiSelect v-model="selected_editor_groups" :options="groups"
                 optionLabel="name" placeholder="Select Editor Groups" class="multiselect-custom max-w-[400px]"
                 :filter="true" display="chip">
                 <template #value="slotProps">
@@ -193,8 +202,8 @@
           </div>
           <div class="formgrid grid">
             <div class="field col">
-              <label for="admins">Readers</label>
-              <MultiSelect v-model="selectedReaders" :options="users"
+              <label for="reader_users">Readers</label>
+              <MultiSelect v-model="selected_reader_users" :options="users"
                 optionLabel="name" placeholder="Select Readers" class="multiselect-custom max-w-[400px]"
                 :filter="true" display="chip">
                 <template #value="slotProps">
@@ -214,8 +223,8 @@
               </MultiSelect>
             </div>
             <div class="field col">
-              <label for="adminGroups">Reader Groups</label>
-              <MultiSelect v-model="selectedReaderGroups" :options="groups"
+              <label for="admin_groups">Reader Groups</label>
+              <MultiSelect v-model="selected_reader_groups" :options="groups"
                 optionLabel="name" placeholder="Select Reader Groups" class="multiselect-custom max-w-[400px]"
                 :filter="true" display="chip">
                 <template #value="slotProps">
@@ -366,6 +375,7 @@
             <small class="p-error" v-if="submitted && dataset.institution.length > 100">
               Institution must be less than 100 characters.</small>
           </div>
+
           <div id="gene_expression" class="field">
             <div id="upload_gene_expression_data_error_panel" v-show="this.upload_gene_expression_data_error" class="my-3">
               <Panel header="Gene Expression Data Error Log" class="p-error">
@@ -378,19 +388,137 @@
             </div>
 
             <div class="flex items-center content-center my-1">
-              <div class="text-lg align-middle font-medium">Select gene expression CSV</div>
+              <div class="text-lg font-medium w-1/3">Select gene expression CSV</div>
               <div class="ml-5">
-                <FileUpload mode="basic" :class="{ 'p-button-warning': upload_gene_metadata_highlight }"
+                <FileUpload mode="basic" :class="{ 'p-button-warning': this.upload_gene_expression_data_highlight }"
                   name="upload_gene_expression_data" 
                   :chooseLabel="upload_gene_expression_data_filename" :auto="true" 
                   :customUpload="true" accept=".csv" :maxFileSize="100000000" 
                   @uploader="upload_gene_expression_data" />
               </div>
             </div>
+          </div>
+
+          <div id="gene_metadata" class="field">
+            <div id="upload_gene_metadata_error_panel" v-show="this.upload_gene_metadata_error" class="my-3">
+              <Panel header="Gene Metadata Error Log" class="p-error">
+                <ScrollPanel style="width: 100%; height: 200px" class="custom">
+                  <li v-for="error in this.upload_gene_metadata_error_log">
+                    {{ error }}
+                  </li>
+                </ScrollPanel>
+              </Panel>
+            </div>
+
+            <div class="flex items-center content-center my-1">
+              <div class="text-lg font-medium w-1/3">Select gene metadata CSV</div>
+              <div class="ml-5">
+                <FileUpload mode="basic" :class="{ 'p-button-warning': this.upload_gene_metadata_highlight }"
+                  name="upload_gene_metadata" 
+                  :chooseLabel="upload_gene_metadata_filename" :auto="true" 
+                  :customUpload="true" accept=".csv" :maxFileSize="100000000" 
+                  @uploader="upload_gene_metadata" />
+              </div>
+            </div>
+          </div>
+
+          <div id="sample_metadata" class="field">
+            <div id="upload_sample_metadata_error_panel" v-show="this.upload_sample_metadata_error" class="my-3">
+              <Panel header="Sample Metadata Error Log" class="p-error">
+                <ScrollPanel style="width: 100%; height: 200px" class="custom">
+                  <li v-for="error in this.upload_sample_metadata_error_log">
+                    {{ error }}
+                  </li>
+                </ScrollPanel>
+              </Panel>
+            </div>
+
+            <div class="flex items-center content-center my-1">
+              <div class="text-lg font-medium w-1/3">Select sample metadata CSV</div>
+              <div class="ml-5">
+                <FileUpload mode="basic" :class="{ 'p-button-warning': upload_sample_metadata_highlight }"
+                  name="upload_gene_expression_data" 
+                  :chooseLabel="upload_sample_metadata_filename" :auto="true" 
+                  :customUpload="true" accept=".csv" :maxFileSize="100000000" 
+                  @uploader="upload_sample_metadata" />
+              </div>
+            </div>
 
           </div>
+
+
+          <div id="permissions-info" class="py-1">
+            <div class="font-semibold">
+              Permissions
+            </div>
+            <div class="text-sm">
+              <p>Grant specific permissions to corresponding users from a permission group.</p>
+              <p>Only the admin users for a group selected as an admin group will have administrative permissions.</p>
+              <p>The reader users will not have additional permissions.</p>
+            </div>
+          </div>
           <div class="flex flex-row items-center">
-            <div class="basis-2/3">
+            <div class="basis-1/3 pr-1">
+              <label for="admin_groups">Admin Groups</label>
+              <MultiSelect v-model="selected_admin_groups" :options="groups"
+                optionLabel="name" placeholder="Select Admin Groups" class="multiselect-custom"
+                :filter="true" display="chip">
+                <template #value="slotProps">
+                  <div class="p-multiselect-token text-sm" v-for="option of slotProps.value" :key="option.uid">
+                    {{option.name}}
+                  </div>
+                </template>
+                <template #option="slotProps">
+                  <div class="permission-item w-full">
+                    <div class="flex flex-row items-center">
+                      <div class="text-sm basis-1/3">{{slotProps.option.name}}</div>
+                      <div class="text-sm basis-2/3 text-right truncate">{{slotProps.option.description}}</div>
+                    </div>
+                  </div>
+                </template>
+              </MultiSelect>
+            </div>
+            <div class="basis-1/3 px-1">
+              <label for="editor_groups">Editor Groups</label>
+              <MultiSelect v-model="selected_editor_groups" :options="groups"
+                optionLabel="name" placeholder="Select Editor Groups" class="multiselect-custom"
+                :filter="true" display="chip">
+                <template #value="slotProps">
+                  <div class="p-multiselect-token text-sm" v-for="option of slotProps.value" :key="option.uid">
+                    {{option.name}}
+                  </div>
+                </template>
+                <template #option="slotProps">
+                  <div class="permission-item w-full">
+                    <div class="flex flex-row items-center">
+                      <div class="text-sm basis-1/3">{{slotProps.option.name}}</div>
+                      <div class="text-sm basis-2/3 text-right truncate">{{slotProps.option.description}}</div>
+                    </div>
+                  </div>
+                </template>
+              </MultiSelect>
+            </div>
+            <div class="basis-1/3 pl-1">
+              <label for="reader_groups">Reader Groups</label>
+              <MultiSelect v-model="selected_reader_groups" :options="groups"
+                optionLabel="name" placeholder="Select Reader Groups" class="multiselect-custom"
+                :filter="true" display="chip">
+                <template #value="slotProps">
+                  <div class="p-multiselect-token text-sm" v-for="option of slotProps.value" :key="option.uid">
+                    {{option.name}}
+                  </div>
+                </template>
+                <template #option="slotProps">
+                  <div class="permission-item w-full">
+                    <div class="flex flex-row items-center">
+                      <div class="text-sm basis-1/3">{{slotProps.option.name}}</div>
+                      <div class="text-sm basis-2/3 text-right truncate">{{slotProps.option.description}}</div>
+                    </div>
+                  </div>
+                </template>
+              </MultiSelect>
+            </div>
+            <!-- <div class="basis-2/3">
               <label for="permissionGroups">Permission Groups</label>
               <MultiSelect v-model="selectedPermissionGroups" :options="groups"
                 optionLabel="name" placeholder="Select Permission Groups" class="multiselect-custom"
@@ -404,18 +532,18 @@
                   </div>
                 </template>
               </MultiSelect>
-            </div>
-            <div class="basis-1/3 ml-3 mt-auto">
-              <Button label="Create Group" @click="createPermissionGroup"/>
-            </div>
+            </div> -->
+          
           </div>
           <div class="field">
             <label for="otherInformation">Other Information</label>
             <Textarea id="otherInformation" v-model="dataset.otherInformation" required="false" rows="3" cols="20" />
           </div>
           <template #footer>
-              <Button label="Cancel" icon="pi pi-times" class="p-button-text" @click="hideDatasetDialog"/>
-              <Button label="Save" icon="pi pi-check" class="p-button-text" @click="saveDataset" />
+              <Button label="Cancel" icon="pi pi-times" class="p-button-text" 
+                @click="hideDatasetDialog" :disabled="submitted"/>
+              <Button label="Save" icon="pi pi-check" class="p-button-text" 
+                @click="saveDataset" :loading="submitted" />
           </template>
         </Dialog>
 
@@ -441,8 +569,8 @@
           </div>
           <div class="formgrid grid">
             <div class="field col">
-              <label for="admins">Admins</label>
-              <MultiSelect v-model="selectedAdmins" :options="users"
+              <label for="admin_users">Admins</label>
+              <MultiSelect v-model="selected_admin_users" :options="users"
                 optionLabel="name" placeholder="Select Admins" class="multiselect-custom"
                 :filter="true" display="chip">
                 <template #value="slotProps">
@@ -461,8 +589,8 @@
               </MultiSelect>
             </div>
             <div class="field col">
-              <label for="adminGroups">Admin Groups</label>
-              <MultiSelect v-model="selectedAdminGroups" :options="groups"
+              <label for="admin_groups">Admin Groups</label>
+              <MultiSelect v-model="selected_admin_groups" :options="groups"
                 optionLabel="name" placeholder="Select Admin Groups" class="multiselect-custom"
                 :filter="true" display="chip">
                 <template #value="slotProps">
@@ -483,8 +611,8 @@
           </div>
           <div class="formgrid grid">
             <div class="field col">
-              <label for="editors">Editors</label>
-              <MultiSelect v-model="selectedEditors" :options="users"
+              <label for="editor_users">Editors</label>
+              <MultiSelect v-model="selected_editor_users" :options="users"
                 optionLabel="name" placeholder="Select Editors" class="multiselect-custom"
                 :filter="true" display="chip">
                 <template #value="slotProps">
@@ -504,8 +632,8 @@
               </MultiSelect>
             </div>
             <div class="field col">
-              <label for="editorGroups">Editor Groups</label>
-              <MultiSelect v-model="selectedEditorGroups" :options="groups"
+              <label for="editor_groups">Editor Groups</label>
+              <MultiSelect v-model="selected_editor_groups" :options="groups"
                 optionLabel="name" placeholder="Select Editor Groups" class="multiselect-custom"
                 :filter="true" display="chip">
                 <template #value="slotProps">
@@ -526,8 +654,8 @@
           </div>
           <div class="formgrid grid">
             <div class="field col">
-              <label for="admins">Readers</label>
-              <MultiSelect v-model="selectedReaders" :options="users"
+              <label for="reader_users">Readers</label>
+              <MultiSelect v-model="selected_reader_users" :options="users"
                 optionLabel="name" placeholder="Select Readers" class="multiselect-custom"
                 :filter="true" display="chip">
                 <template #value="slotProps">
@@ -547,8 +675,8 @@
               </MultiSelect>
             </div>
             <div class="field col">
-              <label for="adminGroups">Reader Groups</label>
-              <MultiSelect v-model="selectedReaderGroups" :options="groups"
+              <label for="reader_groups">Reader Groups</label>
+              <MultiSelect v-model="selected_reader_groups" :options="groups"
                 optionLabel="name" placeholder="Select Reader Groups" class="multiselect-custom"
                 :filter="true" display="chip">
                 <template #value="slotProps">
@@ -568,11 +696,9 @@
             </div>
           </div>
           <template #footer>
-              <Button label="Cancel" icon="pi pi-times" class="p-button-text" @click="hidePermissionGroupDialog"/>
-              <Button label="Save" icon="pi pi-check" class="p-button-text" @click="savePermissionGroup($event)" />
+            <Button label="Cancel" icon="pi pi-times" class="p-button-text" @click="hidePermissionGroupDialog"/>
+            <Button label="Save" icon="pi pi-check" class="p-button-text" @click="savePermissionGroup($event)" />
           </template>
-
-
         </Dialog>
       </div>
     </div>
@@ -584,7 +710,6 @@ import { FilterMatchMode, FilterOperator } from 'primevue/api'
 
 import Toast from 'primevue/toast'
 import ProgressBar from 'primevue/progressbar'
-import ProgressSpinner from 'primevue/progressspinner'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -602,12 +727,13 @@ import _ from 'underscore'
 
 import DataService from "@/services/DataService.js"
 
-import { firestore } from "@/firebase/firebaseInit.js"
+import { storage, firestore } from "@/firebase/firebaseInit.js"
 import { doc, collection, query, where, getDocs, addDoc, setDoc, updateDoc } from "firebase/firestore"
 
 export default {
   name: "Admin",
   components: {
+    Toast,
     DataTable,
     Column,
     InputText,
@@ -648,26 +774,48 @@ export default {
       datasetDialog: false,
       selectedPermissionGroups: null,
 
-      upload_gene_expression_data_error: null,
-      upload_gene_expression_data_error_log: null,
-      upload_gene_expression_data_filename: null,
-
-
       permissionGroupDialog: false,
       permissionGroup: {},
       permissionSubmitted: false,
 
       users: [],
-      selectedAdmins: [],
-      selectedEditors: [],
-      selectedReaders: [],
+      selected_admin_users: [],
+      selected_editor_users: [],
+      selected_reader_users: [],
       groups: [],
-      selectedAdminGroups: [],
-      selectedEditorGroups: [],
-      selectedReaderGroups: [],
+      selected_admin_groups: [],
+      selected_editor_groups: [],
+      selected_reader_groups: [],
 
       editPermissionGroupDialog: false,
       editPermissionSubmitted: false,
+
+      upload_gene_metadata_error: null,
+      upload_gene_metadata_error_log: [],
+      upload_gene_metadata_filename: 'Select', 
+      upload_gene_metadata_file: null,
+      upload_gene_metadata_highlight: null,
+
+      upload_sample_metadata_error: null,
+      upload_sample_metadata_error_log: [],
+      upload_sample_metadata_filename: 'Select', 
+      upload_sample_metadata_file: null,
+      upload_sample_metadata_highlight: null,
+
+      upload_gene_expression_data_error: null,
+      upload_gene_expression_data_error_log: [],
+      upload_gene_expression_data_filename: 'Select', 
+      upload_gene_expression_data_file: null,
+      upload_gene_expression_data_highlight: null, 
+
+      uploadMsg: null,
+      upload_files_error: null, 
+      upload_files_error_log: null, 
+      upload_progress: 0,
+      uploading:null,
+
+      conditions_json: null,
+      genders_json: null,
     }
   },
   computed: {
@@ -710,12 +858,8 @@ export default {
       this.loading = false
     },
     editDataset(d) {
-      // console.log('editDataset')
-      // console.log(d)
       this.datasetDialog = true
       this.dataset = {...d}
-      // console.log('this.dataset')
-      // console.log(this.dataset)
     },
     hideDatasetDialog() {
       this.datasetDialog = false
@@ -728,34 +872,42 @@ export default {
         this.dataset = {};
       }
 
+      const validation_error = false
+
       // Validate
       if (!this.dataset.species) {
         // Species required
-        return
+        validation_error = true
       }
 
       if (!this.dataset.tissue) {
         // Tissue required
-        return
+        validation_error = true
       }
 
       if (!this.dataset.experiment) {
         // Experiment required 
-        return
+        validation_error = true
       }
 
       if (!this.dataset.year) {
         // Year required
-        return
+        validation_error = true
       } else if (this.dataset.year < 1900 || this.dataset.year > 2100) {
         // Year must be non-silly
-        return
+        validation_error = true
       }
 
       if (this.institution && this.institution.length > 100) {
         // Institution must be less than 100 characters
+        validation_error = true
+      }
+
+      if (validation_error) {
+        this.submitted = false
         return
       }
+
 
       const docRef = doc(firestore, "datasets", this.dataset.id)
       await updateDoc(docRef, {
@@ -765,13 +917,37 @@ export default {
         gene_metadata_table_name: this.dataset.gene_metadata_table_name, 
         institution: this.dataset.institution, 
         otherInformation: this.dataset.otherInformation,
-        owner: this.dataset.owner,
         sample_metadata_table_name: this.dataset.sample_metadata_table_name,
         species: this.dataset.species,
         tissue: this.dataset.tissue,
         year: this.dataset.year,
+        reader_groups: this.selected_reader_groups.map(group => group.group_id), 
+        editor_groups: this.selected_editor_groups.map(group => group.group_id), 
+        admin_groups: this.selected_admin_groups.map(group => group.group_id),
       })
 
+      let api_result = await this.post_dataset()
+
+      console.log('api_result')
+      console.log(api_result)
+      if (api_result.status != 200) {
+        this.$toast.add({severity: 'error', summary: 'Error', detail: 'HTTP Error', life: 10000});
+        this.upload_files_error = true
+        this.upload_files_error_log.push(`ERROR: ${api_result.statusText}`)
+      } else {
+        this.$toast.add({severity: 'success', summary: 'Success', detail: 'Dataset Uploaded', life: 10000});
+        console.log('BigQuery: Successfully uploaded dataset tables.')
+      }
+
+      for (let i = 0; i < api_result.data.errorLog.length; i++) {
+        if (api_result.data.errorLog[i].length > 0) {
+          this.upload_files_error_log.concat(api_result.data.errorLog[i]) 
+        }
+      } 
+
+      if (this.upload_files_error_log.length > 0) {
+        this.$toast.add({severity: 'error', summary: 'Error', detail: 'Error Uploading', life: 10000});
+      }
 
       this.permissionSubmitted = false
       await Promise.all([
@@ -785,12 +961,12 @@ export default {
       this.permissionGroup = {
         'name': null,
         'description': null,
-        'admins': [],
-        'adminGroups': [],
-        'editors': [],
-        'editorGroups': [],
-        'readers': [],
-        'readerGroups': [],
+        'admin_users': [],
+        'admin_groups': [],
+        'editor_users': [],
+        'editor_groups': [],
+        'reader_users': [],
+        'reader_groups': [],
         'datasets': [],
       }
       this.permissionGroupDialog = true
@@ -813,23 +989,22 @@ export default {
       }
 
       // Update user information, set roles 
-      this.permissionGroup.admins.forEach((u) => {
+      this.permissionGroup.admin_users.forEach((u) => {
         console.log('admin: ', u)
         console.log(u)
       })
       
-      
       // Save to Firestore
       const docRef = await addDoc(collection(firestore, 'permission_groups'), {
         name: this.permissionGroup.name,
-        admins: this.permissionGroup.admins, 
-        adminGroups: this.permissionGroup.adminGroups, 
+        admin_users: this.permissionGroup.admin_users, 
+        admin_groups: this.permissionGroup.admin_groups, 
         datasets: [],
         description: this.permissionGroup.description, 
-        editors: this.permissionGroup.editors,
-        editorGroups: this.permissionGroup.editorGroups,
-        readers: this.permissionGroup.readers,
-        readerGroups: this.permissionGroup.readerGroups, 
+        editor_users: this.permissionGroup.editor_users,
+        editor_groups: this.permissionGroup.editor_groups,
+        reader_users: this.permissionGroup.reader_users,
+        reader_groups: this.permissionGroup.reader_groups, 
         owner: this.$store.state.profileId,
       })
 
@@ -873,7 +1048,7 @@ export default {
       console.log('getOwnedGroups')
       // TODO: Check if admin group is in permission group
       const q = query(collection(firestore, "permission_groups"), 
-        where('admins', 'array-contains', this.$store.state.profileId))
+        where('admin_users', 'array-contains', this.$store.state.profileId))
       const querySnapshot = await getDocs(q);
       this.owned_groups = []
       querySnapshot.forEach((doc) => {
@@ -904,12 +1079,12 @@ export default {
       console.log('this.permissionGroup')
       console.log(this.permissionGroup)
       // TODO: Possible performance issues when filtering and users array is large, O(n*m)
-      this.selectedAdmins = this.users.filter(user => this.permissionGroup.admins.includes(user.uid))
-      this.selectedAdminGroups = this.groups.filter(group => this.permissionGroup.adminGroups.includes(group.group_id))
-      this.selectedEditors = this.users.filter(user => this.permissionGroup.editors.includes(user.uid))
-      this.selectedEditorGroups = this.groups.filter(group => this.permissionGroup.editorGroups.includes(group.group_id))
-      this.selectedReaders = this.users.filter(user => this.permissionGroup.readers.includes(user.uid))
-      this.selectedReaderGroups = this.groups.filter(group => this.permissionGroup.readerGroups.includes(group.group_id))
+      this.selected_admin_users = this.users.filter(user => this.permissionGroup.admin_users.includes(user.uid))
+      this.selected_admin_groups = this.groups.filter(group => this.permissionGroup.admin_groups.includes(group.group_id))
+      this.selected_editor_users = this.users.filter(user => this.permissionGroup.editor_users.includes(user.uid))
+      this.selected_editor_groups = this.groups.filter(group => this.permissionGroup.editor_groups.includes(group.group_id))
+      this.selected_reader_users = this.users.filter(user => this.permissionGroup.reader_users.includes(user.uid))
+      this.selected_reader_groups = this.groups.filter(group => this.permissionGroup.reader_groups.includes(group.group_id))
     },
     hideEditPermissionGroupDialog() {
       this.editPermissionGroupDialog = false 
@@ -917,29 +1092,40 @@ export default {
     },
     async updatePermissionGroup() {
       this.editPermissionSubmitted = true
+      // TODO: Validation error
+      let validation_error = false
 
       if (!this.permissionGroup.name) {
         // Name required
-        return
+        validation_error = true
+      } else if (this.permissionGroup.name.length > 100) {
+        // Name too long
+        validation_error = true
       }
 
       if (this.permissionGroup.description && this.permissionGroup.description.length > 100) {
         // Description too long
-        return 
+        validation_error = true
+      }
+
+      if (validation_error) {
+        this.editPermissionSubmitted = false
+        return
       }
 
       console.log('this.permissionGroup')
       console.log(this.permissionGroup)
 
-      console.log('this.selectedReaderGroups')
-      console.log(this.selectedReaderGroups)
-      console.log('this.selectedEditors')
-      console.log(this.selectedEditors)
+      const group_id = this.permissionGroup.group_id
 
-      this.selectedAdmins.forEach(user => {
-        // Add permission group ID if it does not already exist
-        user.admin.indexOf()
-      })
+      await Promise.all([
+        this.updateUsers(this.selected_admin_users, 'admin', group_id),
+        this.updateUsers(this.selected_editor_users, 'editor', group_id),
+        this.updateUsers(this.selected_reader_users, 'reader', group_id),
+        this.updateGroups(this.selected_admin_groups, 'admin', group_id),
+        this.updateGroups(this.selected_editor_groups, 'editor', group_id),
+        this.updateGroups(this.selected_reader_groups, 'reader', group_id),
+      ])
 
       const docRef = doc(firestore, "permission_groups", this.permissionGroup.group_id)
       await updateDoc(docRef, {
@@ -947,12 +1133,12 @@ export default {
         group_id: this.permissionGroup.group_id,
         description: this.permissionGroup.description, 
         datasets: this.permissionGroup.datasets,
-        admins: this.selectedAdmins.map(user => user.uid), 
-        adminGroups: this.selectedAdminGroups.map(group => group.group_id), 
-        editors: this.selectedEditors.map(user => user.uid),
-        editorGroups: this.selectedEditorGroups.map(group => group.group_id),
-        readers: this.selectedReaders.map(user => user.uid),
-        readerGroups: this.selectedReaderGroups.map(group => group.group_id), 
+        admin_users: this.selected_admin_users.map(user => user.uid), 
+        admin_groups: this.selected_admin_groups.map(group => group.group_id), 
+        editor_users: this.selected_editor_users.map(user => user.uid),
+        editor_groups: this.selected_editor_groups.map(group => group.group_id),
+        reader_users: this.selected_reader_users.map(user => user.uid),
+        reader_groups: this.selected_reader_groups.map(group => group.group_id), 
       })
 
       await Promise.all([
@@ -963,9 +1149,425 @@ export default {
       this.hideEditPermissionGroupDialog()
 
     },
-    updateUserPermissions() {
+    async updateUsers(selected_users, user_type, group_id) {
+      await Promise.all(selected_users.map(async (user) => {
+        this.updateUserPermissions(user, user_type, group_id)
+      }))
+    },
+    async updateUserPermissions(user, user_type, group_id) {
+      // Add permission group ID if it does not already exist
+      if (user[user_type].indexOf(group_id) === -1) {
+        user[user_type].push(group_id)
+        const docRef = doc(firestore, "users", user.uid)
+        const update_obj = {}
+        update_obj[user_type] = user[user_type]
+        await updateDoc(docRef, update_obj)
+      }
+    },
+    async updateGroups(selected_groups, user_type, group_id) {
+      console.log('updateGroups')
+      // Cascade update roles of all users in inherited permission groups 
+      await Promise.all(selected_groups.map(async (group) => {
+        this.updateUsers(group[`${user_type}_users`], user_type, group_id)
+      }))
+    },
 
-    }
+    // Data.vue methods
+    startProgress() {
+      // 30 second progress bar
+      this.interval = setInterval(() => {
+        let newValue = this.upload_progress + 5;
+        if (newValue >= 99) {
+            newValue = 99;
+        }
+        this.upload_progress = newValue;
+      }, 1500);
+    },
+    endProgress() {
+      this.upload_progress = 0
+      clearInterval(this.interval);
+      this.interval = null;
+    },
+    isItInteger(str) {
+      return /^\-?[0-9]+$/.test(str);
+    },
+    isItFloat(str) {
+      return /^\-?[0-9]+(\.[0-9]+)?$/.test(str);
+    },
+    validateCSV(csv, col_names, col_types) {
+      let rows = csv.split('\n')
+      let error_log = []
+      let error_msg = null
+      const strand_chars = ['+', '-']
+      // console.log(col_names)
+
+      let headers = rows[0].split(',')
+      for (var i = 0; i < col_names.length; i++) {
+        if (!headers[i]) {
+          if (col_types[i].valueOf() !== 'optional') {
+            error_msg = `Header Error on column ${i+1}, missing ${col_names[i]}`
+            error_log.push(error_msg)
+            console.log(error_msg)
+          }
+        } else {
+          if (headers[i].valueOf().trim() != col_names[i].valueOf().trim()) {
+            error_msg = `Header Error on column ${i+1}, expected ${col_names[i]} got ${headers[i]}`
+            error_log.push(error_msg)
+            console.log(error_msg)
+          }
+        }
+        
+      }
+
+      // Check last line 
+      let last = rows[rows.length-1].split(',')
+      let sum_len = 0
+      for (var j = 0; j < last.length; j++) {
+        sum_len += last[j].length
+      }
+      if (sum_len == 0) rows.pop()
+
+      // Iterate line by line
+      for (var i = 1; i < rows.length; i++) {
+        let cols = rows[i].split(',')
+        // if (i % 100 == 0) console.log(i)
+        
+        // Column by column
+        for (var j = 0; j < col_types.length; j++) {
+          let value = cols[j]
+          if (col_types[j] != 'optional' && (!value || !value.length)) {
+            // Fail
+            error_msg = `Null Error on line ${i} column ${col_names[j]}, value: ${value}`
+            error_log.push(error_msg)
+            console.log(error_msg)            
+            continue
+          }
+          if (col_types[j] == 'integer') {
+            if (!this.isItInteger(value.trim())) {
+              // Fail
+              error_msg = `Integer Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+              error_log.push(error_msg)
+              console.log(error_msg)
+              continue 
+            }
+          } else if (col_types[j] == 'float') {
+            if (!this.isItFloat(value.trim())) {
+              // Fail
+              error_msg = `Float Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+              error_log.push(error_msg)
+              console.log(error_msg)
+              continue 
+            }          
+          } else if (col_types[j] == 'char(+/-)') {
+            if (!strand_chars.some((arrVal) => value === arrVal)) {
+              // Fail
+              error_msg = `Char(+/-) Type Error on line ${i} column ${col_names[j]}, value: ${value}`
+              error_log.push(error_msg)
+              console.log(error_msg)
+              continue
+            }              
+          }
+        }
+      }
+      return error_log
+    },
+    upload_gene_expression_data(e) {
+      // console.log('upload_gene_expression_data')
+      const files = e.files
+      const file = files[0]
+      const col_names = ['gene_id', 'sample_name', 'gene_expression']
+      const col_types = ['string', 'string', 'float']
+
+      let error_log = []
+      const sample_names = {}
+
+      // Loads entire file into memory? 
+      let reader = new FileReader() 
+      reader.readAsText(file)
+      reader.onload = (evt) => {
+        let csv = evt.target.result
+        error_log = this.validateCSV(csv, col_names, col_types)
+
+
+        this.upload_gene_expression_data_error_log = error_log
+        this.upload_gene_expression_data_error = error_log.length
+        
+        if (!this.upload_gene_expression_data_error) {
+          this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 5000});
+          this.upload_gene_expression_data_filename = file.name
+          this.upload_gene_expression_data_file = file
+          this.upload_gene_expression_data_highlight = false
+        } else {
+          this.$toast.add({severity: 'error', summary: 'Error', detail: 'Failed Type Validation', life: 5000});
+          this.upload_gene_expression_data_filename = 'Select'
+          this.upload_gene_expression_data_file = null
+        }
+      }
+
+    },
+    upload_gene_metadata(e) {
+      // console.log('upload_gene_metadata')
+      // Upload file contents to memory, does not post to database yet
+      const files = e.files
+      const file = files[0]
+      const col_names = ['gene_id',	'gene_name',	'refseq',	'chr',	'start',	'end',
+      	'strand',	'length',	'description', 'ensembl_gene_id','gene_biotype','copies',
+        'annotation_divergence', 'external_gene_name', 'ensembl_peptide_id']
+      const col_types = ['string', 'string', 'string', 'string', 'integer', 
+        'integer', 'char(+/-)', 'float', 'string', 'string', 'string', 'optional',
+        'optional', 'optional', 'optional']
+
+
+      let error_log = []
+      const gene_ids = {}
+
+      // Loads entire file into memory? 
+      let reader = new FileReader() 
+      reader.readAsText(file)
+      reader.onload = (evt) => {
+        let csv = evt.target.result
+        error_log = this.validateCSV(csv, col_names, col_types)
+
+        this.upload_gene_metadata_error_log = error_log
+        this.upload_gene_metadata_error = error_log.length
+        
+        if (!this.upload_gene_metadata_error) {
+          this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 5000});
+          this.upload_gene_metadata_filename = file.name
+          this.upload_gene_metadata_file = file
+          this.upload_gene_metadata_highlight = false
+        } else {
+          this.$toast.add({severity: 'error', summary: 'Error', detail: 'Failed Type Validation', life: 5000});
+          this.upload_gene_metadata_filename = 'Select'
+          this.upload_gene_metadata_file = null
+          console.log('upload_gene_metadata: ERROR')
+        }
+      }
+    },
+    upload_sample_metadata(e) {
+      // console.log('upload_sample_metadata')
+      const files = e.files
+      const file = files[0]
+      const col_names = ['sample_name',	'species',	'time_point',	'group_name',
+      	'age_months',	'gender',	'tissue',	'number_of_replicates',	'data_type']
+      const col_types = ['string', 'string', 'string', 'string', 'integer', 
+        'string', 'string', 'integer', 'string']
+
+      let error_log = []
+      const sample_names = {}
+
+      // Loads entire file into memory? 
+      let reader = new FileReader() 
+      reader.readAsText(file)
+      reader.onload = (evt) => {
+        // console.log('reader.onload')
+        let csv = evt.target.result
+        error_log = this.validateCSV(csv, col_names, col_types)
+
+        this.upload_sample_metadata_error_log = error_log
+        this.upload_sample_metadata_error = error_log.length
+        
+        if (!this.upload_sample_metadata_error) {
+          this.$toast.add({severity: 'success', summary: 'Success', detail: 'File Validated', life: 5000});
+          this.upload_sample_metadata_filename = file.name
+          this.upload_sample_metadata_file = file
+          this.upload_sample_metadata_highlight = false
+          // TODO: Not yet tested
+          this.sample_counts(csv)
+        } else {
+          this.$toast.add({severity: 'error', summary: 'Error', detail: 'Failed Type Validation', life: 5000});
+          this.upload_sample_metadata_filename = 'Select'
+          this.upload_sample_metadata_file = null
+        }
+      }
+    },
+    sample_counts(csv) {
+      console.log('sample_counts')
+      console.log(csv)
+
+      let rows = csv.split('\n')
+      let conditions = {}
+      let genders = {}
+
+      // Iterate line by line
+      for (var i = 1; i < rows.length; i++) {
+        let cols = rows[i].split(',')
+        let cond = cols[3]
+        conditions[cond] = conditions[cond] + 1 || 1
+        let gender = cols[5]
+        genders[gender] = genders[gender] + 1 || 1
+      }
+      this.conditions_json = JSON.stringify(Object.keys(conditions).map(e => {
+        return {
+          'condition' : e,
+          'count' : conditions[e]}
+      }))
+      this.genders_json = JSON.stringify(Object.keys(genders).map(e => {
+        return {
+          'gender' : e,
+          'count' : genders[e]}
+      }))
+    },
+    download(file) {
+      // console.log('download', file)
+      const fileRef = ref(storage, file)
+      getDownloadURL(fileRef).then((url) => {
+        window.location.href = url;
+      }).catch((error) => {
+        console.log('Error on download: ', error.code)
+      })
+    },
+    save() {
+      this.saveMsg = null
+      this.databaseTablePrefix = null
+      let errors = false
+
+      // Validate experiment 
+      if (!this.experiment) {
+        console.log('ERROR: Invalid experiment name')
+        this.experimentInvalid = true
+        this.experimentErrorMsg = "Experiment name required."
+        errors = true 
+      } else {
+        this.experimentInvalid = false
+      }
+      
+      // Validate year
+      this.year = Number.parseInt(this.year)
+      if (!this.year) {
+        console.log('ERROR: Year required.')
+        this.yearInvalid = true
+        this.yearErrorMsg = "Year required."
+        errors = true 
+      } else if (this.year > 2050 || this.year < 1850) {
+        console.log('ERROR: Year must be reasonable.')
+        this.yearInvalid = true 
+        this.yearErrorMsg = "Year must be non-silly."
+        errors = true
+      } else {
+        this.yearInvalid = false
+      }
+      
+      // Validate institution
+      if (this.institution && this.institution.length > 100) {
+        console.log('ERROR: Institution name too long')
+        this.institutionInvalid = true 
+        this.institutionErrorMsg = "Institution name too long, must be less than 100 characters."
+        errors = true
+      } else {
+        this.institutionInvalid = false
+      }
+      
+      // Validate species
+      if (!this.species) {
+        console.log('ERROR: Invalid species name')
+        this.speciesInvalid = true
+        this.speciesErrorMsg = "Species name required."
+        errors = true 
+      } else {
+        this.speciesInvalid = false
+      }
+      
+      // Validate doi 
+      if (this.doi) {
+        RegExp.escape = function(string) {
+          return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+        };
+        const pat = '\\b(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?!["&\'])\\S)+)\\b'
+        const re = new RegExp(pat)
+        console.log('this.doi', this.doi)
+        console.log('re:', re)
+        var found = re.exec(this.doi);
+        console.log(found)
+        if (!found) {
+          console.log('ERROR: Invalid DOI format.')
+          this.doiInvalid = true 
+          this.doiErrorMsg = "Invalid DOI format."
+          errors = true
+        } else {
+          // console.log('DOI found: ', found + ' in ' + this.doi)
+        }
+      } else {
+        this.doiInvalid = false
+      }
+      
+      // Validate tissue
+      if (!this.tissue) {
+        console.log('ERROR: Invalid tissue')
+        this.tissueInvalid = true
+        this.tissueErrorMsg = "Tissue required."
+        errors = true 
+      } else {
+        this.tissue = this.tissue.replace(/ /g,"_")
+        this.tissueInvalid = false
+      }
+      
+      // Validate other details 
+      if (this.other && this.other.length > 10000) {
+        console.log('ERROR: Other details too long.')
+        this.otherInvalid = true 
+        this.otherErrorMsg = "Other information section too long, must be less than 10,000 characters."
+        errors = true 
+      } else {
+        this.otherInvalid = false
+      }
+      
+      if (errors) return
+
+      this.saveMsg = "Dataset details saved."
+      this.databaseTablePrefix = `${this.experiment}_${this.year}_${this.species}_${this.tissue}`
+    },
+    async post_dataset() {
+      console.log('post_dataset: Posting dataset to BigQuery')
+      this.uploading = true
+      this.startProgress()
+      const start = Date.now()
+      let formData = new FormData() 
+      if (this.upload_gene_metadata_file)
+        formData.append('files', this.upload_gene_metadata_file)
+      if (this.upload_sample_metadata_file)
+        formData.append('files', this.upload_sample_metadata_file)
+      if (this.upload_gene_expression_data_file)
+        formData.append('files', this.upload_gene_expression_data_file)
+
+      const gene_metadata_table_name = `${this.databaseTablePrefix}_gene_metadata`
+      const sample_metadata_table_name = `${this.databaseTablePrefix}_sample_metadata`
+      const gene_expression_data_table_name = `${this.databaseTablePrefix}_gene_expression_data`
+
+      let metadata = {
+        owner: this.$store.state.profileId,
+        experiment: this.experiment, 
+        institution: this.institution, 
+        species: this.species, 
+        tissue: this.tissue, 
+        year: this.year, 
+        doi : this.doi,
+        otherInformation: this.other || '',
+
+        gene_metadata_table_name: `${gene_metadata_table_name}_${this.$store.state.profileId}`,
+        sample_metadata_table_name: `${sample_metadata_table_name}_${this.$store.state.profileId}`,
+        gene_expression_data_table_name: `${gene_expression_data_table_name}_${this.$store.state.profileId}`,
+        gender: this.genders_json,
+        condition: this.conditions_json,
+      }
+
+      // formData.append('body', metadata)
+      for (const [key, value] of Object.entries(metadata)) {
+        formData.append(key, value)
+      }
+
+      formData.append('gene_metadata_filename', this.upload_gene_metadata_filename)
+      formData.append('sample_metadata_filename', this.upload_sample_metadata_filename)
+      formData.append('gene_expression_data_filename', this.upload_gene_expression_data_filename)
+
+      // let api_result = await DataService.postDataset(formData)
+      const time_elapsed = (Date.now() - start) / 1000
+      console.log(`post_dataset: Time elapsed: ${time_elapsed}s`)
+      this.uploading = false
+      this.endProgress()
+      return api_result
+    },
+
   },
 }
 </script>

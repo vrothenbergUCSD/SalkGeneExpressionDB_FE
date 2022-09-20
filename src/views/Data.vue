@@ -296,7 +296,6 @@ import ProgressBar from 'primevue/progressbar'
 
 import { storage, firestore } from "@/firebase/firebaseInit.js"
 import { ref, getDownloadURL } from "firebase/storage";
-import { getAuth } from "firebase/auth";
 import { doc, collection, getDoc, addDoc, setDoc } from "firebase/firestore"
 
 import DataService from "@/services/DataService.js"
@@ -421,19 +420,19 @@ export default {
       ],
 
       upload_gene_metadata_error: null,
-      upload_gene_metadata_error_log: null,
+      upload_gene_metadata_error_log: [],
       upload_gene_metadata_filename: 'Select', 
       upload_gene_metadata_file: null,
       upload_gene_metadata_highlight: null,
 
       upload_sample_metadata_error: null,
-      upload_sample_metadata_error_log: null,
+      upload_sample_metadata_error_log: [],
       upload_sample_metadata_filename: 'Select', 
       upload_sample_metadata_file: null,
       upload_sample_metadata_highlight: null,
 
       upload_gene_expression_data_error: null,
-      upload_gene_expression_data_error_log: null,
+      upload_gene_expression_data_error_log: [],
       upload_gene_expression_data_filename: 'Select', 
       upload_gene_expression_data_file: null,
       upload_gene_expression_data_highlight: null, 
@@ -640,12 +639,16 @@ export default {
           this.upload_sample_metadata_filename = file.name
           this.upload_sample_metadata_file = file
           this.upload_sample_metadata_highlight = false
+          // TODO: Not yet tested
+          this.sample_counts(csv)
         } else {
           this.$toast.add({severity: 'error', summary: 'Error', detail: 'Failed Type Validation', life: 5000});
           this.upload_sample_metadata_filename = 'Select'
           this.upload_sample_metadata_file = null
         }
       }
+      
+      
     },
     upload_gene_expression_data(e) {
       // console.log('upload_gene_expression_data')
@@ -734,7 +737,6 @@ export default {
         this.institutionInvalid = false
       }
       
-
       // Validate species
       if (!this.species) {
         console.log('ERROR: Invalid species name')
@@ -779,7 +781,6 @@ export default {
         this.tissueInvalid = false
       }
       
-
       // Validate other details 
       if (this.other && this.other.length > 10000) {
         console.log('ERROR: Other details too long.')
@@ -790,12 +791,10 @@ export default {
         this.otherInvalid = false
       }
       
-
       if (errors) return
 
       this.saveMsg = "Dataset details saved."
       this.databaseTablePrefix = `${this.experiment}_${this.year}_${this.species}_${this.tissue}`
-
     },
     async post_dataset() {
       console.log('post_dataset: Posting dataset to BigQuery')
@@ -898,13 +897,6 @@ export default {
       const sample_metadata_table_name = `${this.databaseTablePrefix}_sample_metadata`
       const gene_expression_data_table_name = `${this.databaseTablePrefix}_gene_expression_data`
 
-      // const auth = getAuth()
-      // const datasetsCollectionRef = collection(firestore, 'datasets')
-
-      // const newDocRef = doc(firestore, 'datasets', this.databaseTablePrefix)
-      // console.log('newDocRef')
-      // console.log(newDocRef)
-
       const docRef = await addDoc(collection(firestore, 'datasets'), {
         owner: this.$store.state.profileId,
         experiment: this.experiment || 'TestExp', 
@@ -920,38 +912,6 @@ export default {
         gene_expression_data_table_name: gene_expression_data_table_name,
       })
 
-      console.log('docRef')
-      console.log(docRef)
-
-      
-      
-      
-
-      // const docSnap = await getDoc(newDocRef);
-
-      // if (docSnap.exists()) {
-      //   console.log('ERROR: Dataset already exists.')
-      //   this.upload_files_error = true 
-      //   this.upload_files_error_log.push(`ERROR: Dataset ${this.databaseTablePrefix} already exists in database.
-      //   \nIf you are the owner of the dataset you can modify its tables here: [NOT IMPLEMENTED]`)
-      // } else {
-      //   await setDoc(newDocRef, {
-      //     owner: this.$store.state.profileId,
-      //     experiment: this.experiment || 'TestExp', 
-      //     institution: this.institution || 'Inst', 
-      //     species: this.species || 'Human', 
-      //     tissue: this.tissue || 'Brain', 
-      //     year: this.year || '2022', 
-      //     doi : this.doi || 'https://doi.org/10.1016/S0092-8674(02)00722-5',
-      //     otherInformation: this.other,
-      //     permittedUsers: [],
-      //     gene_metadata_table_name: gene_metadata_table_name,
-      //     sample_metadata_table_name: sample_metadata_table_name,
-      //     gene_expression_data_table_name: gene_expression_data_table_name,
-      //   }).catch((err) => {
-      //     console.log('Fail after await setDoc')
-      //     console.log(err)
-      //   })
       if (docRef.exists()) {
         console.log('Firestore: Successfully uploaded dataset metadata.')
 
