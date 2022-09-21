@@ -50,10 +50,10 @@ const routes = [
         name: "Bar",
         component: BarPlot,
         meta: {
-          title: "Bar",
+          title: "Histogram",
           requiresAuth: false,
           onNavbar: false,
-        }
+        },
       },
       {
         path: "line",
@@ -63,7 +63,7 @@ const routes = [
           title: "Line",
           requiresAuth: false,
           onNavbar: false,
-        }
+        },
       }
     ]
   },
