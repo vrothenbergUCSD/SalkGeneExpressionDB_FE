@@ -222,18 +222,12 @@
         <div v-if="this.got_datasets && this.got_gene_data">
           <div class="card mt-1">
             <div class="mx-auto w-3/4">
-              <TabMenu :model="items" />
-            </div>
-            <div class="mx-auto px-3">
-              <router-view :genes="this.genes_selected" :datasets="this.datasets"/>
-            </div>
-            <!-- <div class="mx-auto w-3/4">
               <TabMenu :model="items" v-model:activeIndex="index"/>
             </div>
             <div v-if="index != null" class="mx-auto px-3 ">
               <component :is="items[index].current_component" 
                 :genes="this.genes_selected" :datasets="this.datasets"/>
-            </div> -->
+            </div>
           </div>
         </div>
         <div v-else class="flex h-[50vh]">
@@ -292,12 +286,12 @@ export default {
         {
           label: 'Histogram',
           icon: 'pi pi-fw pi-chart-bar',
-          to: '/main/bar',
+          current_component: 'BarPlot',
         },
         {
           label: 'Line',
           icon: 'pi pi-fw pi-chart-line',
-          to: '/main/line'
+          current_component: 'LinePlot',
         }
       ],
       loading: true,
