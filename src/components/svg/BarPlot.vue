@@ -416,8 +416,8 @@ export default {
           }).data
 
           const merged_data = expression_data.map(itm => ({
-              ...sample_data.find((item) => (item.sample_name == itm.sample_name) && item),
-              ...itm
+            ...sample_data.find((item) => (item.sample_name == itm.sample_name) && item),
+            ...itm
           }))
           e.data = merged_data
           e.data.forEach(itm => {
