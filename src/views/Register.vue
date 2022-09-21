@@ -182,6 +182,9 @@ export default {
         lastName: this.lastName,
         email: this.email, 
         institution: this.institution,
+        admin: [],
+        editor: [],
+        reader: [],
       }).catch((err) => {
         console.log('Fail after await setDoc')
         console.log(err)

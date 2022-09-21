@@ -194,15 +194,17 @@
           <AccordionTab header="Genes">
             <div id="genes-view" class="" v-show="this.got_datasets">
               <div class="font-semibold text-sm my-1">Select Genes:</div>
-              <div v-show="this.loading_genes" class="">
+              <!-- <div v-show="this.loading_genes" class="">
                 <ProgressBar mode="indeterminate" />
-              </div>
+              </div> -->
               <div id="gene-search" class="p-1" v-show="!this.loading_genes">
                 <AutoComplete :multiple="true" v-model="this.genes_selected" 
-                :suggestions="this.genes_filtered" @complete="search_genes($event)" field="name" />
+                :suggestions="this.genes_filtered" @complete="search_genes($event)" 
+                field="name" :disabled="this.loading_genes"/>
               </div>  
               <div id="get-genes" class="mt-1 text-center">
-                  <Button label="Update Chart" @click="get_gene_data" :loading="this.getting_gene_data || this.loading_genes"/>
+                  <Button label="Get Genes" @click="get_gene_data" 
+                    :loading="this.getting_gene_data || this.loading_genes"/>
                 </div>
             </div>
             <div v-show="!this.got_datasets">
@@ -386,7 +388,6 @@ export default {
       this.db_metadata.forEach(e => {
         const genderStr = e.gender.replaceAll(/[']+/g, '"')
         e.gender = JSON.parse(genderStr)
-
         const conditionStr = e.condition.replaceAll(/[']+/g, '"')
         e.condition = JSON.parse(conditionStr)
       })
@@ -420,8 +421,11 @@ export default {
       console.log('get_datasets')
       const start = Date.now()
       this.getting_datasets = true
+      const old_gene_metadata_table_names = this.gene_metadata_table_names
       this.gene_metadata_table_names = []
+      const old_sample_metadata_table_names = this.sample_metadata_table_names
       this.sample_metadata_table_names = []
+      const old_gene_expression_data_table_names = this.gene_expression_data_table_names
       this.gene_expression_data_table_names = []
 
       if (!this.selected_metadata.length) {
@@ -510,6 +514,10 @@ export default {
     async get_gene_data() {
       console.log('get_gene_data')
       const start = Date.now()
+
+      // Check if new datasets selected
+
+
       this.getting_gene_data = true
       if (!this.genes_selected.length) {
         this.$toast.add({severity: 'error', summary: 'Error', detail: 'No genes selected', life: 5000});
