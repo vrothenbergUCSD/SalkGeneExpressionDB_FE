@@ -225,8 +225,10 @@
               <TabMenu :model="items" v-model:activeIndex="index"/>
             </div>
             <div v-if="index != null" class="mx-auto px-3 ">
+              <KeepAlive>
               <component :is="items[index].current_component" 
                 :genes="this.genes_selected" :datasets="this.datasets"/>
+              </KeepAlive>
             </div>
           </div>
         </div>
@@ -294,6 +296,9 @@ export default {
           current_component: 'LinePlot',
         }
       ],
+      index: null,
+      current_component: null,
+
       loading: true,
       loading_genes: true,
       got_datasets: false,
@@ -350,8 +355,7 @@ export default {
       gene_expression_data_tables: [],
 
       datasets: null,
-      index: null,
-      current_component: null,
+      
     }
   },
   async mounted() {

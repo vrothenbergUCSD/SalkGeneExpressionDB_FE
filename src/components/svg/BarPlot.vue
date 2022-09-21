@@ -245,8 +245,16 @@ export default {
     console.log('BarPlot mounted, time elapsed: ', elapsed)
 
   },
+  beforeUnmount() {
+    console.log('beforeUnmount')
+    document.getElementById('plot-svg').remove()
+
+
+  },
   beforeDestroy() { 
+    console.log('beforeDestroy')
     window.removeEventListener('resize', this.onResize); 
+    
   },
   watch: {
     datasets() {
