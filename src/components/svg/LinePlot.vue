@@ -78,6 +78,10 @@ import eyeOffUrl from '@/assets/eye-off.svg'
 import infoUrl from '@/assets/info.svg'
 
 const animationInterval = 250
+const eye_x_offset = 13
+const eye_y_offset = 9
+const eye_w = 10
+const eye_h = 10
 // Custom function, reduces redundant code for transitions
 // Opacity transition, fade in / out
 d3.selection.prototype.transition_attributes = function(
@@ -97,8 +101,8 @@ d3.selection.prototype.append_eyes = function() {
     .attr('type', "image/svg+xml")
     .attr('x', 0)
     .attr('y', 0)
-    .attr('width', 10)
-    .attr('height', 10)
+    .attr('width', eye_w)
+    .attr('height', eye_h)
     .attr('opacity', 1)
   this.append('svg:image')
     .attr('class', 'eye-off')
@@ -106,11 +110,28 @@ d3.selection.prototype.append_eyes = function() {
     .attr('type', "image/svg+xml")
     .attr('x', 0)
     .attr('y', 0)
-    .attr('width', 10)
-    .attr('height', 10)
+    .attr('width', eye_w)
+    .attr('height', eye_h)
     .attr('opacity', 0)
   return this
 }
+
+// // Add info tooltip SVG icons
+// d3.selection.prototype.append_info = function() {
+//   this.append('svg:image')
+//   .attr('class', 'info')
+//   .attr("xlink:href", infoUrl)
+//   .attr('type', "image/svg+xml")
+//   .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
+//   .attr('y', -eye_y_offset)
+//   .attr('width', 10)
+//   .attr('height', 10)
+//   .attr('opacity', 1)
+//   .on('mouseover', this.infoHover)
+//   .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+//   return this
+// }
+
 
 export default {
   name: "LinePlot",
@@ -768,12 +789,16 @@ export default {
 
       console.log('===================')
     },
-
     legend() {
       console.log('legend')
       const num_tissues = this.expression_normalized.length
       const num_genes = this.expression_normalized[0][1].length
       const num_groups = this.expression_normalized[0][1][0][1].length
+
+      const eye_x_offset = 13
+      const eye_y_offset = 9
+      const eye_w = 10
+      const eye_h = 10
 
       this.svg.select('#legend')
       .selectAll(".legend_tissue")
@@ -786,13 +811,13 @@ export default {
           const tissue_root = enter.append('g')
           tissue_root.attr('class', 'legend_tissue')
             .style('fill', d3.rgb("#222"))
-            .attr('transform', (d,i) => `translate(${13}, ${
+            .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
               this.legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
               })`)
 
           tissue_root.append('g')
             .attr('class', 'eyes')
-            .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+            .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
             .on('click', this.tissueClick)
             .append_eyes()
           const text_info = tissue_root.append('g')
@@ -814,9 +839,9 @@ export default {
               const width = groups[i].getBBox().width
               // console.log('width', width)
               return text_info.select('text')._groups[0][i].getBBox().width+5})
-            .attr('y', -9)
-            .attr('width', 10)
-            .attr('height', 10)
+            .attr('y', -eye_y_offset)
+            .attr('width', eye_w)
+            .attr('height', eye_h)
             .attr('opacity', 1)
             .on('mouseover', this.infoHover)
             .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
@@ -830,14 +855,14 @@ export default {
                 const gene_root = enter.append('g')
                   .attr('class', 'legend_gene')
                   .style('fill', d => this.getHSL(d[1][0][1][0].identifier, true))
-                  .attr('transform', (d,i) => `translate(${13}, ${
+                  .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                     this.legendY_spacing *(1 + i * (1 + num_groups))
                     })`)
                   .transition_attributes('opacity', 1)
                 
                 gene_root.append('g')
                   .attr('class', 'eyes')
-                  .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                  .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                   .on('click', this.geneClick)
                   .append_eyes()
                 const text_info = gene_root.append('g')
@@ -852,9 +877,9 @@ export default {
                   .attr("xlink:href", infoUrl)
                   .attr('type', "image/svg+xml")
                   .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-                  .attr('y', -9)
-                  .attr('width', 10)
-                  .attr('height', 10)
+                  .attr('y', -eye_y_offset)
+                  .attr('width', eye_w)
+                  .attr('height', eye_h)
                   .attr('opacity', 1)
                   .on('mouseover', this.infoHover)
                   .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
@@ -869,13 +894,13 @@ export default {
                         .transition_attributes('opacity', 1)
                         .attr('class', 'legend_groupname')
                         .style('fill', d => this.getHSL(d[1][0].identifier))
-                        .attr('transform', (d,i) => `translate(${13}, ${
+                        .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                           this.legendY_spacing * (i+1)
                           })`)
                         
                       groupname_root.append('g')
                         .attr('class', 'eyes')
-                        .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                        .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                         .on('click', this.groupnameClick)
                         .append_eyes()
 
@@ -892,9 +917,9 @@ export default {
                         .attr("xlink:href", infoUrl)
                         .attr('type', "image/svg+xml")
                         .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-                        .attr('y', -9)
-                        .attr('width', 10)
-                        .attr('height', 10)
+                        .attr('y', -eye_y_offset)
+                        .attr('width', eye_w)
+                        .attr('height', eye_h)
                         .attr('opacity', 1)
                         .on('mouseover', this.infoHover)
                         .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
@@ -911,11 +936,19 @@ export default {
           // console.log('tissue update')
           // console.log(update)
           const tissue_root = update.transition_attributes('opacity', 1)
-            .attr('transform', (d,i) => `translate(${13}, ${
+            .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
               this.legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
               })`)
           tissue_root.select('.legend_tissue_text')
-              .text(d => d[0].replaceAll('-', ' '))
+            .text(d => d[0].replaceAll('-', ' '))
+          const text_info = tissue_root.select('.text_info')
+          text_info.select('.info')
+            .attr('x', (d,i) => {
+              const text_select = text_info.select('text')
+              const groups = text_select._groups[0]
+              const width = groups[i].getBBox().width
+              // console.log('width', width)
+              return text_info.select('text')._groups[0][i].getBBox().width+5})
 
           update.selectAll('.legend_gene')
             .data(d => d[1])
@@ -926,13 +959,13 @@ export default {
                 const gene_root = enter.append('g')
                   .attr('class', 'legend_gene')
                   .style('fill', d => this.getHSL(d[1][0][1][0].identifier, true))
-                  .attr('transform', (d,i) => `translate(${5}, ${
+                  .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                     this.legendY_spacing *(1 + i * (1 + num_groups))
                     })`)
                   .transition_attributes('opacity', 1)
                 gene_root.append('g')
                   .attr('class', 'eyes')
-                  .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                  .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                   .on('click', this.geneClick)
                   .append_eyes()
                 const text_info = gene_root.append('g')
@@ -947,9 +980,9 @@ export default {
                   .attr("xlink:href", infoUrl)
                   .attr('type', "image/svg+xml")
                   .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-                  .attr('y', -9)
-                  .attr('width', 10)
-                  .attr('height', 10)
+                  .attr('y', -eye_y_offset)
+                  .attr('width', eye_w)
+                  .attr('height', eye_h)
                   .attr('opacity', 1)
                   .on('mouseover', this.infoHover)
                   .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
@@ -963,13 +996,13 @@ export default {
                         .transition_attributes('opacity', 1)
                         .attr('class', 'legend_groupname')
                         .style('fill', d => this.getHSL(d[1][0].identifier))
-                        .attr('transform', (d,i) => `translate(${5}, ${
+                        .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                           this.legendY_spacing * (i+1)
                           })`)
 
                       groupname_root.append('g')
                         .attr('class', 'eyes')
-                        .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                        .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                         .on('click', this.groupnameClick)
                         .append_eyes()
                       const text_info = groupname_root.append('g')
@@ -985,9 +1018,9 @@ export default {
                         .attr("xlink:href", infoUrl)
                         .attr('type', "image/svg+xml")
                         .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-                        .attr('y', -9)
-                        .attr('width', 10)
-                        .attr('height', 10)
+                        .attr('y', -eye_y_offset)
+                        .attr('width', eye_w)
+                        .attr('height', eye_h)
                         .attr('opacity', 1)
                         .on('mouseover', this.infoHover)
                         .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
@@ -996,11 +1029,21 @@ export default {
                     (update) => {
                       // console.log('groupname update')
                       // console.log(update)
-                      update.attr('transform', (d,i) => `translate(${5}, ${
+                      const groupname_root = update.attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                         this.legendY_spacing * (i+1)
                         })`)
                         .style('fill', d => this.getHSL(d[1][0].identifier))
                         .transition_attributes('opacity', 1)
+                      groupname_root.select('.legend_groupname_text')
+                        .text(d => d[0])
+                      const text_info = groupname_root.select('.text_info')
+                      text_info.select('.info')
+                        .attr('x', (d,i) => {
+                          const text_select = text_info.select('text')
+                          const groups = text_select._groups[0]
+                          const width = groups[i].getBBox().width
+                          // console.log('width', width)
+                          return text_info.select('text')._groups[0][i].getBBox().width+5})
                     },
                     (exit) => exit.transition_attributes('opacity', 0).remove()
                   )
@@ -1009,14 +1052,23 @@ export default {
               (update) => {
                 // console.log('tissue update > gene update')
                 // console.log(update)
-                update.attr('transform', (d,i) => `translate(${13}, ${
-                  this.legendY_spacing *(1 + i * (1 + num_groups))
+                const gene_root = update.attr('transform', (d,i) => `translate(${eye_x_offset}, ${
+                  this.legendY_spacing * (1 + i * (1 + num_groups))
                   })`)
                   .style('fill', d => 
                     this.getHSL(d[1][0][1][0].identifier, true))
                   .transition_attributes('opacity', 1)
-                  .select('.legend_gene_text')
-                    .text(d => d[0])
+                gene_root.select('.legend_gene_text')
+                  .text(d => d[0])
+                const text_info = gene_root.select('.text_info')
+                text_info.select('.info')
+                  .attr('x', (d,i) => {
+                    const text_select = text_info.select('text')
+                    const groups = text_select._groups[0]
+                    const width = groups[i].getBBox().width
+                    // console.log('width', width)
+                    return text_info.select('text')._groups[0][i].getBBox().width+5})
+                
                 update.selectAll('.legend_groupname')
                   .data(d => d[1])
                   .join(
@@ -1027,12 +1079,12 @@ export default {
                         .transition_attributes('opacity', 1)
                         .attr('class', 'legend_groupname')
                         .style('fill', d => this.getHSL(d[1][0].identifier))
-                        .attr('transform', (d,i) => `translate(${5}, ${
+                        .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                           this.legendY_spacing * (i+1)
                           })`)
                       groupname_root.append('g')
                         .attr('class', 'eyes')
-                        .attr('transform', (d,i) => `translate(${-13}, ${-9})`)
+                        .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                         .on('click', this.groupnameClick)
                         .append_eyes()
                       const text_info = groupname_root.append('g')
@@ -1049,9 +1101,9 @@ export default {
                         .attr("xlink:href", infoUrl)
                         .attr('type', "image/svg+xml")
                         .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-                        .attr('y', -9)
-                        .attr('width', 10)
-                        .attr('height', 10)
+                        .attr('y', -eye_y_offset)
+                        .attr('width', eye_w)
+                        .attr('height', eye_h)
                         .attr('opacity', 1)
                         .on('mouseover', this.infoHover)
                         .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
@@ -1060,14 +1112,22 @@ export default {
                     (update) => {
                       // console.log('tissue update > gene update > groupname update')
                       // console.log(update)
-                      // TODO: Possible bug when updating and associated event is not updated?
-                      update.attr('transform', (d,i) => `translate(${13}, ${
+                      const groupname_root = update.attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                         this.legendY_spacing * (i+1)
                         })`)
                         .style('fill', d => this.getHSL(d[1][0].identifier))
                         .transition_attributes('opacity', 1)
-                        .select('.legend_groupname_text')
-                          .text(d => d[0])   
+                      groupname_root.select('.legend_groupname_text')
+                        .text(d => d[0])   
+                      const text_info = groupname_root.select('.text_info')
+                      text_info.select('.info')
+                        .attr('x', (d,i) => {
+                          const text_select = text_info.select('text')
+                          const groups = text_select._groups[0]
+                          const width = groups[i].getBBox().width
+                          // console.log('width', width)
+                          return text_info.select('text')._groups[0][i].getBBox().width+5})
+                        
                     },
                     (exit) => exit.transition_attributes('opacity', 0).remove()
                   )
@@ -1310,23 +1370,27 @@ export default {
     },
     infoGeneText(data) {
       // console.log('infoGeneText')
-      let gene = data[0]
-      // console.log('gene', gene)
+      // console.log(data)
+      let gene_name = data[0]
+      // console.log('gene_name', gene_name)
       const sample = data[1][0][1][0]
       // console.log(sample)
       const table = sample.table
-      // const tissue = sample.tissue
+      const tissue = sample.tissue
+      // console.log('table', table)
 
       const gene_metadata_table = table.replace('gene_expression_data', 'gene_metadata')
       // console.log(gene_metadata_table)
       const gene_metadata_entries = this.gene_metadata.filter(e => e.table_name == gene_metadata_table)
+      // console.log('gene_metadata_entries')
       // console.log(gene_metadata_entries)
-      // let gene
+      let gene
       if (gene_metadata_entries.length > 1 ) {
         console.error('WARNING: Multiple entries in this.gene_metadata')
-        gene = gene_metadata_entries.filter(e => e.gene_name == gene_name)[0]
+        // gene = gene_metadata_entries.filter(e => e.gene_name == gene_name)[0]
       }
-      gene = gene_metadata_entries[0].data[0]
+      gene = gene_metadata_entries[0].data.filter(e => e.gene_name == gene_name)[0]
+      // console.log('gene_metadata..')
       // console.log(gene)
       let text = `Gene: ${gene.gene_name}\n`
       text += `Gene ID: ${gene.gene_id}\n`
@@ -1369,9 +1433,10 @@ export default {
       return text
     },
     infoHover(evt, d) {
-      // console.log('infoHover')
-      // console.log(evt)
-      // console.log(d)
+      console.log('infoHover')
+      console.log(evt)
+      console.log('d')
+      console.log(d)
       const self = evt.currentTarget
       const self_dims = self.getBoundingClientRect()
       
@@ -1396,7 +1461,7 @@ export default {
       g.attr("transform", `translate(${pos_x},${pos_y})`);
 
       const currType = root.querySelector('text').getAttribute('class').split('_')[1]
-      // console.log('currType', currType)
+      console.log('currType', currType)
       let info_text
       if (currType == 'tissue') {
         info_text = this.infoTissueText(d)
@@ -1406,6 +1471,8 @@ export default {
         info_text = this.infoGroupnameText(d)
       }
       if (!info_text) return g.style('display', 'none')
+
+      console.log('info_text', info_text)
       
       // tooltip group
       g.style("display", "flex")
