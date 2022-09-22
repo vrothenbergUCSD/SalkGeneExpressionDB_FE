@@ -410,18 +410,16 @@ export default {
           const table = e.table_name
           const table_split = table.split('_')
           e.owner = table_split.at(-1)
-          const metadata = this.selected_metadata.find(obj => {
-            return obj.gene_expression_data_table_name == table
-          })
+          const metadata = this.selected_metadata.find(obj => 
+            obj.gene_expression_data_table_name == table)
 
           e.experiment = metadata.experiment
           e.year = metadata.year
           e.institution = metadata.institution
           let sample_table = table.replace('gene_expression_data', 'sample_metadata')
           let expression_data = e.data
-          let sample_data = this.sample_metadata_tables.find(obj => {
-            return obj.table == sample_table
-          }).data
+          let sample_data = this.sample_metadata_tables.find(obj => 
+            obj.table_name == sample_table).data
 
           const merged_data = expression_data.map(itm => ({
             ...sample_data.find((item) => (item.sample_name == itm.sample_name) && item),

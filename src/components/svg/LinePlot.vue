@@ -340,9 +340,8 @@ export default {
           // "TRF_2018_Mouse_Adrenal_gene_expression_data_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"
           let sample_table = table.replace('gene_expression_data', 'sample_metadata')
           let expression_data = e.data
-          let sample_data = this.sample_metadata_tables.find(obj => {
-            return obj.table == sample_table
-          }).data
+          let sample_data = this.sample_metadata_tables.find(obj => 
+            obj.table_name == sample_table).data
 
           var collator = new Intl.Collator([], {numeric: true});
 
