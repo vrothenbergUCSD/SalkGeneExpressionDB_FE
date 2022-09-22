@@ -350,9 +350,13 @@ export default {
       gene_expression_data_table_names: [],
 
       gene_metadata_tables: [],
+      gene_metadata_tables_all: [],
       selected_gene_metadata: [],
+      selected_gene_metadata_all: [],
       sample_metadata_tables: [],
+      sample_metadata_tables_all: [],
       gene_expression_data_tables: [],
+      gene_expression_data_tables_all: [],
 
       datasets: null,
       
@@ -426,11 +430,8 @@ export default {
       console.log('get_datasets')
       const start = Date.now()
       this.getting_datasets = true
-      const old_gene_metadata_table_names = this.gene_metadata_table_names
       this.gene_metadata_table_names = []
-      const old_sample_metadata_table_names = this.sample_metadata_table_names
       this.sample_metadata_table_names = []
-      const old_gene_expression_data_table_names = this.gene_expression_data_table_names
       this.gene_expression_data_table_names = []
 
       if (!this.selected_metadata.length) {
@@ -451,6 +452,8 @@ export default {
         this.get_gene_metadata_tables(this.gene_metadata_table_names), 
         this.get_sample_metadata_tables(this.sample_metadata_table_names),
       ])
+      console.log('this.gene_metadata_tables')
+      console.log(this.gene_metadata_tables)
 
       this.got_datasets = true
       this.getting_datasets = false
@@ -464,13 +467,21 @@ export default {
       console.log('get_datasets time elapsed: ', elapsed)
     },
     async get_gene_metadata_tables(tables) {
+      // Array of table names e.g. ["TRF_2018_Mouse_Arcuate_gene_metadata_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"]
+      console.log('get_gene_metadata_tables')
       this.loading_genes = true
       this.gene_metadata_tables = await Promise.all(tables.map(async (t) => {
-        const result = await DataService.getGenes(t)
-        return {
-          table: t, 
-          data: result.data.map(d => d.gene_name)
+        // Check table in gene_metadata_tables_all
+        let table_obj = this.gene_metadata_tables_all.find(e => e.table_name == t)
+        if (!table_obj) {
+          const result = await DataService.getGenes(t)
+          table_obj = {
+            table_name: t, 
+            data: result.data.map(d => d.gene_name)
+          }
+          this.gene_metadata_tables_all.push(table_obj)
         }
+        return table_obj
       }))
       this.genes = this.build_list([...new Set(...this.gene_metadata_tables.map(
         e => e.data))])
@@ -479,15 +490,22 @@ export default {
     },
     async get_sample_metadata_tables(tables) {
       this.sample_metadata_tables = await Promise.all(tables.map(async (t) => {
-        const result = await DataService.getSampleMetadata(t)
-        return {
-          table: t,
-          data: result.data 
+        // Check table in sample_metadata_tables_all
+        let table_obj = this.sample_metadata_tables_all.find(e => e.table_name == t)
+        if (!table_obj) {
+          const result = await DataService.getSampleMetadata(t)
+          table_obj = {
+            table_name: t,
+            data: result.data 
+          }
+          this.sample_metadata_tables_all.push(table_obj)
         }
+        return table_obj
       }))
     },
     async get_gene_expression_data_tables(genes, tables) {
       console.log('get_gene_expression_data_tables')
+      console.log(this.gene_expression_data_tables_all)
       let genesStr = genes.map(d => d.name).toString()
       console.log('genesStr', genesStr)
       let gendersStr = this.gender_selected.map(d => d.name).toString()
@@ -495,25 +513,36 @@ export default {
       let conditionsStr = this.condition_selected.map(d => d.name).toString()
       console.log('conditionsStr', conditionsStr)
       this.gene_expression_data_tables = await Promise.all(tables.map(async (t) => {
-        const result = await DataService
-          .getExpressionDataByGenesGendersConditions(genesStr, gendersStr, conditionsStr, t)
-        // const result = await DataService.getExpressionDataByGenes(genesStr, t)
-        // console.log('result.data')
-        // console.log(result.data)
-        return {
-          table_name: t,
-          data: result.data
+        // Check table in gene_expression_data_tables_all
+        let table_obj = this.gene_expression_data_tables_all.find(e => e.table_name == t)
+        if (!table_obj) {
+          console.log('Not found', t)
+          const result = await DataService
+            .getExpressionDataByGenesGendersConditions(genesStr, gendersStr, conditionsStr, t)
+          table_obj = {
+            table_name: t,
+            data: result.data
+          }
+          this.gene_expression_data_tables_all.push(table_obj)
         }
+        return table_obj
       }))
     },
     async get_selected_gene_metadata(genes, tables) {
+      console.log('get_selected_gene_metadata')
       let genesStr = genes.map((d) => d.name).toString()
       this.selected_gene_metadata = await Promise.all(tables.map(async (t) => {
-        const result = await DataService.getGeneMetadata(genesStr, t)     
-        return {
-          table_name: t,
-          data: result.data
+        let table_obj = this.selected_gene_metadata_all.find(e => e.table_name == t)
+        if (!table_obj) {
+          console.log('Not found: ', t)
+          const result = await DataService.getGeneMetadata(genesStr, t)     
+          table_obj = {
+            table_name: t,
+            data: result.data
+          }
+          this.selected_gene_metadata_all.push(table_obj)
         }
+        return table_obj
       }))
     },
     async get_gene_data() {
@@ -701,26 +730,32 @@ export default {
       this.species_selected = this.species_selected.filter((obj) => 
          obj.name != text)
       this.update_lookup_table()
+      this.get_datasets()
+
     },
     remove_experiment_filter(text) {
       this.experiment_selected = this.experiment_selected.filter((obj) => 
          obj.name != text)
       this.update_lookup_table()
+      this.get_datasets()
     },
     remove_tissue_filter(text) {
       this.tissue_selected = this.tissue_selected.filter((obj) => 
          obj.name != text)
       this.update_lookup_table()
+      this.get_datasets()
     },
     remove_gender_filter(text) {
       this.gender_selected = this.gender_selected.filter((obj) => 
          obj.name != text)
       this.update_lookup_table()
+      this.get_datasets()
     },
     remove_condition_filter(text) {
       this.condition_selected = this.condition_selected.filter((obj) => 
          obj.name != text)
       this.update_lookup_table()
+      this.get_datasets()
     },
     clear_all_filters() {
       this.species_selected = []
@@ -729,6 +764,7 @@ export default {
       this.gender_selected = []
       this.condition_selected = []
       this.update_lookup_table()
+      this.get_datasets()
     },
     async search_genes(event) {
       setTimeout(() => {
