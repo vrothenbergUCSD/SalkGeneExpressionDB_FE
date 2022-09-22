@@ -730,26 +730,32 @@ export default {
       this.species_selected = this.species_selected.filter((obj) => 
          obj.name != text)
       this.update_lookup_table()
+      this.get_datasets()
+
     },
     remove_experiment_filter(text) {
       this.experiment_selected = this.experiment_selected.filter((obj) => 
          obj.name != text)
       this.update_lookup_table()
+      this.get_datasets()
     },
     remove_tissue_filter(text) {
       this.tissue_selected = this.tissue_selected.filter((obj) => 
          obj.name != text)
       this.update_lookup_table()
+      this.get_datasets()
     },
     remove_gender_filter(text) {
       this.gender_selected = this.gender_selected.filter((obj) => 
          obj.name != text)
       this.update_lookup_table()
+      this.get_datasets()
     },
     remove_condition_filter(text) {
       this.condition_selected = this.condition_selected.filter((obj) => 
          obj.name != text)
       this.update_lookup_table()
+      this.get_datasets()
     },
     clear_all_filters() {
       this.species_selected = []
@@ -758,6 +764,7 @@ export default {
       this.gender_selected = []
       this.condition_selected = []
       this.update_lookup_table()
+      this.get_datasets()
     },
     async search_genes(event) {
       setTimeout(() => {
