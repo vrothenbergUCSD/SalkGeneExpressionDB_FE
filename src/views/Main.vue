@@ -452,8 +452,8 @@ export default {
         this.get_gene_metadata_tables(this.gene_metadata_table_names), 
         this.get_sample_metadata_tables(this.sample_metadata_table_names),
       ])
-      console.log('this.gene_metadata_tables')
-      console.log(this.gene_metadata_tables)
+      // console.log('this.gene_metadata_tables')
+      // console.log(this.gene_metadata_tables)
 
       this.got_datasets = true
       this.getting_datasets = false
@@ -468,7 +468,8 @@ export default {
     },
     async get_gene_metadata_tables(tables) {
       // Array of table names e.g. ["TRF_2018_Mouse_Arcuate_gene_metadata_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"]
-      console.log('get_gene_metadata_tables')
+      // console.log('get_gene_metadata_tables')
+      const start = Date.now()
       this.loading_genes = true
       this.gene_metadata_tables = await Promise.all(tables.map(async (t) => {
         // Check table in gene_metadata_tables_all
@@ -487,8 +488,11 @@ export default {
         e => e.data))])
       this.genes_filtered = this.genes
       this.loading_genes = false
+      const elapsed = Date.now() - start 
+      console.log('get_gene_metadata_tables elapsed: ', elapsed)
     },
     async get_sample_metadata_tables(tables) {
+      const start = Date.now()
       this.sample_metadata_tables = await Promise.all(tables.map(async (t) => {
         // Check table in sample_metadata_tables_all
         let table_obj = this.sample_metadata_tables_all.find(e => e.table_name == t)
@@ -502,6 +506,8 @@ export default {
         }
         return table_obj
       }))
+      const elapsed = Date.now() - start 
+      console.log('get_sample_metadata_tables elapsed: ', elapsed)
     },
     async get_gene_expression_data_tables(genes, tables) {
       console.log('get_gene_expression_data_tables')
@@ -515,9 +521,10 @@ export default {
       // console.log('conditions_str', conditions_str)
       this.gene_expression_data_tables = await Promise.all(tables.map(async (t) => {
         // Check table in gene_expression_data_tables_all
-        let table_obj = this.gene_expression_data_tables_all.find(e => e.table_name == t)        
+        // Deep copy table_obj
+        let table_obj = this.gene_expression_data_tables_all.find(e => e.table_name == t)       
         if (!table_obj) {
-          // console.log('Not found', t)
+          console.log('Not found', t)
           const result = await DataService
             .getExpressionDataByGenesGendersConditions(genes_str, genders_str, conditions_str, t)
           table_obj = {
@@ -527,57 +534,62 @@ export default {
           this.gene_expression_data_tables_all.push(table_obj)
         } else {
           // Table object exists, check if all genes in table
-          // console.log('Found', t)
+          console.log('Found', t)
+          table_obj = JSON.parse(JSON.stringify(table_obj))
           const table_obj_genes = [...new Set(table_obj.data.map(item => item.gene_id))]
-          // console.log('table_obj_genes')
-          // console.log(table_obj_genes)
+          console.log('table_obj_genes')
+          console.log(table_obj_genes)
           const genes_arr = genes.map(d => d.name)
-          // console.log('genes_arr')
-          // console.log(genes_arr)
+          console.log('genes_arr')
+          console.log(genes_arr)
           const genes_to_add = _.difference(genes_arr, table_obj_genes)
-          // console.log('genes_to_add')
-          // console.log(genes_to_add)
+          console.log('genes_to_add')
+          console.log(genes_to_add)
           const table_obj_index = this.gene_expression_data_tables_all
             .findIndex(e => e.table_name == t) 
           if (genes_to_add.length > 0) {
             // Cache new genes to table in memory 
+            console.log('Caching')
             
             const data = this.gene_expression_data_tables_all[table_obj_index].data
-            // console.log('data')
-            // console.log(data)
+            console.log('data')
+            console.log(data)
 
             // Only query new genes to save on egress cost
             const genes_to_add_str = genes_to_add.toString()
+            console.log('Querying DataService.getExpressionData...')
             const result = await DataService
               .getExpressionDataByGenesGendersConditions(
                 genes_to_add_str, genders_str, conditions_str, t)
             
             const data_all = data.concat(result.data)
-            // console.log('data_all')
-            // console.log(data_all)
+            console.log('data_all')
+            console.log(data_all)
             this.gene_expression_data_tables_all[table_obj_index].data = data_all
           }
           // Update current table_obj to only contain selected genes
-          table_obj.data = this.gene_expression_data_tables_all[table_obj_index]
-            .data.filter(item => genes_arr.indexOf(item.gene_id) !== -1 )
+          // Deep copy with [...]
+          table_obj.data = [...this.gene_expression_data_tables_all[table_obj_index]
+            .data].filter(item => genes_arr.indexOf(item.gene_id) !== -1 )
         }
         return table_obj
       }))
-      // console.log('this.gene_expression_data_tables')
-      // console.log(this.gene_expression_data_tables)
-      // console.log('this.gene_expression_data_tables_all')
-      // console.log(this.gene_expression_data_tables_all)
+      console.log('this.gene_expression_data_tables')
+      console.log(this.gene_expression_data_tables)
+      console.log('this.gene_expression_data_tables_all')
+      console.log(this.gene_expression_data_tables_all)
       const elapsed = Date.now() - start 
       console.log('get_gene_expression_data_tables elapsed:', elapsed)
     },
     async get_selected_gene_metadata(genes, tables) {
-      console.log('get_selected_gene_metadata')
+      // console.log('get_selected_gene_metadata')
       const start = Date.now()
       const genes_str = genes.map((d) => d.name).toString()
       this.selected_gene_metadata = await Promise.all(tables.map(async (t) => {
+        // Deep copy table_obj
         let table_obj = this.selected_gene_metadata_all.find(e => e.table_name == t)
         if (!table_obj) {
-          console.log('Not found: ', t)
+          // console.log('Not found: ', t)
           const result = await DataService.getGeneMetadata(genes_str, t)     
           table_obj = {
             table_name: t,
@@ -586,42 +598,45 @@ export default {
           this.selected_gene_metadata_all.push(table_obj)
         } else {
           // Table object exists, check if all genes in table
-          console.log('Found: ', t)
-          console.log(table_obj)
+          // console.log('Found: ', t)
+          // console.log(table_obj)
+          table_obj = JSON.parse(JSON.stringify(table_obj))
           const table_obj_genes = [...new Set(table_obj.data.map(item => item.gene_id))]
           const genes_arr = genes.map(d => d.name)
-          console.log('genes_arr')
-          console.log(genes_arr)
+          // console.log('genes_arr')
+          // console.log(genes_arr)
           const genes_to_add = _.difference(genes_arr, table_obj_genes)
-          console.log('genes_to_add')
-          console.log(genes_to_add)
+          // console.log('genes_to_add')
+          // console.log(genes_to_add)
 
           const table_obj_index = this.selected_gene_metadata_all
             .findIndex(e => e.table_name == t) 
           if (genes_to_add.length > 0) {
+            // Check if 
             // Cache new genes to table in memory 
             const data = this.selected_gene_metadata_all[table_obj_index].data
-            console.log('data')
-            console.log(data)
+            // console.log('data')
+            // console.log(data)
 
             // Only query new genes to save on egress cost
             const genes_to_add_str = genes_to_add.toString()
             const result = await DataService.getGeneMetadata(genes_to_add_str, t)
             
             const data_all = data.concat(result.data)
-            console.log('data_all')
-            console.log(data_all)
+            // console.log('data_all')
+            // console.log(data_all)
             this.selected_gene_metadata_all[table_obj_index].data = data_all
           }
           // Update current table_obj to only contain selected genes
-          table_obj.data = this.selected_gene_metadata_all[table_obj_index]
-            .data.filter(item => genes_arr.indexOf(item.gene_id) !== -1)
+          // Deep copy [...]
+          table_obj.data = [...this.selected_gene_metadata_all[table_obj_index]
+            .data].filter(item => genes_arr.indexOf(item.gene_id) !== -1)
           
         }
         return table_obj
       }))
       const elapsed = Date.now() - start
-      console.log('get_selected_gene_metadata elapsed:', elapsed)
+      // console.log('get_selected_gene_metadata elapsed:', elapsed)
     },
     async get_genes_clicked() {
       // Get Genes button clicked

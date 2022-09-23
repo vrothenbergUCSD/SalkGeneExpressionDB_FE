@@ -471,8 +471,8 @@ export default {
           this.expression_merged = this.expression_merged.concat(e.data)
         })
 
-        console.log('DEBUG this.expression_merged')
-        console.log(this.expression_merged)
+        // console.log('DEBUG this.expression_merged')
+        // console.log(this.expression_merged)
 
         this.expression_merged.forEach((e) => {
           e.time_point = parseInt(e.time_point.split('ZT')[1])
