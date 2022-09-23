@@ -471,6 +471,9 @@ export default {
           this.expression_merged = this.expression_merged.concat(e.data)
         })
 
+        console.log('DEBUG this.expression_merged')
+        console.log(this.expression_merged)
+
         this.expression_merged.forEach((e) => {
           e.time_point = parseInt(e.time_point.split('ZT')[1])
           e.replicate = e.sample_name.split('-').at(-1)
@@ -664,7 +667,8 @@ export default {
         this.svg.select('.x-label').text('')
         subgroups = this.time_points
         // data = d3.group(gene_groups_map, d => `${d.gene_group}`)
-        const gene_groups = _.groupBy(this.expression_normalized_averaged, e => `${e.identifier}`)
+        const gene_groups = _.groupBy(this.expression_normalized_averaged, 
+          e => `${e.identifier}`)
         this.group_visibility = this.gene_visibility
         this.subgroup_visibility = this.time_visibility
 
@@ -681,6 +685,8 @@ export default {
         })
       } else if (this.grouped_by == 'Time') {
         this.svg.select('.x-label').text('Time Point (ZT)')
+        console.log('this.time_points')
+        console.log(this.time_points)
         groups = this.time_points
         this.group_visibility = this.time_visibility
         this.subgroup_visibility = this.gene_visibility
@@ -731,7 +737,7 @@ export default {
               // console.log('enter')
               // console.log(enter)
               enter.append('tspan')
-              .attr('id', 'woohoo')
+              .attr('id', 'tick-WIP')
               .attr('x', 0)
               .attr('dx', '-1em')
               .attr('dy', function (d, i) { return (2 * i - 1) + 'em'; })
@@ -1378,7 +1384,7 @@ export default {
 
       if (gene_metadata_entries.length > 1 ) {
         console.error('WARNING: Multiple entries in this.gene_metadata')
-        gene = gene_metadata_entries.filter(e => e.gene_name == gene_name)[0]
+        gene = gene_metadata_entries.filter(e => e.gene_id == gene_id)[0]
       }
       gene = gene_metadata_entries[0].data[0]
       let text = `Gene: ${gene.gene_name}\n`
