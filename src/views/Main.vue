@@ -68,7 +68,7 @@
               <div class="font-semibold mb-1 text-sm">
                 Datasets
               </div>
-              <div class="p-1 border my-2 rounded">
+              <div class="p-1 border my-3 rounded">
                 <DataTable :value="this.species_filtered" v-model:selection="this.species_selected" 
                   class="p-datatable-sm p-datatable-species" stripedRows :scrollable="true" scrollHeight="200px" 
                   :loading="loading" selectionMode="multiple" :metaKeySelection="false"
@@ -90,7 +90,7 @@
                 </Column>
                 </DataTable>
               </div>
-              <div class="p-1 border my-2 rounded" >
+              <div class="p-1 border my-3 rounded" >
                 <DataTable :value="experiment_filtered" v-model:selection="experiment_selected" 
                   class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
                   :loading="loading" selectionMode="multiple" :metaKeySelection="false"
@@ -113,7 +113,7 @@
                 </DataTable>
             
               </div>
-              <div class="p-1 border my-2 rounded">
+              <div class="p-1 border my-3 rounded">
                 <DataTable :value="tissue_filtered" v-model:selection="tissue_selected" 
                   class="p-datatable-sm" stripedRows selectionMode="multiple" :metaKeySelection="false"
                   :scrollable="true" scrollHeight="200px" :loading="loading" 
@@ -139,7 +139,7 @@
               <div class="font-semibold my-1 text-sm">
                 Samples
               </div>
-              <div class="p-1 border my-2 rounded">
+              <div class="p-1 border my-3 rounded">
                 <DataTable :value="gender_filtered" v-model:selection="this.gender_selected" 
                   class="p-datatable-sm" stripedRows selectionMode="multiple" :metaKeySelection="false" 
                   :scrollable="true" scrollHeight="200px" :loading="loading" @row-select="update_lookup_table" 
@@ -160,7 +160,7 @@
                 </Column>
                 </DataTable>
               </div>
-              <div class="p-1 border my-2 rounded">
+              <div class="p-1 border my-3 rounded">
                 <DataTable :value="condition_filtered" v-model:selection="this.condition_selected" 
                   class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" 
                   :loading="loading" selectionMode="multiple" :metaKeySelection="false"
@@ -510,7 +510,7 @@ export default {
       console.log('get_sample_metadata_tables elapsed: ', elapsed)
     },
     async get_gene_expression_data_tables(genes, tables) {
-      console.log('get_gene_expression_data_tables')
+      // console.log('get_gene_expression_data_tables')
       const start = Date.now()
       // console.log(this.gene_expression_data_tables_all)
       const genes_str = genes.map(d => d.name).toString()
@@ -524,7 +524,7 @@ export default {
         // Deep copy table_obj
         let table_obj = this.gene_expression_data_tables_all.find(e => e.table_name == t)       
         if (!table_obj) {
-          console.log('Not found', t)
+          // console.log('Not found', t)
           const result = await DataService
             .getExpressionDataByGenesGendersConditions(genes_str, genders_str, conditions_str, t)
           table_obj = {
@@ -534,37 +534,37 @@ export default {
           this.gene_expression_data_tables_all.push(table_obj)
         } else {
           // Table object exists, check if all genes in table
-          console.log('Found', t)
+          // console.log('Found', t)
           table_obj = JSON.parse(JSON.stringify(table_obj))
           const table_obj_genes = [...new Set(table_obj.data.map(item => item.gene_id))]
-          console.log('table_obj_genes')
-          console.log(table_obj_genes)
+          // console.log('table_obj_genes')
+          // console.log(table_obj_genes)
           const genes_arr = genes.map(d => d.name)
-          console.log('genes_arr')
-          console.log(genes_arr)
+          // console.log('genes_arr')
+          // console.log(genes_arr)
           const genes_to_add = _.difference(genes_arr, table_obj_genes)
-          console.log('genes_to_add')
-          console.log(genes_to_add)
+          // console.log('genes_to_add')
+          // console.log(genes_to_add)
           const table_obj_index = this.gene_expression_data_tables_all
             .findIndex(e => e.table_name == t) 
           if (genes_to_add.length > 0) {
             // Cache new genes to table in memory 
-            console.log('Caching')
+            // console.log('Caching')
             
             const data = this.gene_expression_data_tables_all[table_obj_index].data
-            console.log('data')
-            console.log(data)
+            // console.log('data')
+            // console.log(data)
 
             // Only query new genes to save on egress cost
             const genes_to_add_str = genes_to_add.toString()
-            console.log('Querying DataService.getExpressionData...')
+            // console.log('Querying DataService.getExpressionData...')
             const result = await DataService
               .getExpressionDataByGenesGendersConditions(
                 genes_to_add_str, genders_str, conditions_str, t)
             
             const data_all = data.concat(result.data)
-            console.log('data_all')
-            console.log(data_all)
+            // console.log('data_all')
+            // console.log(data_all)
             this.gene_expression_data_tables_all[table_obj_index].data = data_all
           }
           // Update current table_obj to only contain selected genes
@@ -574,10 +574,10 @@ export default {
         }
         return table_obj
       }))
-      console.log('this.gene_expression_data_tables')
-      console.log(this.gene_expression_data_tables)
-      console.log('this.gene_expression_data_tables_all')
-      console.log(this.gene_expression_data_tables_all)
+      // console.log('this.gene_expression_data_tables')
+      // console.log(this.gene_expression_data_tables)
+      // console.log('this.gene_expression_data_tables_all')
+      // console.log(this.gene_expression_data_tables_all)
       const elapsed = Date.now() - start 
       console.log('get_gene_expression_data_tables elapsed:', elapsed)
     },
@@ -636,7 +636,7 @@ export default {
         return table_obj
       }))
       const elapsed = Date.now() - start
-      // console.log('get_selected_gene_metadata elapsed:', elapsed)
+      console.log('get_selected_gene_metadata elapsed:', elapsed)
     },
     async get_genes_clicked() {
       // Get Genes button clicked
@@ -647,7 +647,7 @@ export default {
       this.get_gene_data()
     },
     async get_gene_data() {
-      console.log('get_gene_data')
+      // console.log('get_gene_data')
       const start = Date.now()
 
       this.getting_gene_data = true
