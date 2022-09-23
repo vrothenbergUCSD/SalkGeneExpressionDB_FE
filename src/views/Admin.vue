@@ -479,7 +479,7 @@ export default {
         this.dataset = {};
       }
 
-      const validation_error = false
+      let validation_error = false
 
       // Validate
       if (!this.dataset.species) {
