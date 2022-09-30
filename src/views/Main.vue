@@ -551,6 +551,12 @@ export default {
           table_obj = JSON.parse(JSON.stringify(table_obj))
           const table_obj_index = this.gene_expression_data_tables_all
             .findIndex(e => e.table_name == t) 
+
+          const sample_table_name = t.replace('gene_expression_data', 'sample_metadata')
+          const sample_metadata = this.sample_metadata_tables_all.find(e => 
+            e.table_name == sample_table_name)
+          const sample_metadata_lookup = sample_metadata.data.reduce(
+            (obj, item) => (obj[item.sample_name] = item, obj), {})
           
           const table_obj_genes = [...new Set(table_obj.data.map(item => item.gene_id))]
           // console.log('table_obj_genes')
@@ -561,49 +567,61 @@ export default {
           const genes_to_add = _.difference(genes_arr, table_obj_genes)
           // console.log('genes_to_add')
           // console.log(genes_to_add)
-          console.log('table_obj')
-          console.log(table_obj)
+          // console.log('table_obj')
+          // console.log(table_obj)
+
+          // Check if all genders in table 
+          const table_obj_genders = [...new Set(table_obj.data.map(item => 
+            sample_metadata_lookup[item.sample_name].gender))]
+          // console.log('table_obj_genders')
+          // console.log(table_obj_genders)
+          const genders_arr = this.gender_selected.map(d => d.name)
+          // console.log('genders_arr')
+          // console.log(genders_arr)
+          const genders_to_add = _.difference(genders_arr, table_obj_genders)
+          console.log('genders_to_add')
+          console.log(genders_to_add)
 
           // Check if all conditions in table
-          const sample_metadata = this.sample_metadata_tables_all.find(e => e.table_name == t)
-          const sample_metadata_lookup = sample_metadata.data.reduce(
-            (obj, item)
-          )
-          const table_obj_conditions = [...new Set(table_obj.data.map(item => item.condition))]
-          console.log('table_obj_conditions')
-          console.log(table_obj_conditions)
+          console.log('sample_metadata_tables_all')
+          console.log(this.sample_metadata_tables_all)
+
+          console.log('sample_metadata_lookup')
+          console.log(sample_metadata_lookup)
+          const table_obj_conditions = [...new Set(table_obj.data.map(item => 
+            sample_metadata_lookup[item.sample_name].condition))]
+          // console.log('table_obj_conditions')
+          // console.log(table_obj_conditions)
           const conditions_arr = this.condition_selected.map(d => d.name)
-          console.log('conditions_arr')
-          console.log(conditions_arr)
+          // console.log('conditions_arr')
+          // console.log(conditions_arr)
           const conditions_to_add = _.difference(conditions_arr, table_obj_conditions)
           console.log('conditions_to_add')
           console.log(conditions_to_add)
 
-          // Check if all genders in table 
-          const table_obj_genders = [...new Set(table_obj.data.map(item => item.gender))]
-          console.log('table_obj_genders')
-          console.log(table_obj_genders)
-
-
-          
-          if (genes_to_add.length > 0) {
-            // Cache new genes to table in memory 
-            // console.log('Caching')
+          if (genes_to_add.length 
+            || conditions_to_add.length 
+            || genders_to_add.length) {
+            // New data needed, run query
+            console.log('Querying new data')
             
             const data = this.gene_expression_data_tables_all[table_obj_index].data
-            // console.log('data')
-            // console.log(data)
+            console.log('data')
+            console.log(data)
 
-            // Only query new genes to save on egress cost
-            const genes_to_add_str = genes_to_add.toString()
+            const genes_str = genes_arr.toString()
+            const genders_str = genders_arr.toString()
+            const conditions_str = conditions_arr.toString()
+            
             // console.log('Querying DataService.getExpressionData...')
             const result = await DataService
               .getExpressionDataByGenesGendersConditions(
-                genes_to_add_str, genders_str, conditions_str, t)
+                genes_str, genders_str, conditions_str, t)
             
+            // Union to only add data and not overwrite old results 
             const data_all = _.union(data, result.data)
-            // console.log('data_all')
-            // console.log(data_all)
+            console.log('data_all')
+            console.log(data_all)
             this.gene_expression_data_tables_all[table_obj_index].data = data_all
           }
           // Update current table_obj to only contain selected genes
