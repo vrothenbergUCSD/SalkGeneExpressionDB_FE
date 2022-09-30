@@ -467,7 +467,9 @@ export default {
       console.log('get_datasets time elapsed: ', elapsed)
     },
     async get_gene_metadata_tables(tables) {
-      // Array of table names e.g. ["TRF_2018_Mouse_Arcuate_gene_metadata_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"]
+      // Gets list of all gene metadata for each table in tables
+      // Creates a unique set of all genes, assigns to this.genes
+      // tables: Array of table names e.g. ["TRF_2018_Mouse_Arcuate_gene_metadata_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"]
       // console.log('get_gene_metadata_tables')
       const start = Date.now()
       this.loading_genes = true
@@ -492,11 +494,14 @@ export default {
       console.log('get_gene_metadata_tables elapsed: ', elapsed)
     },
     async get_sample_metadata_tables(tables) {
+      // Gets all sample metadata corresponding to list of table names
+      // tables: Array of table names e.g. ["TRF_2018_Mouse_Arcuate_gene_metadata_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"]
       const start = Date.now()
       this.sample_metadata_tables = await Promise.all(tables.map(async (t) => {
         // Check table in sample_metadata_tables_all
         let table_obj = this.sample_metadata_tables_all.find(e => e.table_name == t)
         if (!table_obj) {
+          // Table not found, query
           const result = await DataService.getSampleMetadata(t)
           table_obj = {
             table_name: t,
@@ -504,15 +509,23 @@ export default {
           }
           this.sample_metadata_tables_all.push(table_obj)
         }
-        return table_obj
+        return JSON.parse(JSON.stringify(table_obj))
       }))
+      // Filter tables of samples based on condition and gender
+      // this.sample_metadata_tables.forEach(table => {
+      //   table.data = table.data.filter(e => e.condition in this.condition_selected.map(d => d.name))
+      //   table.data = table.data.filter(e => e.gender in this.gender_selected.map(d => d.name))
+      // })
+      console.log('this.sample_metadata_tables')
+      console.log(this.sample_metadata_tables)
       const elapsed = Date.now() - start 
       console.log('get_sample_metadata_tables elapsed: ', elapsed)
     },
     async get_gene_expression_data_tables(genes, tables) {
-      // console.log('get_gene_expression_data_tables')
+      // genes: List of selected gene objects
+      console.log('get_gene_expression_data_tables')
       const start = Date.now()
-      // console.log(this.gene_expression_data_tables_all)
+      console.log(this.gene_expression_data_tables_all)
       const genes_str = genes.map(d => d.name).toString()
       // console.log('genes_str', genes_str)
       const genders_str = this.gender_selected.map(d => d.name).toString()
@@ -521,10 +534,10 @@ export default {
       // console.log('conditions_str', conditions_str)
       this.gene_expression_data_tables = await Promise.all(tables.map(async (t) => {
         // Check table in gene_expression_data_tables_all
-        // Deep copy table_obj
+        
         let table_obj = this.gene_expression_data_tables_all.find(e => e.table_name == t)       
         if (!table_obj) {
-          // console.log('Not found', t)
+          // Table does not exist, query 
           const result = await DataService
             .getExpressionDataByGenesGendersConditions(genes_str, genders_str, conditions_str, t)
           table_obj = {
@@ -534,8 +547,11 @@ export default {
           this.gene_expression_data_tables_all.push(table_obj)
         } else {
           // Table object exists, check if all genes in table
-          // console.log('Found', t)
+          // Deep copy table_obj to prevent overwriting 
           table_obj = JSON.parse(JSON.stringify(table_obj))
+          const table_obj_index = this.gene_expression_data_tables_all
+            .findIndex(e => e.table_name == t) 
+          
           const table_obj_genes = [...new Set(table_obj.data.map(item => item.gene_id))]
           // console.log('table_obj_genes')
           // console.log(table_obj_genes)
@@ -545,8 +561,31 @@ export default {
           const genes_to_add = _.difference(genes_arr, table_obj_genes)
           // console.log('genes_to_add')
           // console.log(genes_to_add)
-          const table_obj_index = this.gene_expression_data_tables_all
-            .findIndex(e => e.table_name == t) 
+          console.log('table_obj')
+          console.log(table_obj)
+
+          // Check if all conditions in table
+          const sample_metadata = this.sample_metadata_tables_all.find(e => e.table_name == t)
+          const sample_metadata_lookup = sample_metadata.data.reduce(
+            (obj, item)
+          )
+          const table_obj_conditions = [...new Set(table_obj.data.map(item => item.condition))]
+          console.log('table_obj_conditions')
+          console.log(table_obj_conditions)
+          const conditions_arr = this.condition_selected.map(d => d.name)
+          console.log('conditions_arr')
+          console.log(conditions_arr)
+          const conditions_to_add = _.difference(conditions_arr, table_obj_conditions)
+          console.log('conditions_to_add')
+          console.log(conditions_to_add)
+
+          // Check if all genders in table 
+          const table_obj_genders = [...new Set(table_obj.data.map(item => item.gender))]
+          console.log('table_obj_genders')
+          console.log(table_obj_genders)
+
+
+          
           if (genes_to_add.length > 0) {
             // Cache new genes to table in memory 
             // console.log('Caching')
@@ -562,7 +601,7 @@ export default {
               .getExpressionDataByGenesGendersConditions(
                 genes_to_add_str, genders_str, conditions_str, t)
             
-            const data_all = data.concat(result.data)
+            const data_all = _.union(data, result.data)
             // console.log('data_all')
             // console.log(data_all)
             this.gene_expression_data_tables_all[table_obj_index].data = data_all
@@ -574,10 +613,13 @@ export default {
         }
         return table_obj
       }))
-      // console.log('this.gene_expression_data_tables')
-      // console.log(this.gene_expression_data_tables)
+      console.log('this.gene_expression_data_tables')
+      console.log(this.gene_expression_data_tables)
       // console.log('this.gene_expression_data_tables_all')
       // console.log(this.gene_expression_data_tables_all)
+      // this.gene_expression_data_tables.forEach(table => {
+      //   table.data
+      // })
       const elapsed = Date.now() - start 
       console.log('get_gene_expression_data_tables elapsed:', elapsed)
     },
@@ -622,7 +664,7 @@ export default {
             const genes_to_add_str = genes_to_add.toString()
             const result = await DataService.getGeneMetadata(genes_to_add_str, t)
             
-            const data_all = data.concat(result.data)
+            const data_all = _.union(data, result.data)
             // console.log('data_all')
             // console.log(data_all)
             this.selected_gene_metadata_all[table_obj_index].data = data_all
@@ -661,6 +703,34 @@ export default {
         this.get_gene_expression_data_tables(this.genes_selected, this.gene_expression_data_table_names),
         this.get_selected_gene_metadata(this.genes_selected, this.gene_metadata_table_names)
       ])
+      // Filter tables based on gender and condition
+      const conditions = this.condition_selected.map(d => d.name)
+      const genders = this.gender_selected.map(d => d.name)
+      this.sample_metadata_tables.forEach(table => {
+        console.log('table')
+        console.log(table)
+        if (conditions.length) 
+          table.data = table.data.filter(d => conditions.includes(d.condition))
+        
+        if (genders.length) 
+          table.data = table.data.filter(d => genders.includes(d.gender))
+        
+        
+        const sample_names = table.data.map(d => d.sample_name)
+        const gene_expr_table_name = table.table_name.replace('sample_metadata', 'gene_expression_data')
+        const gene_expr_table = this.gene_expression_data_tables.find(d => d.table_name == gene_expr_table_name)
+        gene_expr_table.data = gene_expr_table.data.filter(d => sample_names.includes(d.sample_name))
+      })
+      console.log('this.sample_metadata_tables')
+      console.log(this.sample_metadata_tables)
+
+      console.log('this.gene_expression_data_tables')
+      console.log(this.gene_expression_data_tables)
+
+      
+
+
+
       this.datasets = {
         sample_metadata_tables: this.sample_metadata_tables,
         gene_expression_data_tables: this.gene_expression_data_tables,

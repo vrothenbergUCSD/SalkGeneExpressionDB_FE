@@ -742,14 +742,14 @@ export default {
 
       const group_id = this.permissionGroup.group_id
 
-      await Promise.all([
-        this.updateUsers(this.selected_admin_users, 'admin', group_id),
-        this.updateUsers(this.selected_editor_users, 'editor', group_id),
-        this.updateUsers(this.selected_reader_users, 'reader', group_id),
-        this.updateGroups(this.selected_admin_groups, 'admin', group_id),
-        this.updateGroups(this.selected_editor_groups, 'editor', group_id),
-        this.updateGroups(this.selected_reader_groups, 'reader', group_id),
-      ])
+      // await Promise.all([
+      //   this.updateUsers(this.selected_admin_users, 'admin', group_id),
+      //   this.updateUsers(this.selected_editor_users, 'editor', group_id),
+      //   this.updateUsers(this.selected_reader_users, 'reader', group_id),
+      //   this.updateGroups(this.selected_admin_groups, 'admin', group_id),
+      //   this.updateGroups(this.selected_editor_groups, 'editor', group_id),
+      //   this.updateGroups(this.selected_reader_groups, 'reader', group_id),
+      // ])
 
       const docRef = doc(firestore, "permission_groups", this.permissionGroup.group_id)
       await updateDoc(docRef, {
