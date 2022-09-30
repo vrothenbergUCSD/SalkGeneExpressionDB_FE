@@ -375,21 +375,33 @@ export default {
     },
     updateTimePointsSelected(evt) {
       // TODO: Make more efficient by only toggling changed values?
+      console.log('updateTimePointsSelected')
+      // console.log(evt)
+      // console.log('time_points_selected')
+      // console.log(this.time_points_selected)
       for (const key of Object.keys(this.time_visibility)) {
         this.time_visibility[key] = 0
       }
       this.time_points_selected.forEach(e => this.time_visibility[e.name] = 1)
-      Object.keys(this.time_visibility).forEach(key => {
-        const opacity = this.time_visibility[key]
-        let id
-        if (this.grouped_by == 'Time')
-          id = `#group_${key}`
-        else if (this.grouped_by == 'Gene')
-          id = `#subgroup_${key}`
-        
-        const bar = d3.select('#bars').selectAll(id)
-        bar.transition_attributes('opacity', opacity)
-      })
+      // TODO: Necessary?
+      // Object.keys(this.time_visibility).forEach(key => {
+      //   const opacity = this.time_visibility[key]
+      //   if (opacity == 0) {
+      //     // console.log('opacity == 0', key)
+      //     let id
+      //     if (this.grouped_by == 'Time')
+      //       id = `#group_${key}`
+      //     else if (this.grouped_by == 'Gene')
+      //       id = `#subgroup_${key}`
+      //     const bars = d3.select('#bars')
+      //     const rects = bars.selectAll(id)
+    
+      //     rects.transition_attributes('fill-opacity', 0).remove()
+
+      //   }
+
+      // })
+      this.update_grouped_bar_plot()
     },
     update_datasets() {
       // Processes datasets into various arrays such as grouped by tissue, gene, condition
@@ -665,7 +677,7 @@ export default {
       let data, groups, subgroups
       if (this.grouped_by == 'Gene') {
         this.svg.select('.x-label').text('')
-        subgroups = this.time_points
+        subgroups = [...this.time_points].filter(e => this.time_visibility[e])
         // data = d3.group(gene_groups_map, d => `${d.gene_group}`)
         const gene_groups = _.groupBy(this.expression_normalized_averaged, 
           e => `${e.identifier}`)
@@ -676,18 +688,21 @@ export default {
           // const grouping = _.groupBy(gene_groups[key], e => `${e.identifier}`)
           return [key, gene_groups[key]]
         })
-        groups = Object.keys(gene_groups)
+        groups = [...Object.keys(gene_groups)].filter(e => this.gene_visibility[e])
 
         data.forEach(d => {
           d[1] = d[1].map(e => {
             return {key:e.time_point.toString(), value:e}
           })
         })
+
+        data.forEach(d => {
+          d[1] = d[1].filter(key_val => this.time_visibility[key_val.key])
+        })       
+        
       } else if (this.grouped_by == 'Time') {
         this.svg.select('.x-label').text('Time Point (ZT)')
-        console.log('this.time_points')
-        console.log(this.time_points)
-        groups = this.time_points
+        groups = [...this.time_points].filter(e => this.time_visibility[e])
         this.group_visibility = this.time_visibility
         this.subgroup_visibility = this.gene_visibility
         const time_groups = _.groupBy(this.expression_normalized_averaged, e => `${e.time_point}`)
@@ -696,13 +711,16 @@ export default {
           return [key, grouping]
         })
 
-        subgroups = [...new Set(... data.map(e => Object.keys(e[1])) )]
+        subgroups = [...new Set(... data.map(e => Object.keys(e[1])) )].filter(e => 
+          this.gene_visibility[e])
 
         data.forEach(d => {
           d[1] = Object.keys(d[1]).map((id) => {
             return {key:id, value:d[1][id][0]}
           })
         })
+        
+        data = data.filter(e => this.time_visibility[e[0]])
       }
       
       this.color = d3.scaleSequential(d3.interpolateWarm)
@@ -763,8 +781,6 @@ export default {
           .transition()
           .duration(this.animationInterval)
           .call(this.yAxis)
-      
-      // this.svg.selectAll("g.group").remove()
 
       // Display grouped bars
       this.svg.select("#bars")
@@ -776,7 +792,7 @@ export default {
               .attr("transform", d => `translate(${x(d[0])}, 0)`)
               .attr("class", "bar-group")
               .attr('id', d => `group_${d[0]}`)
-              .transition_attributes('opacity', d => this.group_visibility[d[0]])
+              // .transition_attributes('opacity', d => this.group_visibility[d[0]])
               .selectAll(".subgroup-rect")
               .data(d => d[1])
               .join(
@@ -789,7 +805,7 @@ export default {
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
                     .attr("fill", d => this.getHSL(d.value))
-                    .transition_attributes('fill-opacity', d => this.subgroup_visibility[d.key])
+                    // .transition_attributes('fill-opacity', d => this.subgroup_visibility[d.key])
                     .on("mouseover", (evt, d) => {
                       this.svg.append('g').attr('class', 'tooltip')
                           .call(this.popover, d)
@@ -804,7 +820,7 @@ export default {
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
                     .attr("fill", d => this.getHSL(d.value))
-                    .transition_attributes('fill-opacity', d => this.subgroup_visibility[d.key])
+                    // .transition_attributes('fill-opacity', d => this.subgroup_visibility[d.key])
                     .on("mouseover", (evt, d) => {
                       this.svg.append('g').attr('class', 'tooltip')
                           .call(this.popover, d)
@@ -820,7 +836,7 @@ export default {
             update
               .attr("transform", d => `translate(${x(d[0])}, 0)`)
               .attr('id', d => `group_${d[0]}`)
-              .transition_attributes('opacity', d => this.group_visibility[d[0]])
+              // .transition_attributes('opacity', d => this.group_visibility[d[0]])
               .selectAll(".subgroup-rect")
               .data(d => d[1])
               .join(
@@ -833,7 +849,7 @@ export default {
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
                     .attr("fill", d => this.getHSL(d.value))
-                    .transition_attributes('fill-opacity', d => this.subgroup_visibility[d.key])
+                    // .transition_attributes('fill-opacity', d => this.subgroup_visibility[d.key])
                     .on("mouseover", (evt, d) => {
                       this.svg.append('g').attr('class', 'tooltip')
                           .call(this.popover, d)
@@ -848,7 +864,7 @@ export default {
                     .attr("width", this.xSubgroup.bandwidth())
                     .attr("height", d => this.height - y(d.value.gene_expression_norm_avg))
                     .attr("fill", d => this.getHSL(d.value))
-                    .transition_attributes('fill-opacity', d => this.subgroup_visibility[d.key])
+                    // .transition_attributes('fill-opacity', d => this.subgroup_visibility[d.key])
                     .on("mouseover", (evt, d) => {
                       this.svg.append('g').attr('class', 'tooltip')
                           .call(this.popover, d)

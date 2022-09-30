@@ -45,6 +45,14 @@ class DataService {
   async getSampleMetadata(table) {
     return http.get(`sample_metadata/data?table=${table}`)
   }
+  async getSampleMetadataGendersConditions(genders, conditions, table) {
+    let url = `sample_metadata/data?table=${table}`
+    if (genders.length)
+      url += `&genders=${genders}`
+    if (conditions.length)
+      url += `&conditions=${conditions}`
+    return http.get(url)
+  }
   async getDatabaseMetadata() {
     return http.get('database_metadata/data')
   }
