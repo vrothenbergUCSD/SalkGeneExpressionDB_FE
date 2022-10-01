@@ -6,25 +6,25 @@
       <ProgressSpinner class="w-full mt-10" />
     </div>
 
-    <div id="plot-options" class="w-3/4 mx-auto mt-1" v-show="this.complete">
-      <div class="flex flex-row mt-1">
-        <div class="mx-1 flex flex-col items-center">
-          <div class="font-semibold">Data Points</div>
-          <InputSwitch v-model="showReplicatePoints" @change="this.update_line_plot" />
-        </div>
-        <div class="mx-1 flex flex-col items-center">
-          <div class="font-semibold">Error Bars</div>
-          <InputSwitch v-model="showErrorBars" @change="this.update_line_plot" />
-        </div>
-        <div id="more-options" class="flex grow justify-end">
-          <div class="flex flex-col items-center">
-            <div class="font-semibold">Options</div>
-            <Button type="button" label="" icon="pi pi-cog" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu"/>
-            <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
-          </div>    
-        </div>
+    <div id="plot-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
+      <div id="toggle_data_points" class="flex flex-col align-items-center mx-2">
+        <div class="font-semibold pb-2">Data Points</div>
+        <InputSwitch v-model="showReplicatePoints" @change="this.update_line_plot" />
       </div>
+      <div id="toggle_error_bars" class="flex flex-col align-items-center mx-2">
+        <div class="font-semibold pb-2">Error Bars</div>
+        <InputSwitch v-model="showErrorBars" @change="this.update_line_plot" />
+      </div>
+      <div id="more-options" class="flex grow justify-end">
+        <div class="flex flex-col items-center">
+          <div class="font-semibold pb-2">Download</div>
+          <Button type="button" label="" icon="pi pi-download" @click="toggle" 
+            aria-haspopup="true" aria-controls="overlay_menu"/>
+          <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
+        </div>    
+      </div> 
     </div>
+
     <div id="plot-area" class="mt-10">
     </div>
     <div id="table-area" class="mt-1">
