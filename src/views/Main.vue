@@ -200,7 +200,7 @@
               <div id="gene-search" class="p-1" v-show="!this.loading_genes">
                 <AutoComplete :multiple="true" v-model="this.genes_selected" 
                 :suggestions="this.genes_filtered" @complete="search_genes($event)" 
-                field="name" :disabled="this.loading_genes"/>
+                field="name" :disabled="this.loading_genes" @item-unselect="remove_gene"/>
               </div>  
               <div id="get-genes" class="mt-1 text-center">
                   <Button label="Get Genes" @click="get_datasets" 
@@ -965,6 +965,10 @@ export default {
     remove_condition_filter(text) {
       this.condition_selected = this.condition_selected.filter((obj) => 
          obj.name != text)
+      this.update_lookup_table()
+      this.get_datasets()
+    },
+    remove_gene() {
       this.update_lookup_table()
       this.get_datasets()
     },
