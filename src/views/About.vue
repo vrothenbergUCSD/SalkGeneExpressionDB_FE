@@ -29,7 +29,7 @@ import Button from 'primevue/button'
 // import getStuff from '@/main.js'
 
 export default {
-  name: "Home",
+  name: "About",
   components: {
     // HelloWorld,
     Button
