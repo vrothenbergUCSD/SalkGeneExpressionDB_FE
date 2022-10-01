@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import Home from "../views/Home.vue"
+import About from "../views/About.vue"
 import Main from "../views/Main.vue"
 import BarPlot from "@/components/svg/BarPlot.vue"
 import LinePlot from "@/components/svg/LinePlot.vue"
@@ -26,17 +26,6 @@ const routes = [
   },
   {
     path: "/",
-    name: 'Home',
-    component: Home,
-    meta: {
-      title: "Home",
-      requiresAuth: false,
-      onNavbar: true,
-
-    }
-  },
-  {
-    path: "/main",
     name: "Main",
     component: Main,
     meta: {
@@ -66,6 +55,17 @@ const routes = [
         },
       }
     ]
+  },
+  {
+    path: "/about",
+    name: 'About',
+    component: About,
+    meta: {
+      title: "About",
+      requiresAuth: false,
+      onNavbar: true,
+
+    }
   },
   {
     path: "/login",

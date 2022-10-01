@@ -200,7 +200,7 @@
               <div id="gene-search" class="p-1" v-show="!this.loading_genes">
                 <AutoComplete :multiple="true" v-model="this.genes_selected" 
                 :suggestions="this.genes_filtered" @complete="search_genes($event)" 
-                field="name" :disabled="this.loading_genes"/>
+                field="name" :disabled="this.loading_genes" @item-unselect="remove_gene"/>
               </div>  
               <div id="get-genes" class="mt-1 text-center">
                   <Button label="Get Genes" @click="get_datasets" 
@@ -377,8 +377,13 @@ export default {
     ])
 
     // Testing - Remove later
+    this.species_selected = [{name:'Mus musculus'}]
+    this.experiment_selected = [{name:'TRF Experiment'}]
     this.tissue_selected = [{name:'Arcuate'}]
+    this.gender_selected = [{name:'Male'}]
+    this.condition_selected = [{name:'ALF'},{name:'TRF'}]
     this.genes_selected = [{name:'Clock'}]
+    
     await this.update_lookup_table()
     await this.get_datasets()
 
@@ -521,11 +526,29 @@ export default {
       const elapsed = Date.now() - start 
       console.log('get_sample_metadata_tables elapsed: ', elapsed)
     },
+    check_combo(table_obj, sample_metadata_lookup, genes_arr, conditions_arr, genders_arr) {
+      for (let i=0; i<genes_arr.length; i++) {
+        for (let j=0; j<conditions_arr.length; j++) {
+          for (let k=0; k<genders_arr.length; k++) {
+            // Check combination exists in table
+            const combo = table_obj.data.find(e =>  
+              e.gene_id == genes_arr[i] 
+              && sample_metadata_lookup[e.sample_name].condition == conditions_arr[j]
+              && sample_metadata_lookup[e.sample_name].gender == genders_arr[k]
+              )
+            if (!combo) 
+              // Missing at least one combination
+              return true   
+          }
+        }
+      }
+      return false
+    },
     async get_gene_expression_data_tables(genes, tables) {
       // genes: List of selected gene objects
-      console.log('get_gene_expression_data_tables')
+      // console.log('get_gene_expression_data_tables')
       const start = Date.now()
-      console.log(this.gene_expression_data_tables_all)
+      // console.log(this.gene_expression_data_tables_all)
       const genes_str = genes.map(d => d.name).toString()
       // console.log('genes_str', genes_str)
       const genders_str = this.gender_selected.map(d => d.name).toString()
@@ -551,6 +574,12 @@ export default {
           table_obj = JSON.parse(JSON.stringify(table_obj))
           const table_obj_index = this.gene_expression_data_tables_all
             .findIndex(e => e.table_name == t) 
+
+          const sample_table_name = t.replace('gene_expression_data', 'sample_metadata')
+          const sample_metadata = this.sample_metadata_tables_all.find(e => 
+            e.table_name == sample_table_name)
+          const sample_metadata_lookup = sample_metadata.data.reduce(
+            (obj, item) => (obj[item.sample_name] = item, obj), {})
           
           const table_obj_genes = [...new Set(table_obj.data.map(item => item.gene_id))]
           // console.log('table_obj_genes')
@@ -561,46 +590,63 @@ export default {
           const genes_to_add = _.difference(genes_arr, table_obj_genes)
           // console.log('genes_to_add')
           // console.log(genes_to_add)
-          console.log('table_obj')
-          console.log(table_obj)
-
-          // Check if all conditions in table
-          const sample_metadata = this.sample_metadata_tables_all.find(e => e.table_name == t)
-          const sample_metadata_lookup = sample_metadata.data.reduce(
-            (obj, item)
-          )
-          const table_obj_conditions = [...new Set(table_obj.data.map(item => item.condition))]
-          console.log('table_obj_conditions')
-          console.log(table_obj_conditions)
-          const conditions_arr = this.condition_selected.map(d => d.name)
-          console.log('conditions_arr')
-          console.log(conditions_arr)
-          const conditions_to_add = _.difference(conditions_arr, table_obj_conditions)
-          console.log('conditions_to_add')
-          console.log(conditions_to_add)
+          // console.log('table_obj')
+          // console.log(table_obj)
 
           // Check if all genders in table 
-          const table_obj_genders = [...new Set(table_obj.data.map(item => item.gender))]
-          console.log('table_obj_genders')
-          console.log(table_obj_genders)
+          const table_obj_genders = [...new Set(table_obj.data.map(item => 
+            sample_metadata_lookup[item.sample_name].gender))]
+          // console.log('table_obj_genders')
+          // console.log(table_obj_genders)
+          const genders_arr = this.gender_selected.map(d => d.name)
+          // console.log('genders_arr')
+          // console.log(genders_arr)
+          const genders_to_add = _.difference(genders_arr, table_obj_genders)
+          // console.log('genders_to_add')
+          // console.log(genders_to_add)
 
+          // Check if all conditions in table
+          // console.log('sample_metadata_tables_all')
+          // console.log(this.sample_metadata_tables_all)
 
-          
-          if (genes_to_add.length > 0) {
-            // Cache new genes to table in memory 
-            // console.log('Caching')
+          // console.log('sample_metadata_lookup')
+          // console.log(sample_metadata_lookup)
+          const table_obj_conditions = [...new Set(table_obj.data.map(item => 
+            sample_metadata_lookup[item.sample_name].condition))]
+          // console.log('table_obj_conditions')
+          // console.log(table_obj_conditions)
+          const conditions_arr = this.condition_selected.map(d => d.name)
+          // console.log('conditions_arr')
+          // console.log(conditions_arr)
+          const conditions_to_add = _.difference(conditions_arr, table_obj_conditions)
+          // console.log('conditions_to_add')
+          // console.log(conditions_to_add)
+
+          // Check if any combination of gene, condition and gender are missing
+          const combo_missing = this.check_combo(table_obj, 
+            sample_metadata_lookup, genes_arr, conditions_arr, genders_arr) 
+
+          if (genes_to_add.length 
+            || conditions_to_add.length 
+            || genders_to_add.length
+            || combo_missing) {
+            // New data needed, run query
+            // console.log('Querying new data')
             
             const data = this.gene_expression_data_tables_all[table_obj_index].data
             // console.log('data')
             // console.log(data)
 
-            // Only query new genes to save on egress cost
-            const genes_to_add_str = genes_to_add.toString()
+            const genes_str = genes_arr.toString()
+            const genders_str = genders_arr.toString()
+            const conditions_str = conditions_arr.toString()
+            
             // console.log('Querying DataService.getExpressionData...')
             const result = await DataService
               .getExpressionDataByGenesGendersConditions(
-                genes_to_add_str, genders_str, conditions_str, t)
+                genes_str, genders_str, conditions_str, t)
             
+            // Union to only add data and not overwrite old results 
             const data_all = _.union(data, result.data)
             // console.log('data_all')
             // console.log(data_all)
@@ -613,8 +659,8 @@ export default {
         }
         return table_obj
       }))
-      console.log('this.gene_expression_data_tables')
-      console.log(this.gene_expression_data_tables)
+      // console.log('this.gene_expression_data_tables')
+      // console.log(this.gene_expression_data_tables)
       // console.log('this.gene_expression_data_tables_all')
       // console.log(this.gene_expression_data_tables_all)
       // this.gene_expression_data_tables.forEach(table => {
@@ -726,10 +772,6 @@ export default {
 
       console.log('this.gene_expression_data_tables')
       console.log(this.gene_expression_data_tables)
-
-      
-
-
 
       this.datasets = {
         sample_metadata_tables: this.sample_metadata_tables,
@@ -923,6 +965,10 @@ export default {
     remove_condition_filter(text) {
       this.condition_selected = this.condition_selected.filter((obj) => 
          obj.name != text)
+      this.update_lookup_table()
+      this.get_datasets()
+    },
+    remove_gene() {
       this.update_lookup_table()
       this.get_datasets()
     },

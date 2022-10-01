@@ -6,17 +6,18 @@
         <div class="flex-1 flex items-center justify-start">
           <div class="">
             <div class="flex space-x-4">
-              <NavLink :to="{name: 'Home'}">
-                <div class="">
-                  <i class="pi pi-home mr-3"></i> 
-                  <span>Home</span>
-                </div> 
-              </NavLink>
+              
               <NavLink :to="{name: 'Main'}">
                 <div class="">
                   <i class="pi pi-chart-bar mr-3"></i> 
                   <span>Main</span>
                 </div>  
+              </NavLink>
+              <NavLink :to="{name: 'About'}">
+                <div class="">
+                  <i class="pi pi-info-circle mr-3"></i> 
+                  <span>About</span>
+                </div> 
               </NavLink>
               <NavLink v-if="!user" :to="{ name: 'Login'}">
                 <div class="">

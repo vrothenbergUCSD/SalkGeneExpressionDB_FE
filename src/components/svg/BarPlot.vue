@@ -1,24 +1,25 @@
 <template>
   <div id="bar" class="mx-auto">
-    <!-- <div class="text-center mb-5">Bar Plot component</div> -->
-    <!-- <div id="plot-options" class="!grid grid-cols-12 mt-3 items-center"> -->
+    <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
+      <ProgressSpinner class="w-full mt-10" />
+    </div>
+    
     <div id="plot-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
-      <!-- <div id="group-by" class="col-start-1 col-span-3"> -->
       <div id="group-by" class="flex flex-col align-items-center mx-2">
         <div class="font-semibold pb-2">Group by:</div>
         <SelectButton v-model="grouped_by" :options="grouped_by_options" @change="updateGroupedBy"/>
       </div>
-      <!-- <div id="time-selection" v-show="grouped_by === 'Time'" class="col-start-6 col-span-7"> -->
       <div id="time-selection" v-show="grouped_by === 'Time'" class="flex flex-col align-items-center mx-2">
         <div class="font-semibold pb-2">Time Points (ZT)</div>
         <SelectButton v-model="time_points_selected" 
           :options="time_points_options" optionLabel="name" 
           multiple @change="updateTimePointsSelected"/>
       </div>
-      <div id="more-options" class="flex flex-col align-items-center mx-2">
-        <div class="font-semibold pb-2">Options</div>
-        <div>
-          <Button type="button" label="" icon="pi pi-cog" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu"/>
+      <div id="more-options" class="flex grow justify-end">
+        <div class="flex flex-col items-center">
+          <div class="font-semibold pb-2">Download</div>
+          <Button type="button" label="" icon="pi pi-download" @click="toggle" 
+            aria-haspopup="true" aria-controls="overlay_menu"/>
           <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
         </div>
       </div>
@@ -26,9 +27,7 @@
     </div>
 
 
-    <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
-      <ProgressSpinner class="w-full mt-10" />
-    </div>
+    
     
     <div id="plot-area" class="mt-10">
     </div>
@@ -1528,9 +1527,21 @@ export default {
     padding-top: 0.25rem !important;
     padding-bottom: 0.25rem !important;
   }
-}
 
-// .time-points {
-//   font-size: 0.5rem !important;
-// }
+  :deep(.p-inputswitch) {
+    height: 1.4rem;
+    width: 2.6rem;
+    &.p-inputswitch-checked {
+        .p-inputswitch-slider::before {
+            transform: translateX(1.1rem);
+        }
+    }
+
+    .p-inputswitch-slider::before {
+        width: 0.9rem;
+        height: 0.9rem;
+        margin-top: -0.45rem;
+    }
+  }
+}
 </style>
