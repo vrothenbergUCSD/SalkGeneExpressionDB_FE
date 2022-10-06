@@ -28,31 +28,7 @@
     <div id="plot-area" class="mt-10">
     </div>
     <div id="table-area" class="mt-1">
-      <div class="font-semibold">Filtered Dataset</div>
-      <DataTable :value="this.expression_merged" :scrollable="true" scrollHeight="400px"
-        scrollDirection="both" class="p-datatable-sm">
-        <Column field="gene_id" header="Gene ID" style="width: 10rem"></Column>
-        <Column field="gene_expression" header="Gene Expression" style="width: 7rem">
-          <template #body="slotProps">
-            {{Math.round(slotProps.data.gene_expression * 1000)/1000}}
-          </template>
-        </Column>
-        <Column field="data_type" header="Data Type" style="width: 8rem"></Column>
-        <Column field="sample_name" header="Sample Name" style="width: 10rem"></Column>
-        <Column field="time_point" header="Time Point (ZT)" style="width: 7rem"></Column>
-        <Column field="condition" header="Condition" style="width: 7rem"></Column>
-        <Column field="species" header="Species" style="width: 8rem"></Column>
-        <Column field="tissue" header="Tissue" style="width: 8rem"></Column>
-        <Column field="age_months" header="Age (months)" style="width: 8rem"></Column>
-        <Column field="gender" header="Gender" style="width: 6rem"></Column>
-        <Column field="replicate" header="Replicate" style="width: 8rem"></Column>
-        <Column field="number_of_replicates" header="Number of Replicates" style="width: 8rem"></Column>
-        <Column field="experiment" header="Experiment" style="width: 8rem"></Column>
-        <Column field="institution" header="Institution" style="width: 8rem"></Column>
-        <Column field="year" header="Year" style="width: 4rem"></Column>
-
-      </DataTable>
-
+      <Table :dataset="this.expression_merged"/>
     </div>
   </div>
 </template>
@@ -72,6 +48,8 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
 import _ from 'underscore';
+
+import Table from '@/components/svg/Table.vue'
 
 import eyeUrl from '@/assets/eye.svg'
 import eyeOffUrl from '@/assets/eye-off.svg'
@@ -143,6 +121,7 @@ export default {
     ToggleButton,
     DataTable,
     Column,
+    Table,
   },
   props: { 
     genes: Array,

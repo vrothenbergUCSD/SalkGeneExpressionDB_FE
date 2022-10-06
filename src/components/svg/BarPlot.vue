@@ -3,7 +3,7 @@
     <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
       <ProgressSpinner class="w-full mt-10" />
     </div>
-    
+
     <div id="plot-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
       <div id="group-by" class="flex flex-col align-items-center mx-2">
         <div class="font-semibold pb-2">Group by:</div>
@@ -23,41 +23,13 @@
           <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
         </div>
       </div>
-
     </div>
-
-
-    
     
     <div id="plot-area" class="mt-10">
     </div>
 
     <div id="table-area" class="mt-1">
-      <div class="font-semibold">Filtered Dataset</div>
-      <DataTable :value="this.expression_merged" :scrollable="true" scrollHeight="400px"
-        scrollDirection="both" class="p-datatable-sm">
-        <Column field="gene_id" header="Gene ID" style="width: 10rem"></Column>
-        <Column field="gene_expression" header="Gene Expression" style="width: 7rem">
-          <template #body="slotProps">
-            {{Math.round(slotProps.data.gene_expression * 1000)/1000}}
-          </template>
-        </Column>
-        <Column field="data_type" header="Data Type" style="width: 8rem"></Column>
-        <Column field="sample_name" header="Sample Name" style="width: 10rem"></Column>
-        <Column field="time_point" header="Time Point (ZT)" style="width: 7rem"></Column>
-        <Column field="condition" header="Condition" style="width: 7rem"></Column>
-        <Column field="species" header="Species" style="width: 8rem"></Column>
-        <Column field="tissue" header="Tissue" style="width: 8rem"></Column>
-        <Column field="age_months" header="Age (months)" style="width: 8rem"></Column>
-        <Column field="gender" header="Gender" style="width: 6rem"></Column>
-        <Column field="replicate" header="Replicate" style="width: 8rem"></Column>
-        <Column field="number_of_replicates" header="Number of Replicates" style="width: 8rem"></Column>
-        <Column field="experiment" header="Experiment" style="width: 8rem"></Column>
-        <Column field="institution" header="Institution" style="width: 8rem"></Column>
-        <Column field="year" header="Year" style="width: 4rem"></Column>
-
-      </DataTable>
-
+      <Table :dataset="this.expression_merged"/>
     </div>
   </div>
 </template>
@@ -74,6 +46,8 @@ import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import _ from 'underscore'
+
+import Table from '@/components/svg/Table.vue'
 
 import eyeUrl from '@/assets/eye.svg'
 import eyeOffUrl from '@/assets/eye-off.svg'
@@ -127,6 +101,7 @@ export default {
     Button,
     DataTable,
     Column,
+    Table,
   },
   props: {
     genes: Array,
