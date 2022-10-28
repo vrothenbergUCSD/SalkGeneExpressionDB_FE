@@ -585,8 +585,8 @@ export default {
       }
     },
     sample_counts(csv) {
-      console.log('sample_counts')
-      console.log(csv)
+      // console.log('sample_counts')
+      // console.log(csv)
 
       let rows = csv.split('\n')
       let conditions = {}
@@ -754,10 +754,10 @@ export default {
         };
         const pat = '\\b(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?!["&\'])\\S)+)\\b'
         const re = new RegExp(pat)
-        console.log('this.doi', this.doi)
-        console.log('re:', re)
+        // console.log('this.doi', this.doi)
+        // console.log('re:', re)
         var found = re.exec(this.doi);
-        console.log(found)
+        // console.log(found)
         if (!found) {
           console.log('ERROR: Invalid DOI format.')
           this.doiInvalid = true 
@@ -835,8 +835,13 @@ export default {
       formData.append('gene_metadata_filename', this.upload_gene_metadata_filename)
       formData.append('sample_metadata_filename', this.upload_sample_metadata_filename)
       formData.append('gene_expression_data_filename', this.upload_gene_expression_data_filename)
-
+    
+      const token = this.$store.state.token.token
+      formData.append('authorization', token)
+      
+      // let api_result = await DataService.testAuth(formData)
       let api_result = await DataService.postDataset(formData)
+
       const time_elapsed = (Date.now() - start) / 1000
       console.log(`post_dataset: Time elapsed: ${time_elapsed}s`)
       this.uploading=false
@@ -912,7 +917,7 @@ export default {
         gene_expression_data_table_name: gene_expression_data_table_name,
       })
 
-      if (docRef.exists()) {
+      if (docRef) {
         console.log('Firestore: Successfully uploaded dataset metadata.')
 
         let api_result = await this.post_dataset()
@@ -928,15 +933,19 @@ export default {
           console.log('BigQuery: Successfully uploaded dataset tables.')
         }
 
-        for (let i = 0; i < api_result.data.errorLog.length; i++) {
-          if (api_result.data.errorLog[i].length > 0) {
-            this.upload_files_error_log.concat(api_result.data.errorLog[i]) 
-          }
-        } 
+        if (api_result.data.errorLog) {
+          for (let i = 0; i < api_result.data.errorLog.length; i++) {
+            if (api_result.data.errorLog[i] && api_result.data.errorLog[i].length > 0) {
+              this.upload_files_error_log.concat(api_result.data.errorLog[i]) 
+            }
+          } 
+        }
 
         if (this.upload_files_error_log.length > 0) {
           this.$toast.add({severity: 'error', summary: 'Error', detail: 'Error Uploading', life: 10000});
         }
+      } else {
+        console.error('Failed to upload to Firestore')
       }
     }
   }

@@ -218,6 +218,7 @@
           </AccordionTab>
         </Accordion>
       </div>
+
       <div id="graphs-view" class="w-3/4 h-1/2 min-w-[50rem]">
         <div v-if="this.got_datasets && this.got_gene_data">
           <div class="card mt-1">
@@ -236,6 +237,8 @@
           <ProgressSpinner v-show="!(this.got_datasets && this.got_gene_data)" class="m-auto"/>
         </div>
       </div>
+
+
     </div>
   </div>
 </div>
@@ -527,6 +530,8 @@ export default {
       console.log('get_sample_metadata_tables elapsed: ', elapsed)
     },
     check_combo(table_obj, sample_metadata_lookup, genes_arr, conditions_arr, genders_arr) {
+      // Check for missing combinations of gene condition and gender
+      // Used for updating differential data, instead of downloading everything again
       for (let i=0; i<genes_arr.length; i++) {
         for (let j=0; j<conditions_arr.length; j++) {
           for (let k=0; k<genders_arr.length; k++) {

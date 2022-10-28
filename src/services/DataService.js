@@ -96,6 +96,14 @@ class DataService {
       }
     })
   }
+  async testAuth(formData) {
+    return http.post('ping', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      }
+    })
+
+  }
 
 }
 

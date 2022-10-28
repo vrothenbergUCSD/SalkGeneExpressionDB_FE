@@ -21,7 +21,13 @@
           <Button type="button" label="" icon="pi pi-download" @click="toggle" 
             aria-haspopup="true" aria-controls="overlay_menu"/>
           <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
-        </div>    
+        </div> 
+        <div class="flex flex-col items-center ml-2">
+          <div class="font-semibold pb-2">Colors</div>
+          <Button type="button" label="" icon="pi pi-palette" @click="toggle" 
+            aria-haspopup="true" aria-controls="overlay_menu"/>
+          <Menu id="overlay_menu" ref="menu" :model="option_items" :popup="true" />
+        </div>   
       </div> 
     </div>
 
@@ -185,7 +191,22 @@ export default {
           icon: 'pi pi-table',
           command: () => this.downloadCSV()
         }
-      ]
+      ],
+      option_items: [
+        {
+          label: 'Spectral',
+          command: () => this.change_color(d3.interpolateSpectral)
+        },
+        {
+          label: 'Viridis',
+          command: () => this.change_color(d3.interpolateViridis)
+        },
+        {
+          label: 'Warm',
+          command: () => this.change_color(d3.interpolateWarm)
+        }
+      ],
+    
     }
   },
   watch: {
@@ -567,6 +588,15 @@ export default {
       this.svg.append('g')
         .attr('id', 'legend')
         .attr('transform', `translate(${this.legendX}, 0)`)
+      
+      // Color 
+      this.color = d3.scaleSequential(d3.interpolateWarm)
+
+    },
+    change_color(d3color) {
+      this.color = d3.scaleSequential(d3color)
+      this.update_line_plot()
+      this.legend()
 
     },
     update_line_plot() {
@@ -580,8 +610,9 @@ export default {
       // var color = d3.scaleSequential().domain([1,categories]).interpolator(d3.interpolateSinebow)
       
       // TODO: More color schemes, color blind, user customized colors, etc.
-      var color2 = d3.scaleSequential(d3.interpolateWarm)
-      this.color = color2
+      // this.color = d3.scaleSequential(d3.interpolateWarm)
+      
+      
 
 
       // Create the X axis
@@ -605,8 +636,8 @@ export default {
           .data(this.sumstat)
           .join(
             (enter) => {
-              // console.log('line enter')
-              // console.log(enter)
+              console.log('line enter')
+              console.log(enter)
               enter.append('path')
                 .attr('class', 'line')
                 .attr('id', d => `line_${d[0]}`)
@@ -617,6 +648,10 @@ export default {
                   (d[1]))
                 .attr("fill", "none")
                 .attr("stroke-width", 1.5)
+                .attr("stroke-dasharray", d => {
+                  const group = d[0].split('_').at(-1)
+                  return group == 'ALF' ? ('3,3') : null;
+                })
                 .attr("stroke", d => this.getHSL(d[0]))
                 .transition_attributes('stroke-opacity', d => 
                   this.sumstat_visibility[d[0]])
@@ -640,8 +675,11 @@ export default {
             (exit) => exit.transition_attributes('stroke-opacity', 0).remove()
           )
       // Tissue > Gene > Group 
+      console.log('this.avgPoints')
 
       // Draw dots on line with averaged data points
+      // TRF points represented with a solid circle
+      // ALF points represented with a hollow circle
       this.svg.select('#avgPoints')
         .selectAll(".dot")
         // Flattened array
@@ -653,7 +691,11 @@ export default {
             enter.append("circle")
               .attr('class', 'dot')
               .attr('id', d => `dot_${d.identifier}`)
-              .style("fill", d => this.getHSL(d.identifier))
+              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr("fill", d => {
+                const group = d.identifier.split('_').at(-1);
+                return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
+              })
               .attr("cx", d => x(d.time_point))
               .attr("cy", d => y(d.gene_expression_norm_avg))
               .attr("r", 2)
@@ -665,7 +707,11 @@ export default {
             // console.log(update)
             update.attr('cx', d => x(d.time_point))
               .attr('cy', d => y(d.gene_expression_norm_avg))
-              .style('fill', d => this.getHSL(d.identifier))
+              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr("fill", d => {
+                const group = d.identifier.split('_').at(-1);
+                return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
+              })
               .transition_attributes('fill-opacity', d =>
                 this.sumstat_visibility[d.identifier])
               .attr('id', d => `dot_${d.identifier}`)
@@ -742,11 +788,15 @@ export default {
               // .attr("class", "dot")
               .attr('class', 'dot')
               .attr('id', d => `dot_${d.identifier}`)
-              .style("fill", d => this.getHSL(d.identifier))
+              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr("fill", d => {
+                const group = d.identifier.split('_').at(-1);
+                return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
+              })
               .attr("cx", d => x(d.time_point))
               .attr("cy", d => y(d.gene_expression_norm))
               .attr("r", 2)
-              .transition_attributes('fill-opacity', d => 
+              .transition_attributes('opacity', d => 
                 (this.sumstat_visibility[d.identifier] && this.showReplicatePoints) ? 1 : 0)
           },
           (update) => {
@@ -754,8 +804,12 @@ export default {
             // console.log(update)
             update.attr('cx', d => x(d.time_point))
               .attr('cy', d => y(d.gene_expression_norm))
-              .style('fill', d => this.getHSL(d.identifier))
-              .transition_attributes('fill-opacity', d => 
+              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr("fill", d => {
+                const group = d.identifier.split('_').at(-1);
+                return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
+              })
+              .transition_attributes('opacity', d => 
                 (this.sumstat_visibility[d.identifier] && this.showReplicatePoints) ? 1 : 0)
               .attr('id', d => `dot_${d.identifier}`)
           },
@@ -1176,10 +1230,10 @@ export default {
       const group = name.split('_').at(-1)
       let hsl = d3.hsl(this.color(this.cat_map.get(cat)))
       // If gene flag is true, use unshaded base color 
-      if (!gene) {
-        const factor = 1 + (((group === 'ALF') - 0.5) / shade_factor)
-        hsl.l *= factor
-      }
+      // if (!gene) {
+      //   const factor = 1 + (((group === 'ALF') - 0.5) / shade_factor)
+      //   hsl.l *= factor
+      // }
       return hsl
     },
     popover_text(d) {
@@ -1411,10 +1465,10 @@ export default {
       return text
     },
     infoHover(evt, d) {
-      console.log('infoHover')
-      console.log(evt)
-      console.log('d')
-      console.log(d)
+      // console.log('infoHover')
+      // console.log(evt)
+      // console.log('d')
+      // console.log(d)
       const self = evt.currentTarget
       const self_dims = self.getBoundingClientRect()
       
@@ -1439,7 +1493,7 @@ export default {
       g.attr("transform", `translate(${pos_x},${pos_y})`);
 
       const currType = root.querySelector('text').getAttribute('class').split('_')[1]
-      console.log('currType', currType)
+      // console.log('currType', currType)
       let info_text
       if (currType == 'tissue') {
         info_text = this.infoTissueText(d)
@@ -1450,7 +1504,7 @@ export default {
       }
       if (!info_text) return g.style('display', 'none')
 
-      console.log('info_text', info_text)
+      // console.log('info_text', info_text)
       
       // tooltip group
       g.style("display", "flex")
