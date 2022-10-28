@@ -605,8 +605,8 @@ export default {
           .data(this.sumstat)
           .join(
             (enter) => {
-              // console.log('line enter')
-              // console.log(enter)
+              console.log('line enter')
+              console.log(enter)
               enter.append('path')
                 .attr('class', 'line')
                 .attr('id', d => `line_${d[0]}`)
@@ -617,6 +617,10 @@ export default {
                   (d[1]))
                 .attr("fill", "none")
                 .attr("stroke-width", 1.5)
+                .attr("stroke-dasharray", d => {
+                  const group = d[0].split('_').at(-1)
+                  return group == 'ALF' ? ('3,3') : null;
+                })
                 .attr("stroke", d => this.getHSL(d[0]))
                 .transition_attributes('stroke-opacity', d => 
                   this.sumstat_visibility[d[0]])
