@@ -194,8 +194,12 @@ export default {
       ],
       option_items: [
         {
-          label: 'Spectral',
-          command: () => this.change_color(d3.interpolateSpectral)
+          label: 'Rainbow',
+          command: () => this.change_color(d3.interpolateRainbow)
+        },
+        {
+          label: 'Sinebow',
+          command: () => this.change_color(d3.interpolateSinebow)
         },
         {
           label: 'Viridis',
@@ -204,7 +208,8 @@ export default {
         {
           label: 'Warm',
           command: () => this.change_color(d3.interpolateWarm)
-        }
+        },
+
       ],
     
     }
@@ -590,7 +595,7 @@ export default {
         .attr('transform', `translate(${this.legendX}, 0)`)
       
       // Color 
-      this.color = d3.scaleSequential(d3.interpolateWarm)
+      this.color = d3.scaleSequential(d3.interpolateSinebow)
 
     },
     change_color(d3color) {

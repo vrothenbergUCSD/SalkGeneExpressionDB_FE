@@ -184,8 +184,12 @@ export default {
       ],
       option_items: [
         {
-          label: 'Spectral',
-          command: () => this.change_color(d3.interpolateSpectral)
+          label: 'Rainbow',
+          command: () => this.change_color(d3.interpolateRainbow)
+        },
+        {
+          label: 'Sinebow',
+          command: () => this.change_color(d3.interpolateSinebow)
         },
         {
           label: 'Viridis',
@@ -670,7 +674,7 @@ export default {
         .attr('id', 'legend')
         .attr('transform', `translate(${this.legendX}, 0)`)
 
-      this.color = d3.scaleSequential(d3.interpolateWarm)
+      this.color = d3.scaleSequential(d3.interpolateSinebow)
 
     },
     update_grouped_bar_plot() {
