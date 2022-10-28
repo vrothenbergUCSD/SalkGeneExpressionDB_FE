@@ -20,6 +20,8 @@ export default createStore({
       profileInstitution: null,
       profileId: null,
       profileInitials: null,
+      token: null,
+      profileUploader: null,
     }
   },
   getters: {
@@ -45,7 +47,9 @@ export default createStore({
     },
     setProfileAdmin(state, payload) {
       state.profileAdmin = payload;
-      console.log(state.profileAdmin);
+    },
+    setProfileUploader(state, payload) {
+      state.profileUploader = payload;
     },
     setProfileInitials(state) {
       state.profileInitials =
@@ -59,10 +63,14 @@ export default createStore({
     },
     changeInstitution(state, payload) {
       state.profileInstitution = payload
-    }
+    },
+    setToken(state, payload) {
+      state.token = payload
+    },
+
   },
   actions: {
-    async getCurrentUser({ commit }, user) {
+    async getCurrentUser({ commit, dispatch }, user) {
       // const dataBase = await firestore.collection("users").doc(firebase.auth().currentUser.uid);
       // const dbResults = await dataBase.get();
       // console.log('getCurrentUser')
@@ -79,8 +87,11 @@ export default createStore({
         commit("setProfileInfo", result);
         commit("setProfileInitials");
         const token = await user.getIdTokenResult();
-        const admin = await token.claims.admin;
-        commit("setProfileAdmin", admin);
+        commit("setToken", token)
+        await Promise.all([
+          dispatch("getAdmin"),
+          dispatch("getUploader"),
+        ])
       }
     },
     async updateUserSettings({ commit, state }) {
@@ -92,9 +103,7 @@ export default createStore({
       // console.log(docRef)
 
       const docSnap = await getDoc(docRef)
-      // console.log(docSnap)
       if (docSnap.exists()) {
-        // console.log('docSnap exists')
         await updateDoc(docRef, {
           firstName: state.profileFirstName,
           lastName: state.profileLastName,
@@ -108,5 +117,23 @@ export default createStore({
         console.log(`User id does not exist: ${state.profileId}`)
       }
     },
+    async getAdmin({ commit, state }) {
+      const docRef = doc(firestore, "admins", state.profileId);
+      const docSnap = await getDoc(docRef)
+      if (docSnap.exists()) {
+        commit("setProfileAdmin", true);
+      } else {
+        commit("setProfileAdmin", false);
+      }
+    },
+    async getUploader({ commit, state }) {
+      const docRef = doc(firestore, "uploaders", state.profileId);
+      const docSnap = await getDoc(docRef)
+      if (docSnap.exists()) {
+        commit("setProfileUploader", true);
+      } else {
+        commit("setProfileUploader", false);
+      }
+    }
   }
 })

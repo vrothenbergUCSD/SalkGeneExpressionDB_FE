@@ -61,10 +61,14 @@
           <dt class="text-sm font-medium text-gray-500">Admin</dt>
           <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ admin }}</dd>
         </div>
+        <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">Uploader</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ uploader }}</dd>
+        </div>
         <!-- <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
           <dt class="text-sm font-medium text-gray-500">About</dt>
           <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">Fugiat ipsum ipsum deserunt culpa aute sint do nostrud anim incididunt cillum culpa consequat. Excepteur qui ipsum aliquip consequat sint. Sit id mollit nulla mollit nostrud in ea officia proident. Irure nostrud pariatur mollit ad adipisicing reprehenderit deserunt qui eu.</dd>
-        </div> -->
+        </div>
         <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
           <dt class="text-sm font-medium text-gray-500">Datasets</dt>
           <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
@@ -72,7 +76,7 @@
               <li class="pl-3 pr-4 py-3 flex items-center justify-between text-sm">
                 <div class="w-0 flex-1 flex items-center">
                   <PaperClipIcon class="flex-shrink-0 h-5 w-5 text-gray-400" aria-hidden="true" />
-                  <span class="ml-2 flex-1 w-0 truncate"> Mouse_TRF_2019_Heart.csv </span>
+                  <span class="ml-2 flex-1 w-0 truncate"> TEST_Mouse_TRF_2019_Heart.csv </span>
                 </div>
                 <div class="ml-4 flex-shrink-0">
                   <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500"> Download </a>
@@ -81,7 +85,7 @@
               <li class="pl-3 pr-4 py-3 flex items-center justify-between text-sm">
                 <div class="w-0 flex-1 flex items-center">
                   <PaperClipIcon class="flex-shrink-0 h-5 w-5 text-gray-400" aria-hidden="true" />
-                  <span class="ml-2 flex-1 w-0 truncate"> Human_ALF_2020_Blood.pdf </span>
+                  <span class="ml-2 flex-1 w-0 truncate"> TEST_Human_ALF_2020_Blood.pdf </span>
                 </div>
                 <div class="ml-4 flex-shrink-0">
                   <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500"> Download </a>
@@ -90,6 +94,7 @@
             </ul>
           </dd>
         </div>
+        -->
       </dl>
     </div>
   </div>
@@ -103,8 +108,13 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import ToggleButton from 'primevue/togglebutton'
 import { PaperClipIcon } from '@heroicons/vue/solid'
+import { auth } from "@/firebase/firebaseInit";
+import { getAuth } from "firebase/auth";
 
-PaperClipIcon
+// Testing
+import DataService from "@/services/DataService.js"
+
+// PaperClipIcon
 
 export default {
   name: "Profile",
@@ -131,12 +141,23 @@ export default {
       institution: null,
       institutionInvalid: null,
       admin: null,
+      uploader: null,
 
     }
   },
-  mounted() {
+  async mounted() {
     this.getProfile()
 
+    let formData = new FormData() 
+
+
+    const token = this.$store.state.token.token
+    console.log('token')
+    console.log(token)
+    formData.append('authorization', token)
+    let api_result = await DataService.testAuth(formData)
+    console.log('api_result')
+    console.log(api_result)
 
   },
   // computed: {
@@ -181,6 +202,7 @@ export default {
       this.institutionInvalid = false
       this.email = this.$store.state.profileEmail
       this.admin = this.$store.state.profileAdmin ? 'Yes' : 'No'
+      this.uploader = this.$store.state.profileUploader ? 'Yes' : 'No'
 
     },
     toggleEdit() {
