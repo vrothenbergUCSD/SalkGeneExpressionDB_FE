@@ -644,8 +644,18 @@ export default {
             (exit) => exit.transition_attributes('stroke-opacity', 0).remove()
           )
       // Tissue > Gene > Group 
+      console.log('this.avgPoints')
+      console.log(this.avgPoints)
+      const avgPointsALF = this.avgPoints.filter(d => d.sample_name.includes('ALF_'))
+      const avgPointsTRF = this.avgPoints.filter(d => d.sample_name.includes('TRF_'))
+      console.log('avgPointsALF')
+      console.log(avgPointsALF)
+      console.log('avgPointsTRF')
+      console.log(avgPointsTRF)
 
       // Draw dots on line with averaged data points
+      // TRF points represented with a solid circle
+      // ALF points represented with a hollow circle
       this.svg.select('#avgPoints')
         .selectAll(".dot")
         // Flattened array
@@ -657,7 +667,11 @@ export default {
             enter.append("circle")
               .attr('class', 'dot')
               .attr('id', d => `dot_${d.identifier}`)
-              .style("fill", d => this.getHSL(d.identifier))
+              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr("fill", d => {
+                const group = d.identifier.split('_').at(-1);
+                return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
+              })
               .attr("cx", d => x(d.time_point))
               .attr("cy", d => y(d.gene_expression_norm_avg))
               .attr("r", 2)
@@ -669,7 +683,11 @@ export default {
             // console.log(update)
             update.attr('cx', d => x(d.time_point))
               .attr('cy', d => y(d.gene_expression_norm_avg))
-              .style('fill', d => this.getHSL(d.identifier))
+              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr("fill", d => {
+                const group = d.identifier.split('_').at(-1);
+                return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
+              })
               .transition_attributes('fill-opacity', d =>
                 this.sumstat_visibility[d.identifier])
               .attr('id', d => `dot_${d.identifier}`)
@@ -746,11 +764,15 @@ export default {
               // .attr("class", "dot")
               .attr('class', 'dot')
               .attr('id', d => `dot_${d.identifier}`)
-              .style("fill", d => this.getHSL(d.identifier))
+              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr("fill", d => {
+                const group = d.identifier.split('_').at(-1);
+                return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
+              })
               .attr("cx", d => x(d.time_point))
               .attr("cy", d => y(d.gene_expression_norm))
               .attr("r", 2)
-              .transition_attributes('fill-opacity', d => 
+              .transition_attributes('opacity', d => 
                 (this.sumstat_visibility[d.identifier] && this.showReplicatePoints) ? 1 : 0)
           },
           (update) => {
@@ -758,8 +780,12 @@ export default {
             // console.log(update)
             update.attr('cx', d => x(d.time_point))
               .attr('cy', d => y(d.gene_expression_norm))
-              .style('fill', d => this.getHSL(d.identifier))
-              .transition_attributes('fill-opacity', d => 
+              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr("fill", d => {
+                const group = d.identifier.split('_').at(-1);
+                return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
+              })
+              .transition_attributes('opacity', d => 
                 (this.sumstat_visibility[d.identifier] && this.showReplicatePoints) ? 1 : 0)
               .attr('id', d => `dot_${d.identifier}`)
           },
@@ -1180,10 +1206,10 @@ export default {
       const group = name.split('_').at(-1)
       let hsl = d3.hsl(this.color(this.cat_map.get(cat)))
       // If gene flag is true, use unshaded base color 
-      if (!gene) {
-        const factor = 1 + (((group === 'ALF') - 0.5) / shade_factor)
-        hsl.l *= factor
-      }
+      // if (!gene) {
+      //   const factor = 1 + (((group === 'ALF') - 0.5) / shade_factor)
+      //   hsl.l *= factor
+      // }
       return hsl
     },
     popover_text(d) {
@@ -1415,10 +1441,10 @@ export default {
       return text
     },
     infoHover(evt, d) {
-      console.log('infoHover')
-      console.log(evt)
-      console.log('d')
-      console.log(d)
+      // console.log('infoHover')
+      // console.log(evt)
+      // console.log('d')
+      // console.log(d)
       const self = evt.currentTarget
       const self_dims = self.getBoundingClientRect()
       
@@ -1443,7 +1469,7 @@ export default {
       g.attr("transform", `translate(${pos_x},${pos_y})`);
 
       const currType = root.querySelector('text').getAttribute('class').split('_')[1]
-      console.log('currType', currType)
+      // console.log('currType', currType)
       let info_text
       if (currType == 'tissue') {
         info_text = this.infoTissueText(d)
@@ -1454,7 +1480,7 @@ export default {
       }
       if (!info_text) return g.style('display', 'none')
 
-      console.log('info_text', info_text)
+      // console.log('info_text', info_text)
       
       // tooltip group
       g.style("display", "flex")
