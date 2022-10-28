@@ -22,6 +22,12 @@
             aria-haspopup="true" aria-controls="overlay_menu"/>
           <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
         </div>
+        <div class="flex flex-col items-center ml-2">
+          <div class="font-semibold pb-2">Colors</div>
+          <Button type="button" label="" icon="pi pi-palette" @click="toggle" 
+            aria-haspopup="true" aria-controls="overlay_menu"/>
+          <Menu id="overlay_menu" ref="menu" :model="option_items" :popup="true" />
+        </div>   
       </div>
     </div>
     
@@ -176,6 +182,20 @@ export default {
           command: () => this.downloadCSV()
         }
       ],
+      option_items: [
+        {
+          label: 'Spectral',
+          command: () => this.change_color(d3.interpolateSpectral)
+        },
+        {
+          label: 'Viridis',
+          command: () => this.change_color(d3.interpolateViridis)
+        },
+        {
+          label: 'Warm',
+          command: () => this.change_color(d3.interpolateWarm)
+        }
+      ],
     }
   },
   async mounted() {
@@ -298,6 +318,12 @@ export default {
         link.click()
         document.body.removeChild(link)
       } 
+    },
+    change_color(d3color) {
+      this.color = d3.scaleSequential(d3color)
+      this.update_grouped_bar_plot()
+      this.legend()
+
     },
     onResize() {
       this.windowHeight = window.innerHeight
@@ -644,6 +670,8 @@ export default {
         .attr('id', 'legend')
         .attr('transform', `translate(${this.legendX}, 0)`)
 
+      this.color = d3.scaleSequential(d3.interpolateWarm)
+
     },
     update_grouped_bar_plot() {
       console.log('update_grouped_bar_plot')
@@ -697,7 +725,7 @@ export default {
         data = data.filter(e => this.time_visibility[e[0]])
       }
       
-      this.color = d3.scaleSequential(d3.interpolateWarm)
+      
 
       this.x.domain(groups)
         .padding([0.1])

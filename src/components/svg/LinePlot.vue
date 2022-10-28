@@ -21,7 +21,13 @@
           <Button type="button" label="" icon="pi pi-download" @click="toggle" 
             aria-haspopup="true" aria-controls="overlay_menu"/>
           <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
-        </div>    
+        </div> 
+        <div class="flex flex-col items-center ml-2">
+          <div class="font-semibold pb-2">Colors</div>
+          <Button type="button" label="" icon="pi pi-palette" @click="toggle" 
+            aria-haspopup="true" aria-controls="overlay_menu"/>
+          <Menu id="overlay_menu" ref="menu" :model="option_items" :popup="true" />
+        </div>   
       </div> 
     </div>
 
@@ -185,7 +191,22 @@ export default {
           icon: 'pi pi-table',
           command: () => this.downloadCSV()
         }
-      ]
+      ],
+      option_items: [
+        {
+          label: 'Spectral',
+          command: () => this.change_color(d3.interpolateSpectral)
+        },
+        {
+          label: 'Viridis',
+          command: () => this.change_color(d3.interpolateViridis)
+        },
+        {
+          label: 'Warm',
+          command: () => this.change_color(d3.interpolateWarm)
+        }
+      ],
+    
     }
   },
   watch: {
@@ -567,6 +588,15 @@ export default {
       this.svg.append('g')
         .attr('id', 'legend')
         .attr('transform', `translate(${this.legendX}, 0)`)
+      
+      // Color 
+      this.color = d3.scaleSequential(d3.interpolateWarm)
+
+    },
+    change_color(d3color) {
+      this.color = d3.scaleSequential(d3color)
+      this.update_line_plot()
+      this.legend()
 
     },
     update_line_plot() {
@@ -580,8 +610,9 @@ export default {
       // var color = d3.scaleSequential().domain([1,categories]).interpolator(d3.interpolateSinebow)
       
       // TODO: More color schemes, color blind, user customized colors, etc.
-      var color2 = d3.scaleSequential(d3.interpolateWarm)
-      this.color = color2
+      // this.color = d3.scaleSequential(d3.interpolateWarm)
+      
+      
 
 
       // Create the X axis
@@ -645,13 +676,6 @@ export default {
           )
       // Tissue > Gene > Group 
       console.log('this.avgPoints')
-      console.log(this.avgPoints)
-      const avgPointsALF = this.avgPoints.filter(d => d.sample_name.includes('ALF_'))
-      const avgPointsTRF = this.avgPoints.filter(d => d.sample_name.includes('TRF_'))
-      console.log('avgPointsALF')
-      console.log(avgPointsALF)
-      console.log('avgPointsTRF')
-      console.log(avgPointsTRF)
 
       // Draw dots on line with averaged data points
       // TRF points represented with a solid circle
