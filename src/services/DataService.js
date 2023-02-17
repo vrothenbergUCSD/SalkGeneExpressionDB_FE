@@ -102,7 +102,9 @@ class DataService {
         'Content-Type': 'multipart/form-data',
       }
     })
-
+  }
+  async getFile(url) {
+    return http.get(url)
   }
 
 }

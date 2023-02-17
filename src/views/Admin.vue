@@ -436,9 +436,6 @@ export default {
     this.getOwnedDatasets()
   },
   methods: {
-    description(d) {
-      return d.length < 50 ? d : d.substring(0,50) + "..."
-    },
     async load_metadata() {
       this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
     },
@@ -795,6 +792,9 @@ export default {
       await Promise.all(selected_groups.map(async (group) => {
         this.updateUsers(group[`${user_type}_users`], user_type, group_id)
       }))
+    },
+    description(d) {
+      return d.length < 50 ? d : d.substring(0,50) + "..."
     },
 
     // Data.vue methods
