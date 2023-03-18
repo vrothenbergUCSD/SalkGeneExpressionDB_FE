@@ -22,6 +22,7 @@
             aria-haspopup="true" aria-controls="overlay_menu"/>
           <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
         </div>
+        
         <div class="flex flex-col items-center ml-2">
           <div class="font-semibold pb-2">Colors</div>
           <Button type="button" label="" icon="pi pi-palette" @click="toggle" 
@@ -60,7 +61,6 @@ import eyeOffUrl from '@/assets/eye-off.svg'
 import infoUrl from '@/assets/info.svg'
 
 // import TimeSelection from "@/components/svg/TimeSelection.vue";
-
 
 const animationInterval = 250
 // Custom function, reduces redundant code for transitions

@@ -1,7 +1,7 @@
 
 // import firebase from "firebase";
 import { initializeApp } from "firebase/app";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaV3Provider, getToken } from "firebase/app-check";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -21,6 +21,7 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 
+self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 const appCheck = initializeAppCheck(firebaseApp, {
   provider: new ReCaptchaV3Provider('6LcTdI8kAAAAACUbokBXW8XxlpED2Jrx2BS2rTWu'),
 
@@ -28,6 +29,15 @@ const appCheck = initializeAppCheck(firebaseApp, {
   // tokens as needed.
   isTokenAutoRefreshEnabled: true
 });
+
+getToken(appCheck)
+  .then(() => {
+    console.log('getToken success!!!!')
+  })
+  .catch((error) => {
+    console.log('getToken fail!')
+    console.log(error.message)
+  })
 
 const auth = getAuth()
 const firestore = getFirestore(firebaseApp)

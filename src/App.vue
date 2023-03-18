@@ -3,7 +3,6 @@
     <NavBar/>
     <router-view/>
     <Footer/>
-    <VueRecaptcha sitekey="6LcTdI8kAAAAACUbokBXW8XxlpED2Jrx2BS2rTWu"/>
 
   </div>
   
@@ -53,6 +52,7 @@ export default {
     auth.onAuthStateChanged((user) => {
       this.$store.commit("updateUser", user)
       if (user) {
+        console.log("Before getCurrentUser")
         this.$store.dispatch("getCurrentUser", user)
       }
     })

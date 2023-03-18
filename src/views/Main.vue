@@ -391,8 +391,9 @@ export default {
       const start = Date.now()
       this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
       // Parse gender and condition fields
+      // console.log(this.db_metadata)
       this.db_metadata.forEach(e => {
-        console.log(e)
+        // console.log(e)
         const genderStr = e.gender.replaceAll(/[']+/g, '"')
         e.gender = JSON.parse(genderStr)
         const conditionStr = e.condition.replaceAll(/[']+/g, '"')
@@ -406,9 +407,13 @@ export default {
 
       this.experiment_list = this.build_list([...new Set(this.db_metadata.map(item => item.experiment))])
       this.experiment_filtered = this.experiment_list
+      console.log('this.experiment_filtered')
+      console.log(this.experiment_filtered)
 
       this.tissue_list = this.build_list([...new Set(this.db_metadata.map(item => item.tissue))])
       this.tissue_filtered = this.tissue_list
+      console.log('this.tissue_filtered')
+      console.log(this.tissue_filtered)
 
       this.gender_list = this.build_list([...new Set(this.db_metadata.map(item =>
         [...new Set(item.gender.map(g => g.gender))]
@@ -431,6 +436,7 @@ export default {
       this.gene_metadata_table_names = []
       this.sample_metadata_table_names = []
       this.gene_expression_data_table_names = []
+      console.log(this.selected_metadata)
 
       if (!this.selected_metadata.length) {
         this.getting_datasets = false
@@ -468,7 +474,8 @@ export default {
       // Gets list of all gene metadata for each table in tables
       // Creates a unique set of all genes, assigns to this.genes
       // tables: Array of table names e.g. ["TRF_2018_Mouse_Arcuate_gene_metadata_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"]
-      // console.log('get_gene_metadata_tables')
+      console.log('get_gene_metadata_tables')
+      console.log(tables)
       const start = Date.now()
       this.loading_genes = true
       this.gene_metadata_tables = await Promise.all(tables.map(async (t) => {
@@ -541,7 +548,7 @@ export default {
     },
     async get_gene_expression_data_tables(genes, tables) {
       // genes: List of selected gene objects
-      // console.log('get_gene_expression_data_tables')
+      console.log('get_gene_expression_data_tables')
       const start = Date.now()
       // console.log(this.gene_expression_data_tables_all)
       const genes_str = genes.map(d => d.name).toString()
@@ -665,7 +672,7 @@ export default {
       console.log('get_gene_expression_data_tables elapsed:', elapsed)
     },
     async get_selected_gene_metadata(genes, tables) {
-      // console.log('get_selected_gene_metadata')
+      console.log('get_selected_gene_metadata')
       const start = Date.now()
       const genes_str = genes.map((d) => d.name).toString()
       this.selected_gene_metadata = await Promise.all(tables.map(async (t) => {
@@ -725,7 +732,6 @@ export default {
       // Get Genes button clicked
 
       // Check if new datasets selected
-
 
       this.get_gene_data()
     },
@@ -789,6 +795,9 @@ export default {
       this.tissue_result = this.filter_metadata_except('tissue')
       this.gender_result = this.filter_metadata_except('gender')
       this.condition_result = this.filter_metadata_except('condition')
+
+      console.log('this.species_result')
+      console.log(this.species_result)
 
       this.species_filtered = this.build_list([...new Set(this.species_result.map(item => item.species))].sort())
       this.experiment_filtered = this.build_list([...new Set(this.experiment_result.map(item => item.experiment))].sort())
@@ -858,7 +867,7 @@ export default {
       })
 
       // Performs API calls to Database on change to filters
-      // await this.get_datasets()
+      await this.get_datasets()
 
       const elapsed = Date.now() - start
       console.log('update_lookup_table time elapsed: ', elapsed)
@@ -869,10 +878,15 @@ export default {
       //  locking in current filters, preventing adding new selections that are not 
       //  in the intersection, e.g. selecting Heart tissue would filter down all 
       //  datasets to only include those from Heart tissue, preventing selecting Liver, etc.
-
+      console.log('filter_metadata_except: ' + except_category)
       let filtered = this.db_metadata
+      console.log('this.db_metadata')
+      console.log(typeof(this.db_metadata))
+      console.log(filtered)
       if (except_category != 'species') {
         const species_selected_names = this.species_selected.map(el => el.name)
+        console.log('species_selected_names')
+        console.log(species_selected_names)
         // If no species selected, then skip filtering
         if (species_selected_names.length)
           filtered = filtered.filter(
@@ -880,24 +894,36 @@ export default {
               (s) => species.toLowerCase().includes(s.toLowerCase())))
       }
 
+      console.log(filtered)
+
       if (except_category != 'experiment') {
         const experiment_selected_names = this.experiment_selected.map(el => el.name)
+        console.log('experiment_selected_names')
+        console.log(experiment_selected_names)
         if (experiment_selected_names.length)
           filtered = filtered.filter(
             ({ experiment }) => experiment_selected_names.some(
               (s) => experiment.toLowerCase().includes(s.toLowerCase())))
       }
 
+      console.log(filtered)
+
       if (except_category != 'tissue') {
         const tissue_selected_names = this.tissue_selected.map(el => el.name)
+        console.log('tissue_selected_names')
+        console.log(tissue_selected_names)
         if (tissue_selected_names.length)
           filtered = filtered.filter(
             ({ tissue }) => tissue_selected_names.some(
               (s) => tissue.toLowerCase().includes(s.toLowerCase())))
       }
 
+      console.log(filtered)
+
       if (except_category != 'gender') {
         const gender_selected_names = this.gender_selected.map(el => el.name)
+        console.log('gender_selected_names')
+        console.log(gender_selected_names)
         if (gender_selected_names.length)
           filtered = filtered.filter(
             ({ gender }) => gender_selected_names.some(
@@ -905,14 +931,20 @@ export default {
                 gend.gender.toLowerCase() == s.toLowerCase())))
       }
 
+      console.log(filtered)
+
       if (except_category != 'condition') {
         const condition_selected_names = this.condition_selected.map(el => el.name)
+        console.log('condition_selected_names')
+        console.log(condition_selected_names)
         if (condition_selected_names.length)
           filtered = filtered.filter(
             ({ condition }) => condition_selected_names.some(
               (s) => condition.some((cond) =>
                 cond.condition.toLowerCase() == s.toLowerCase())))
       }
+
+      console.log(filtered)
 
       return filtered
     },

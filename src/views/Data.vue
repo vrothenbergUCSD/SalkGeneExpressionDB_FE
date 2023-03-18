@@ -295,7 +295,7 @@ import Divider from 'primevue/divider'
 import ProgressBar from 'primevue/progressbar'
 
 import { storage, firestore } from "@/firebase/firebaseInit.js"
-import { ref, getDownloadURL } from "firebase/storage";
+import { ref, getDownloadURL, getBlob } from "firebase/storage";
 import { doc, collection, getDoc, addDoc, setDoc } from "firebase/firestore"
 
 
@@ -458,11 +458,11 @@ export default {
   mounted() {
     // Testing
     console.log('Mounted - Testing')
-    this.experiment = 'test_experiment'
-    this.year = 2022
-    this.institution = 'test_inst'
-    this.species = 'test_species'
-    this.tissue = 'test_tissue'
+    this.experiment = 'TRF'
+    this.year = 2019
+    this.institution = 'Salk Institute'
+    this.species = 'Mus Musculus'
+    this.tissue = ''
   },
   methods: {
     async recaptcha() {
@@ -710,32 +710,33 @@ export default {
       }
 
     },
-    async download(file) {
-      // console.log('download', file)
-      await this.$recaptchaLoaded()
+    download(file) {
+      console.log('Downloading...' + file)
+      const url = "https://storage.googleapis.com/rbio-p-datasharing.appspot.com/"  + file
+      window.location.assign(url);
+      // const fileRef = ref(storage, file)
+  
+      // console.log('fileRef')
+      // console.log(fileRef)
 
-      // // Execute reCAPTCHA with action "login".
-      // this.token = await this.$recaptcha('login')
-      
-      this.$recaptcha("login").then((token) => { 
-        // data["g-recaptcha-response"] = token;
-        const fileRef = ref(storage, file)
-        getDownloadURL(fileRef).then((url) => {
-          window.location.href = url;
-        }).catch((error) => {
-          console.log('Error on download: ', error.code)
-        })
 
-      });
-      // grecaptcha.ready(function() {
-      //   grecaptcha.execute('6LcTdI8kAAAAACUbokBXW8XxlpED2Jrx2BS2rTWu', {action: 'submit'}).then(function(token) {
-      //     // Add your logic to submit to your backend server here.
-      //     console.log(fileRef)
-      //     // const url = `gs://rbio-p-datasharing.appspot.com/${file}`;
-      //     // geneexpression_data_template
-          
-      //   });
-      // });
+      // getDownloadURL(fileRef).then((u) => {
+      //   console.log('Got url: ' + u)
+      //   // const baseUrl = 
+      //   // https://storage.googleapis.com/rbio-p-datasharing.appspot.com/sample_metadata_template.csv
+      //   // window.location.assign(url);
+      //   // const xhr = new XMLHttpRequest();
+      //   // xhr.responseType = 'blob';
+      //   // xhr.onload = (event) => {
+      //   //   const blob = xhr.response;
+      //   // };
+      //   // xhr.open('GET', url);
+      //   // xhr.send();
+        
+      // }).catch((error) => {
+      //   console.log('Error on download: ', error.code)
+      // })
+ 
 
     },
     save() {
@@ -837,7 +838,7 @@ export default {
       if (errors) return
 
       this.saveMsg = "Dataset details saved."
-      this.databaseTablePrefix = `${this.experiment}_${this.year}_${this.species}_${this.tissue}`
+      this.databaseTablePrefix = `${this.experiment}_${this.year}_${this.species}_${this.tissue}`//.split(' ').join('_')
     },
     async post_dataset() {
       console.log('post_dataset: Posting dataset to BigQuery')
