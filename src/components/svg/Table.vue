@@ -35,11 +35,14 @@
 <script>
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import Button from 'primevue/button'
+
 export default {
   name: "Table",
   components: {
     DataTable,
     Column,
+    Button,
   },
   props: {
     dataset: Array,

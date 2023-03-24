@@ -15,21 +15,22 @@
           :options="time_points_options" optionLabel="name" 
           multiple @change="updateTimePointsSelected"/>
       </div>
-      <div id="more-options" class="flex grow justify-end">
+      <div id="menu-options" class="flex grow justify-end">
         <div class="flex flex-col items-center">
           <div class="font-semibold pb-2">Download</div>
-          <Button type="button" label="" icon="pi pi-download" @click="toggle" 
-            aria-haspopup="true" aria-controls="overlay_menu"/>
-          <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
+          <Button type="button" label="" icon="pi pi-download" @click="toggle('download_menu', $event)" 
+            aria-haspopup="true" aria-controls="download_menu"/>
+          <Menu id="download_menu" ref="download_menu" :model="download_items" :popup="true" />
         </div>
         
         <div class="flex flex-col items-center ml-2">
           <div class="font-semibold pb-2">Colors</div>
-          <Button type="button" label="" icon="pi pi-palette" @click="toggle" 
-            aria-haspopup="true" aria-controls="overlay_menu"/>
-          <Menu id="overlay_menu" ref="menu" :model="option_items" :popup="true" />
+          <Button type="button" label="" icon="pi pi-palette" @click="toggle('color_menu', $event)" 
+            aria-haspopup="true" aria-controls="color_menu"/>
+          <Menu id="color_menu" ref="color_menu" :model="color_items" :popup="true" />
         </div>   
       </div>
+
     </div>
     
     <div id="plot-area" class="mt-10">
@@ -170,7 +171,7 @@ export default {
       windowHeight: window.innerHeight,
       windowWidth: window.innerWidth,
 
-      menu_items: [
+      download_items: [
         {
           label: 'Download as PNG',
           icon: 'pi pi-image',
@@ -182,7 +183,7 @@ export default {
           command: () => this.downloadCSV()
         }
       ],
-      option_items: [
+      color_items: [
         {
           label: 'Rainbow',
           command: () => this.change_color(d3.interpolateRainbow)
@@ -263,8 +264,8 @@ export default {
     }
   },
   methods: {
-    toggle(evt) {
-      this.$refs.menu.toggle(evt);
+    toggle(menu, evt) {
+      this.$refs[menu].toggle(evt);
     },  
     async downloadChart(filetype) {
       console.log('downloadChart')
