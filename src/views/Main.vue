@@ -108,6 +108,26 @@
 
                 </div>
                 <div class="p-1 border my-3 rounded">
+                  <DataTable :value="year_filtered" v-model:selection="year_selected" class="p-datatable-sm"
+                    stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" selectionMode="multiple"
+                    :metaKeySelection="false" @row-select="update_lookup_table" @row-unselect="update_lookup_table"
+                    @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table">
+                    <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                    <Column field="name" header="Year"></Column>
+                    <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                      <template #body="slotProps">
+                        {{ get_count('year', slotProps.data.name) }}
+                      </template>
+                    </Column>
+                    <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                      <template #body="slotProps">
+                        {{ get_freq('year', slotProps.data.name) }}
+                      </template>
+                    </Column>
+                  </DataTable>
+
+                </div>
+                <div class="p-1 border my-3 rounded">
                   <DataTable :value="tissue_filtered" v-model:selection="tissue_selected" class="p-datatable-sm"
                     stripedRows selectionMode="multiple" :metaKeySelection="false" :scrollable="true"
                     scrollHeight="200px" :loading="loading" @row-select="update_lookup_table"
@@ -126,7 +146,6 @@
                       </template>
                     </Column>
                   </DataTable>
-
                 </div>
                 <div class="font-semibold my-1 text-sm">
                   Samples
@@ -304,7 +323,7 @@ export default {
       selected_metadata: null,
       lookup_table: {},
 
-      dataset_categories: ['species', 'experiment', 'tissue'],
+      dataset_categories: ['species', 'experiment', 'year', 'tissue'],
       sample_categories: ['gender', 'condition'],
 
       species_list: [], //["Mouse", "Human", "Baboon"],
@@ -316,6 +335,11 @@ export default {
       experiment_filtered: [],
       experiment_selected: [],
       experiment_result: null,
+
+      year_list: [], //["2019", "2018"],
+      year_filtered: [],
+      year_selected: [],
+      year_result: null,
 
       tissue_list: [], //["Liver", "Muscle", "Adipose", "Heart", "Neuron"],
       tissue_filtered: [],
@@ -371,8 +395,9 @@ export default {
     // Testing - Remove later
     this.species_selected = [{ name: 'Mus musculus' }]
     this.experiment_selected = [{ name: 'TRF Experiment' }]
-    this.tissue_selected = [{ name: 'Arcuate' }]
-    this.gender_selected = [{ name: 'Male' }]
+    this.year_selected = [{ name: '2018'}, { name: '2019'}]
+    this.tissue_selected = [{ name: 'Adrenal' }]
+    this.gender_selected = [{ name: 'Male' }, { name: 'Female'}]
     this.condition_selected = [{ name: 'ALF' }, { name: 'TRF' }]
     this.genes_selected = [{ name: 'Clock' }]
 
@@ -391,13 +416,12 @@ export default {
       const start = Date.now()
       this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
       // Parse gender and condition fields
-      // console.log(this.db_metadata)
       this.db_metadata.forEach(e => {
-        // console.log(e)
         const genderStr = e.gender.replaceAll(/[']+/g, '"')
         e.gender = JSON.parse(genderStr)
         const conditionStr = e.condition.replaceAll(/[']+/g, '"')
         e.condition = JSON.parse(conditionStr)
+        e.year = e.year.toString()
       })
 
       this.species_list = this.build_list([...new Set(this.db_metadata.map(item => item.species))])
@@ -409,6 +433,11 @@ export default {
       this.experiment_filtered = this.experiment_list
       console.log('this.experiment_filtered')
       console.log(this.experiment_filtered)
+
+      this.year_list = this.build_list([...new Set(this.db_metadata.map(item => item.year))])
+      this.year_filtered = this.year_list
+      console.log('this.year_filtered')
+      console.log(this.year_filtered)
 
       this.tissue_list = this.build_list([...new Set(this.db_metadata.map(item => item.tissue))])
       this.tissue_filtered = this.tissue_list
@@ -437,31 +466,26 @@ export default {
       this.sample_metadata_table_names = []
       this.gene_expression_data_table_names = []
       console.log(this.selected_metadata)
-
       if (!this.selected_metadata.length) {
         this.getting_datasets = false
         this.got_datasets = false
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No datasets selected', life: 5000 });
         return
       }
-
       this.selected_metadata.forEach((e) => {
         // Build list of gene_metadata_tables
         this.gene_metadata_table_names.push(e.gene_metadata_table_name)
         this.sample_metadata_table_names.push(e.sample_metadata_table_name)
         this.gene_expression_data_table_names.push(e.gene_expression_data_table_name)
       })
-
+      console.log('this.gene_metadata_table_names')
+      console.log(this.gene_metadata_table_names)
       await Promise.all([
         this.get_gene_metadata_tables(this.gene_metadata_table_names),
         this.get_sample_metadata_tables(this.sample_metadata_table_names),
       ])
-      // console.log('this.gene_metadata_tables')
-      // console.log(this.gene_metadata_tables)
-
       this.got_datasets = true
       this.getting_datasets = false
-
       if (this.genes_selected.length)
         // If user has at least one selected genes call get_gene_data 
         // Updates chart with selected gene data for corresponding datasets
@@ -550,16 +574,11 @@ export default {
       // genes: List of selected gene objects
       console.log('get_gene_expression_data_tables')
       const start = Date.now()
-      // console.log(this.gene_expression_data_tables_all)
       const genes_str = genes.map(d => d.name).toString()
-      // console.log('genes_str', genes_str)
       const genders_str = this.gender_selected.map(d => d.name).toString()
-      // console.log('genders_str', genders_str)
       const conditions_str = this.condition_selected.map(d => d.name).toString()
-      // console.log('conditions_str', conditions_str)
       this.gene_expression_data_tables = await Promise.all(tables.map(async (t) => {
         // Check table in gene_expression_data_tables_all
-
         let table_obj = this.gene_expression_data_tables_all.find(e => e.table_name == t)
         if (!table_obj) {
           // Table does not exist, query 
@@ -576,7 +595,6 @@ export default {
           table_obj = JSON.parse(JSON.stringify(table_obj))
           const table_obj_index = this.gene_expression_data_tables_all
             .findIndex(e => e.table_name == t)
-
           const sample_table_name = t.replace('gene_expression_data', 'sample_metadata')
           const sample_metadata = this.sample_metadata_tables_all.find(e =>
             e.table_name == sample_table_name)
@@ -584,25 +602,13 @@ export default {
             (obj, item) => (obj[item.sample_name] = item, obj), {})
 
           const table_obj_genes = [...new Set(table_obj.data.map(item => item.gene_id))]
-          // console.log('table_obj_genes')
-          // console.log(table_obj_genes)
           const genes_arr = genes.map(d => d.name)
-          // console.log('genes_arr')
-          // console.log(genes_arr)
           const genes_to_add = _.difference(genes_arr, table_obj_genes)
-          // console.log('genes_to_add')
-          // console.log(genes_to_add)
-          // console.log('table_obj')
-          // console.log(table_obj)
 
           // Check if all genders in table 
           const table_obj_genders = [...new Set(table_obj.data.map(item =>
             sample_metadata_lookup[item.sample_name].gender))]
-          // console.log('table_obj_genders')
-          // console.log(table_obj_genders)
           const genders_arr = this.gender_selected.map(d => d.name)
-          // console.log('genders_arr')
-          // console.log(genders_arr)
           const genders_to_add = _.difference(genders_arr, table_obj_genders)
           // console.log('genders_to_add')
           // console.log(genders_to_add)
@@ -792,6 +798,7 @@ export default {
       //  own additional filter conditions to prevent prematurely locking in a selection
       this.species_result = this.filter_metadata_except('species')
       this.experiment_result = this.filter_metadata_except('experiment')
+      this.year_result = this.filter_metadata_except('year')
       this.tissue_result = this.filter_metadata_except('tissue')
       this.gender_result = this.filter_metadata_except('gender')
       this.condition_result = this.filter_metadata_except('condition')
@@ -801,6 +808,7 @@ export default {
 
       this.species_filtered = this.build_list([...new Set(this.species_result.map(item => item.species))].sort())
       this.experiment_filtered = this.build_list([...new Set(this.experiment_result.map(item => item.experiment))].sort())
+      this.year_filtered = this.build_list([...new Set(this.year_result.map(item => item.year))].sort())
       this.tissue_filtered = this.build_list([...new Set(this.tissue_result.map(item => item.tissue))].sort())
 
       // Get all genders in filtered list then flatten and get unique values
@@ -905,6 +913,17 @@ export default {
             ({ experiment }) => experiment_selected_names.some(
               (s) => experiment.toLowerCase().includes(s.toLowerCase())))
       }
+      console.log(filtered)
+
+      if (except_category != 'year') {
+        const year_selected_names = this.year_selected.map(el => el.name)
+        console.log('year_selected_names')
+        console.log(year_selected_names)
+        if (year_selected_names.length)
+          filtered = filtered.filter(
+            ({ year }) => year_selected_names.some(
+              (s) => year.toLowerCase().includes(s.toLowerCase())))
+      }
 
       console.log(filtered)
 
@@ -975,6 +994,12 @@ export default {
     },
     remove_experiment_filter(text) {
       this.experiment_selected = this.experiment_selected.filter((obj) =>
+        obj.name != text)
+      this.update_lookup_table()
+      this.get_datasets()
+    },
+    remove_year_filter(text) {
+      this.year_selected = this.year_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
       this.get_datasets()

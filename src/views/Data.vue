@@ -67,9 +67,9 @@
       <Button label="Save Details" @click="save" class="my-3" />
       <div v-show="saveMsg" class="my-3">{{ saveMsg }}</div>
 
-      <div v-show="databaseTablePrefix" class="my-3">
+      <!-- <div v-show="databaseTablePrefix" class="my-3">
         Database Table Prefix: <span class="font-mono pl-3">{{ databaseTablePrefix }}</span>
-      </div>
+      </div> -->
 
 
 
@@ -251,11 +251,15 @@
         <div class="text-center my-5">
           <div class="text-900 text-2xl font-medium mb-3">Finalize and upload dataset</div>
         </div>
-        <div class="my-3 p-error" v-show="uploadMsg">
-          {{ uploadMsg }}
+        <div v-show="uploadSuccess">
+          <div class="p-4 w-1/2 mx-auto my-5 text-green-800 rounded-lg bg-green-50 dark:bg-gray-800 dark:text-green-400" role="alert">
+            <div class="font-medium text-center">Successfully uploaded dataset!</div>
+          </div>
+
         </div>
+        
         <div id="upload_files_error_panel" v-show="this.upload_files_error" class="my-3">
-          <Panel header="Upload Files Error Log" class="custom">
+          <Panel header="Error Log" class="custom">
             <ScrollPanel style="width: 100%; height: 200px" class="custom">
               <li v-for="error in this.upload_files_error_log">
                 {{ error }}
@@ -269,6 +273,10 @@
             v-show="!this.uploading" />
         </div>
         <div class="mx-auto my-3 w-1/3" v-show="this.uploading">
+          <div class="text-center mb-3">
+            <p>Please wait... </p>
+            <p>Can take up to 1 minute to upload.</p>
+          </div>
           <ProgressBar :value="this.upload_progress" />
         </div>
         <!-- <span v-show="uploadMsg">{{ uploadMsg }} </span> -->
@@ -446,6 +454,7 @@ export default {
       upload_gene_expression_data_highlight: null,
 
       uploadMsg: null,
+      uploadSuccess: false,
       upload_files_error: null,
       upload_files_error_log: null,
       upload_progress: 0,
@@ -458,7 +467,7 @@ export default {
   mounted() {
     // Testing
     console.log('Mounted - Testing')
-    this.experiment = 'TRF'
+    this.experiment = 'TRF Experiment'
     this.year = 2019
     this.institution = 'Salk Institute'
     this.species = 'Mus Musculus'
@@ -476,13 +485,16 @@ export default {
     },
     startProgress() {
       // 30 second progress bar
+      const gene_exp_file_size = this.upload_gene_expression_data_file.size / (1000000)
+      console.log('gene_exp_file_size: ' + gene_exp_file_size)
+
       this.interval = setInterval(() => {
         let newValue = this.upload_progress + 5;
         if (newValue >= 99) {
           newValue = 99;
         }
         this.upload_progress = newValue;
-      }, 1500);
+      }, 3000); // 3 seconds, 60 seconds total
     },
     endProgress() {
       this.upload_progress = 0
@@ -621,10 +633,12 @@ export default {
       // Iterate line by line
       for (var i = 1; i < rows.length; i++) {
         let cols = rows[i].split(',')
-        let cond = cols[3]
-        conditions[cond] = conditions[cond] + 1 || 1
-        let gender = cols[5]
-        genders[gender] = genders[gender] + 1 || 1
+        if (cols.length == 9) {
+          let cond = cols[3]
+          conditions[cond] = conditions[cond] + 1 || 1
+          let gender = cols[5]
+          genders[gender] = genders[gender] + 1 || 1
+        }
       }
       this.conditions_json = JSON.stringify(Object.keys(conditions).map(e => {
         return {
@@ -632,12 +646,16 @@ export default {
           'count': conditions[e]
         }
       }))
+      console.log('this.conditions_json')
+      console.log(this.conditions_json)
       this.genders_json = JSON.stringify(Object.keys(genders).map(e => {
         return {
           'gender': e,
           'count': genders[e]
         }
       }))
+      console.log('this.genders_json')
+      console.log(this.genders_json)
     },
     upload_sample_metadata(e) {
       // console.log('upload_sample_metadata')
@@ -702,46 +720,23 @@ export default {
           this.upload_gene_expression_data_filename = file.name
           this.upload_gene_expression_data_file = file
           this.upload_gene_expression_data_highlight = false
+          console.log('Size: ' + this.upload_gene_expression_data_file.size)
         } else {
           this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Failed Type Validation', life: 5000 });
           this.upload_gene_expression_data_filename = 'Select'
           this.upload_gene_expression_data_file = null
         }
       }
-
     },
     download(file) {
       console.log('Downloading...' + file)
       const url = "https://storage.googleapis.com/rbio-p-datasharing.appspot.com/"  + file
       window.location.assign(url);
-      // const fileRef = ref(storage, file)
-  
-      // console.log('fileRef')
-      // console.log(fileRef)
-
-
-      // getDownloadURL(fileRef).then((u) => {
-      //   console.log('Got url: ' + u)
-      //   // const baseUrl = 
-      //   // https://storage.googleapis.com/rbio-p-datasharing.appspot.com/sample_metadata_template.csv
-      //   // window.location.assign(url);
-      //   // const xhr = new XMLHttpRequest();
-      //   // xhr.responseType = 'blob';
-      //   // xhr.onload = (event) => {
-      //   //   const blob = xhr.response;
-      //   // };
-      //   // xhr.open('GET', url);
-      //   // xhr.send();
-        
-      // }).catch((error) => {
-      //   console.log('Error on download: ', error.code)
-      // })
- 
-
     },
     save() {
       this.saveMsg = null
       this.databaseTablePrefix = null
+      this.uploadSuccess = false
 
       let errors = false
 
@@ -843,6 +838,7 @@ export default {
     async post_dataset() {
       console.log('post_dataset: Posting dataset to BigQuery')
       this.uploading = true
+      this.uploadSuccess = false
       this.startProgress()
       const start = Date.now()
       let formData = new FormData()
@@ -863,12 +859,15 @@ export default {
         year: this.year,
         doi: this.doi,
         otherInformation: this.other || '',
-        permittedUsers: [],
         gene_metadata_table_name: `${gene_metadata_table_name}_${this.$store.state.profileId}`,
         sample_metadata_table_name: `${sample_metadata_table_name}_${this.$store.state.profileId}`,
         gene_expression_data_table_name: `${gene_expression_data_table_name}_${this.$store.state.profileId}`,
         gender: this.genders_json,
         condition: this.conditions_json,
+        admin_groups: [],
+        editor_groups: [],
+        reader_groups: [],
+        valid: true,
       }
 
       // formData.append('body', metadata)
@@ -903,6 +902,7 @@ export default {
       this.upload_sample_metadata_highlight = false
       this.upload_gene_expression_data_highlight = false
       this.upload_files_error_log = []
+      this.uploadSuccess = false
 
       this.save()
       if (!this.saveMsg) {
@@ -970,24 +970,26 @@ export default {
         let api_result = await this.post_dataset()
         console.log('api_result')
         console.log(api_result)
-        if (api_result.status != 200) {
-          this.$toast.add({ severity: 'error', summary: 'Error', detail: 'HTTP Error', life: 10000 });
-          this.upload_files_error = true
-          this.upload_files_error_log.push(`ERROR: ${api_result.statusText}`)
-        } else if (api_result.data.hasOwnProperty('status_code')
-          && api_result.data.status_code != 200) {
-          this.$toast.add({ severity: 'error', summary: 'Error', detail: 'HTTP Error', life: 10000 });
-          this.upload_files_error = true
-          this.upload_files_error_log.push(`ERROR: ${api_result.data.detail.message}`)
-        } else if (api_result.status == 200
-          && api_result.data.hasOwnProperty('message')
-          && api_result.data.message == 'Successful') {
+        if (api_result.status == 200  && api_result.data.status_code == 200) {
           this.$toast.add({ severity: 'success', summary: 'Success', detail: 'Dataset Uploaded', life: 10000 });
           console.log('BigQuery: Successfully uploaded dataset tables.')
-        } else {
+          this.uploadSuccess = true
+
+          // this.upload_files_error = true
+          // this.upload_files_error_log.push(`Successfully uploaded dataset.`)
+          // Reset filenames 
+          this.upload_gene_metadata_filename = 'Select'
+          this.upload_gene_metadata_file = null
+          this.upload_sample_metadata_filename = 'Select'
+          this.upload_sample_metadata_file = null
+          this.upload_gene_expression_data_filename = 'Select'
+          this.upload_gene_expression_data_file = null
+
+          
+        }  else {
           this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Error', life: 10000 });
           this.upload_files_error = true
-          this.upload_files_error_log.push(`ERROR: ${api_result.status} ${api_result.statusText}`)
+          this.upload_files_error_log.push(`ERROR: ${api_result.data.status_code} ${api_result.data.detail}`)
         }
 
         if (api_result.data.errorLog) {
@@ -998,11 +1000,13 @@ export default {
           }
         }
 
-        if (this.upload_files_error_log.length > 0) {
-          this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Error Uploading', life: 10000 });
-        }
+        // if (this.upload_files_error_log.length > 0) {
+        //   this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Error Uploading', life: 10000 });
+        // }
       } else {
         console.error('Failed to upload to Firestore')
+        this.upload_files_error = true
+        this.upload_files_error_log.push(`Failed to upload to Firestore`)
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Error Uploading to Firestore', life: 10000 });
       }
     }

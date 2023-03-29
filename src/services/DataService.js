@@ -35,6 +35,8 @@ class DataService {
     return http.get(url)
   }
 
+  
+
   async getGenes(table = "Mouse_TRF_2018_Liver_gene_metadata") {
     return http.get(`gene_metadata/all_names?table=${table}`)
   }
@@ -58,6 +60,9 @@ class DataService {
   }
   async getDatasetsMetadata() {
     return http.get('datasets_metadata/data')
+  }
+  async getGeneList() {
+    return http.get('datasets_metadata/genes')
   }
 
   // POST Requests
