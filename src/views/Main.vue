@@ -66,6 +66,13 @@
               <div v-if="!this.datasets_filter_warning">
                 <div class="font-semibold mb-1 text-sm">
                   Datasets
+                  <span class="font-light">
+                    {{ this.number_datasets_selected() }}
+                  </span>
+                </div>
+                <div id="selection_count">
+
+
                 </div>
                 <div class="p-1 border my-3 rounded">
                   <DataTable :value="this.species_filtered" v-model:selection="this.species_selected"
@@ -319,7 +326,7 @@ export default {
       datasets_filter_warning: false,
       filter_warning: false,
 
-      db_metadata: null,
+      db_metadata: null, // Should be constant
       selected_metadata: null,
       lookup_table: {},
 
@@ -392,7 +399,7 @@ export default {
       this.load_metadata(),
     ])
 
-    // Testing - Remove later
+    // Default selection
     this.species_selected = [{ name: 'Mus musculus' }]
     this.experiment_selected = [{ name: 'TRF Experiment' }]
     this.year_selected = [{ name: '2018'}, { name: '2019'}]
@@ -402,7 +409,7 @@ export default {
     this.genes_selected = [{ name: 'Clock' }]
 
     await this.update_lookup_table()
-    await this.get_datasets()
+    // await this.get_datasets()
 
     // Line chart at index 1
     this.index = 0
@@ -412,8 +419,10 @@ export default {
   },
   methods: {
     async load_metadata() {
+      // Called only once by mounted()
       console.log('load_metadata')
       const start = Date.now()
+      // 
       this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
       // Parse gender and condition fields
       this.db_metadata.forEach(e => {
@@ -458,7 +467,26 @@ export default {
       const elapsed = Date.now() - start
       console.log('load_metadata time elapsed: ', elapsed)
     },
+    async update_selection() {
+      console.log('update_selection')
+      const start = Date.now()
+      this.getting_datasets = true
+      this.gene_metadata_table_names = []
+      this.sample_metadata_table_names = []
+      this.gene_expression_data_table_names = []
+      console.log(this.selected_metadata)
+      if (!this.selected_metadata.length) {
+        this.getting_datasets = false
+        this.got_datasets = false
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No datasets selected', life: 5000 });
+        return
+      }
+      const elapsed = Date.now() - start
+      console.log('update_selection time elapsed: ', elapsed)
+    },
     async get_datasets() {
+      // TODO: get_datasets Optimize filtering..
+      // Called on initial mount, and by remove_filter functions on update
       console.log('get_datasets')
       const start = Date.now()
       this.getting_datasets = true
@@ -481,6 +509,7 @@ export default {
       console.log('this.gene_metadata_table_names')
       console.log(this.gene_metadata_table_names)
       await Promise.all([
+        // TODO: get_datasets Query Firestore gene list 
         this.get_gene_metadata_tables(this.gene_metadata_table_names),
         this.get_sample_metadata_tables(this.sample_metadata_table_names),
       ])
@@ -531,11 +560,18 @@ export default {
         let table_obj = this.sample_metadata_tables_all.find(e => e.table_name == t)
         if (!table_obj) {
           // Table not found, query
+          console.log('sample metadata table not found')
           const result = await DataService.getSampleMetadata(t)
+          // console.log(result)
           table_obj = {
             table_name: t,
             data: result.data
           }
+          // Object.defineProperty(table_obj, 'data', {
+          //   value: result.data,
+          //   writable: false
+          // });
+          
           this.sample_metadata_tables_all.push(table_obj)
         }
         return JSON.parse(JSON.stringify(table_obj))
@@ -547,6 +583,7 @@ export default {
       // })
       console.log('this.sample_metadata_tables')
       console.log(this.sample_metadata_tables)
+      console.log(this.sample_metadata_tables_all)
       const elapsed = Date.now() - start
       console.log('get_sample_metadata_tables elapsed: ', elapsed)
     },
@@ -580,16 +617,8 @@ export default {
       this.gene_expression_data_tables = await Promise.all(tables.map(async (t) => {
         // Check table in gene_expression_data_tables_all
         let table_obj = this.gene_expression_data_tables_all.find(e => e.table_name == t)
-        if (!table_obj) {
-          // Table does not exist, query 
-          const result = await DataService
-            .getExpressionDataByGenesGendersConditions(genes_str, genders_str, conditions_str, t)
-          table_obj = {
-            table_name: t,
-            data: result.data
-          }
-          this.gene_expression_data_tables_all.push(table_obj)
-        } else {
+        if (table_obj) {
+          console.log('Table exists')
           // Table object exists, check if all genes in table
           // Deep copy table_obj to prevent overwriting 
           table_obj = JSON.parse(JSON.stringify(table_obj))
@@ -639,11 +668,8 @@ export default {
             || genders_to_add.length
             || combo_missing) {
             // New data needed, run query
-            // console.log('Querying new data')
 
             const data = this.gene_expression_data_tables_all[table_obj_index].data
-            // console.log('data')
-            // console.log(data)
 
             const genes_str = genes_arr.toString()
             const genders_str = genders_arr.toString()
@@ -656,21 +682,31 @@ export default {
 
             // Union to only add data and not overwrite old results 
             const data_all = _.union(data, result.data)
-            // console.log('data_all')
-            // console.log(data_all)
             this.gene_expression_data_tables_all[table_obj_index].data = data_all
           }
           // Update current table_obj to only contain selected genes
           // Deep copy with [...]
           table_obj.data = [...this.gene_expression_data_tables_all[table_obj_index]
             .data].filter(item => genes_arr.indexOf(item.gene_id) !== -1)
-        }
-        return table_obj
+          return table_obj
+        } else {
+          // Table does not exist, query 
+          const result = await DataService
+            .getExpressionDataByGenesGendersConditions(genes_str, genders_str, conditions_str, t)
+          
+          const new_table_obj = {
+            table_name: t,
+            data: result.data
+          }
+          this.gene_expression_data_tables_all.push(new_table_obj)
+          return new_table_obj
+        } 
+        
       }))
-      // console.log('this.gene_expression_data_tables')
-      // console.log(this.gene_expression_data_tables)
-      // console.log('this.gene_expression_data_tables_all')
-      // console.log(this.gene_expression_data_tables_all)
+      console.log('this.gene_expression_data_tables')
+      console.log(this.gene_expression_data_tables)
+      console.log('this.gene_expression_data_tables_all')
+      console.log(this.gene_expression_data_tables_all)
       // this.gene_expression_data_tables.forEach(table => {
       //   table.data
       // })
@@ -735,10 +771,9 @@ export default {
       console.log('get_selected_gene_metadata elapsed:', elapsed)
     },
     async get_genes_clicked() {
+      // TODO: get_genes_clicked Not used
       // Get Genes button clicked
-
       // Check if new datasets selected
-
       this.get_gene_data()
     },
     async get_gene_data() {
@@ -760,25 +795,17 @@ export default {
       const conditions = this.condition_selected.map(d => d.name)
       const genders = this.gender_selected.map(d => d.name)
       this.sample_metadata_tables.forEach(table => {
-        console.log('table')
-        console.log(table)
-        if (conditions.length)
+        if (conditions.length) {
           table.data = table.data.filter(d => conditions.includes(d.condition))
-
-        if (genders.length)
+        }
+        if (genders.length) {
           table.data = table.data.filter(d => genders.includes(d.gender))
-
-
+        }
         const sample_names = table.data.map(d => d.sample_name)
         const gene_expr_table_name = table.table_name.replace('sample_metadata', 'gene_expression_data')
         const gene_expr_table = this.gene_expression_data_tables.find(d => d.table_name == gene_expr_table_name)
         gene_expr_table.data = gene_expr_table.data.filter(d => sample_names.includes(d.sample_name))
       })
-      console.log('this.sample_metadata_tables')
-      console.log(this.sample_metadata_tables)
-
-      console.log('this.gene_expression_data_tables')
-      console.log(this.gene_expression_data_tables)
 
       this.datasets = {
         sample_metadata_tables: this.sample_metadata_tables,
@@ -786,12 +813,16 @@ export default {
         gene_metadata: this.selected_gene_metadata,
         selected_metadata: this.selected_metadata,
       }
+      console.log('this.datasets')
+      console.log(this.datasets)
       this.got_gene_data = true
       this.getting_gene_data = false
       const elapsed = Date.now() - start
       console.log('get_gene_data time elapsed: ', elapsed)
     },
     async update_lookup_table() {
+      // TODO: update_lookup_table optimize 
+      // Called by dataset filter row select / unselect
       console.log('update_lookup_table')
       const start = Date.now()
       // Get each subset of all datasets for each filter grouping, excluding its
@@ -803,8 +834,8 @@ export default {
       this.gender_result = this.filter_metadata_except('gender')
       this.condition_result = this.filter_metadata_except('condition')
 
-      console.log('this.species_result')
-      console.log(this.species_result)
+      // console.log('this.species_result')
+      // console.log(this.species_result)
 
       this.species_filtered = this.build_list([...new Set(this.species_result.map(item => item.species))].sort())
       this.experiment_filtered = this.build_list([...new Set(this.experiment_result.map(item => item.experiment))].sort())
@@ -886,15 +917,15 @@ export default {
       //  locking in current filters, preventing adding new selections that are not 
       //  in the intersection, e.g. selecting Heart tissue would filter down all 
       //  datasets to only include those from Heart tissue, preventing selecting Liver, etc.
-      console.log('filter_metadata_except: ' + except_category)
+      // console.log('filter_metadata_except: ' + except_category)
       let filtered = this.db_metadata
-      console.log('this.db_metadata')
-      console.log(typeof(this.db_metadata))
-      console.log(filtered)
+      // console.log('this.db_metadata')
+      // console.log(typeof(this.db_metadata))
+      // console.log(filtered)
       if (except_category != 'species') {
         const species_selected_names = this.species_selected.map(el => el.name)
-        console.log('species_selected_names')
-        console.log(species_selected_names)
+        // console.log('species_selected_names')
+        // console.log(species_selected_names)
         // If no species selected, then skip filtering
         if (species_selected_names.length)
           filtered = filtered.filter(
@@ -902,47 +933,47 @@ export default {
               (s) => species.toLowerCase().includes(s.toLowerCase())))
       }
 
-      console.log(filtered)
+      // console.log(filtered)
 
       if (except_category != 'experiment') {
         const experiment_selected_names = this.experiment_selected.map(el => el.name)
-        console.log('experiment_selected_names')
-        console.log(experiment_selected_names)
+        // console.log('experiment_selected_names')
+        // console.log(experiment_selected_names)
         if (experiment_selected_names.length)
           filtered = filtered.filter(
             ({ experiment }) => experiment_selected_names.some(
               (s) => experiment.toLowerCase().includes(s.toLowerCase())))
       }
-      console.log(filtered)
+      // console.log(filtered)
 
       if (except_category != 'year') {
         const year_selected_names = this.year_selected.map(el => el.name)
-        console.log('year_selected_names')
-        console.log(year_selected_names)
+        // console.log('year_selected_names')
+        // console.log(year_selected_names)
         if (year_selected_names.length)
           filtered = filtered.filter(
             ({ year }) => year_selected_names.some(
               (s) => year.toLowerCase().includes(s.toLowerCase())))
       }
 
-      console.log(filtered)
+      // console.log(filtered)
 
       if (except_category != 'tissue') {
         const tissue_selected_names = this.tissue_selected.map(el => el.name)
-        console.log('tissue_selected_names')
-        console.log(tissue_selected_names)
+        // console.log('tissue_selected_names')
+        // console.log(tissue_selected_names)
         if (tissue_selected_names.length)
           filtered = filtered.filter(
             ({ tissue }) => tissue_selected_names.some(
               (s) => tissue.toLowerCase().includes(s.toLowerCase())))
       }
 
-      console.log(filtered)
+      // console.log(filtered)
 
       if (except_category != 'gender') {
         const gender_selected_names = this.gender_selected.map(el => el.name)
-        console.log('gender_selected_names')
-        console.log(gender_selected_names)
+        // console.log('gender_selected_names')
+        // console.log(gender_selected_names)
         if (gender_selected_names.length)
           filtered = filtered.filter(
             ({ gender }) => gender_selected_names.some(
@@ -950,12 +981,12 @@ export default {
                 gend.gender.toLowerCase() == s.toLowerCase())))
       }
 
-      console.log(filtered)
+      // console.log(filtered)
 
       if (except_category != 'condition') {
         const condition_selected_names = this.condition_selected.map(el => el.name)
-        console.log('condition_selected_names')
-        console.log(condition_selected_names)
+        // console.log('condition_selected_names')
+        // console.log(condition_selected_names)
         if (condition_selected_names.length)
           filtered = filtered.filter(
             ({ condition }) => condition_selected_names.some(
@@ -963,7 +994,7 @@ export default {
                 cond.condition.toLowerCase() == s.toLowerCase())))
       }
 
-      console.log(filtered)
+      // console.log(filtered)
 
       return filtered
     },
@@ -989,42 +1020,41 @@ export default {
       this.species_selected = this.species_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
-      this.get_datasets()
-
+      // this.get_datasets()
     },
     remove_experiment_filter(text) {
       this.experiment_selected = this.experiment_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
-      this.get_datasets()
+      // this.get_datasets()
     },
     remove_year_filter(text) {
       this.year_selected = this.year_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
-      this.get_datasets()
+      // this.get_datasets()
     },
     remove_tissue_filter(text) {
       this.tissue_selected = this.tissue_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
-      this.get_datasets()
+      // this.get_datasets()
     },
     remove_gender_filter(text) {
       this.gender_selected = this.gender_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
-      this.get_datasets()
+      // this.get_datasets()
     },
     remove_condition_filter(text) {
       this.condition_selected = this.condition_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
-      this.get_datasets()
+      // this.get_datasets()
     },
     remove_gene() {
       this.update_lookup_table()
-      this.get_datasets()
+      // this.get_datasets()
     },
     clear_all_filters() {
       this.species_selected = []
@@ -1033,7 +1063,17 @@ export default {
       this.gender_selected = []
       this.condition_selected = []
       this.update_lookup_table()
-      this.get_datasets()
+      // this.get_datasets()
+    },
+    number_datasets_selected() {
+      // Show number of current datasets selected
+      let selected = 0
+      if (this.selected_metadata)
+        selected = this.selected_metadata.length 
+      if (this.db_metadata == null)
+        return '0'
+      let total = this.db_metadata.length
+      return `(${selected} / ${total})`;
     },
     async search_genes(event) {
       setTimeout(() => {
