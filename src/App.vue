@@ -13,7 +13,6 @@
 // Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
 import NavBar from '@/components/NavBar.vue';
 import Footer from '@/components/Footer.vue'
-//import HelloWorld from './components/HelloWorld.vue'
 
 import { getAuth } from "firebase/auth";
 
@@ -53,6 +52,7 @@ export default {
     auth.onAuthStateChanged((user) => {
       this.$store.commit("updateUser", user)
       if (user) {
+        console.log("Before getCurrentUser")
         this.$store.dispatch("getCurrentUser", user)
       }
     })

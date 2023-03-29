@@ -15,20 +15,22 @@
           :options="time_points_options" optionLabel="name" 
           multiple @change="updateTimePointsSelected"/>
       </div>
-      <div id="more-options" class="flex grow justify-end">
+      <div id="menu-options" class="flex grow justify-end">
         <div class="flex flex-col items-center">
           <div class="font-semibold pb-2">Download</div>
-          <Button type="button" label="" icon="pi pi-download" @click="toggle" 
-            aria-haspopup="true" aria-controls="overlay_menu"/>
-          <Menu id="overlay_menu" ref="menu" :model="menu_items" :popup="true" />
+          <Button type="button" label="" icon="pi pi-download" @click="toggle('download_menu', $event)" 
+            aria-haspopup="true" aria-controls="download_menu"/>
+          <Menu id="download_menu" ref="download_menu" :model="download_items" :popup="true" />
         </div>
+        
         <div class="flex flex-col items-center ml-2">
           <div class="font-semibold pb-2">Colors</div>
-          <Button type="button" label="" icon="pi pi-palette" @click="toggle" 
-            aria-haspopup="true" aria-controls="overlay_menu"/>
-          <Menu id="overlay_menu" ref="menu" :model="option_items" :popup="true" />
+          <Button type="button" label="" icon="pi pi-palette" @click="toggle('color_menu', $event)" 
+            aria-haspopup="true" aria-controls="color_menu"/>
+          <Menu id="color_menu" ref="color_menu" :model="color_items" :popup="true" />
         </div>   
       </div>
+
     </div>
     
     <div id="plot-area" class="mt-10">
@@ -60,7 +62,6 @@ import eyeOffUrl from '@/assets/eye-off.svg'
 import infoUrl from '@/assets/info.svg'
 
 // import TimeSelection from "@/components/svg/TimeSelection.vue";
-
 
 const animationInterval = 250
 // Custom function, reduces redundant code for transitions
@@ -170,7 +171,7 @@ export default {
       windowHeight: window.innerHeight,
       windowWidth: window.innerWidth,
 
-      menu_items: [
+      download_items: [
         {
           label: 'Download as PNG',
           icon: 'pi pi-image',
@@ -182,10 +183,14 @@ export default {
           command: () => this.downloadCSV()
         }
       ],
-      option_items: [
+      color_items: [
         {
-          label: 'Spectral',
-          command: () => this.change_color(d3.interpolateSpectral)
+          label: 'Rainbow',
+          command: () => this.change_color(d3.interpolateRainbow)
+        },
+        {
+          label: 'Sinebow',
+          command: () => this.change_color(d3.interpolateSinebow)
         },
         {
           label: 'Viridis',
@@ -259,8 +264,8 @@ export default {
     }
   },
   methods: {
-    toggle(evt) {
-      this.$refs.menu.toggle(evt);
+    toggle(menu, evt) {
+      this.$refs[menu].toggle(evt);
     },  
     async downloadChart(filetype) {
       console.log('downloadChart')
@@ -323,7 +328,6 @@ export default {
       this.color = d3.scaleSequential(d3color)
       this.update_grouped_bar_plot()
       this.legend()
-
     },
     onResize() {
       this.windowHeight = window.innerHeight
@@ -374,7 +378,6 @@ export default {
       this.update_grouped_bar_plot()
     },
     updateTimePointsSelected(evt) {
-      // TODO: Make more efficient by only toggling changed values?
       console.log('updateTimePointsSelected')
       // console.log(evt)
       // console.log('time_points_selected')
@@ -418,10 +421,16 @@ export default {
         this.sample_metadata_tables = JSON.parse(JSON.stringify(this.datasets.sample_metadata_tables))
         this.selected_metadata = JSON.parse(JSON.stringify(this.datasets.selected_metadata))
 
+        console.log('this.gene_expression_data_tables')
+        console.log(this.gene_expression_data_tables)
+
         this.gene_expression_data_tables.forEach((e) => {
+          console.log('this.gene_expression_data_tables.forEach')
           const table = e.table_name
-          const table_split = table.split('_')
-          e.owner = table_split.at(-1)
+          console.log(e.table_name)
+          const table_split = table.split('_').filter((str) => str !== "")
+
+          e.owner = table_split[table_split.length - 2]
           const metadata = this.selected_metadata.find(obj => 
             obj.gene_expression_data_table_name == table)
 
@@ -479,16 +488,20 @@ export default {
             console.error('WARNING: More than 1 tissue in ', table)
           }
           e.tissue = tissue[0]
+
+          console.log(e)
           
           this.expression_merged = this.expression_merged.concat(e.data)
+
         })
 
-        // console.log('DEBUG this.expression_merged')
-        // console.log(this.expression_merged)
+        console.log('DEBUG this.expression_merged')
+        console.log(this.expression_merged)
 
         this.expression_merged.forEach((e) => {
           e.time_point = parseInt(e.time_point.split('ZT')[1])
-          e.replicate = e.sample_name.split('-').at(-1)
+          const tmp = e.sample_name.split('-')
+          e.replicate = tmp[tmp.length - 1]
           e.identifier = `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}`
         })
 
@@ -498,9 +511,15 @@ export default {
 
         const grouped_tissue = _.groupBy(this.expression_merged, e => `${e.tissue.replaceAll(' ', '-')}`)
 
+        console.log('grouped_tissue')
+        console.log(grouped_tissue)
+
         const grouped_tissue_gene = Object.keys(grouped_tissue).map((key) => {
           return [key, _.groupBy(grouped_tissue[key], e => `${e.gene_id}`)]
         })
+
+        console.log('grouped_tissue_gene')
+        console.log(grouped_tissue_gene)
 
         const grouped_tissue_gene_groupname = grouped_tissue_gene.map((tissue) => {
           return [tissue[0], Object.keys(tissue[1]).map((key) => {
@@ -536,6 +555,9 @@ export default {
             })
           })
         })
+
+        console.log('grouped_tissue_gene_groupname')
+        console.log(grouped_tissue_gene_groupname)
 
         this.expression_normalized = grouped_tissue_gene_groupname
 
@@ -670,7 +692,7 @@ export default {
         .attr('id', 'legend')
         .attr('transform', `translate(${this.legendX}, 0)`)
 
-      this.color = d3.scaleSequential(d3.interpolateWarm)
+      this.color = d3.scaleSequential(d3.interpolateSinebow)
 
     },
     update_grouped_bar_plot() {
@@ -1226,10 +1248,14 @@ export default {
     },
     getHSL(data, gene=false) {
       // Differentiates groups by making one darker and one lighter
+      console.log('getHSL')
+      console.log(data)
       const name = data.identifier
       const shade_factor = 3
+      // cat = Adrenal-gland_Clock
       const cat = name.split('_').slice(0,-1).join('_')
-      const group = name.split('_').at(-1)
+      const name_split = name.split('_')
+      const group = name_split[name_split.length - 1]
       let hsl = d3.hsl(this.color(this.cat_map.get(cat)))
       // If gene flag is true, use unshaded base color 
       if (!gene) {

@@ -20,30 +20,30 @@
     <div class="w-11/12 mx-auto">
         <div class="mb-3">
           <label for="firstName" class="block text-900 font-medium mb-2">First name</label>
-          <InputText v-model="firstName" type="text" class="w-full mb-2" :class="{ 'p-invalid': firstNameInvalid }" />
+          <InputText id="firstName" v-model="firstName" type="text" class="w-full mb-2" :class="{ 'p-invalid': firstNameInvalid }" />
           <small id="firstName-help" class="p-error" v-show="firstNameInvalid">Invalid first name</small>
         </div>
         <div class="mb-3">
           <label for="lastName" class="block text-900 font-medium mb-2">Last name</label>
-          <InputText v-model="lastName" type="text" class="w-full mb-2" :class="{ 'p-invalid': lastNameInvalid }" />
+          <InputText id="lastName" v-model="lastName" type="text" class="w-full mb-2" :class="{ 'p-invalid': lastNameInvalid }" />
           <small id="lastName-help" class="p-error" v-show="lastNameInvalid">Invalid last name</small>
         </div>
         <div class="mb-3">
           <label for="email" class="block text-900 font-medium mb-2">Email</label>
-          <InputText v-model="email" type="text" class="w-full mb-2" :class="{ 'p-invalid': emailInvalid }" />
+          <InputText id="email" v-model="email" type="text" class="w-full mb-2" :class="{ 'p-invalid': emailInvalid }" />
           <small id="email-help" class="p-error" v-show="emailInvalid">Invalid email address</small>
         </div>
         <div class="mb-3">
           <label for="institution" class="block text-900 font-medium mb-2">Institution</label>
           <small id="institution-help">Optional</small>
-          <InputText v-model="institution" type="text" class="w-full mb-2" :class="{ 'p-invalid': institutionInvalid }" />
+          <InputText id="institution" v-model="institution" type="text" class="w-full mb-2" :class="{ 'p-invalid': institutionInvalid }" />
           
           <small id="institution-help-error" class="p-error" v-show="institutionInvalid">Invalid institution</small>
         </div>
         
         <div class="mb-2">
           <label for="password" class="block text-900 w-full font-medium mb-2">Password</label>
-          <Password class="w-full mb-3" inputClass="w-full" 
+          <Password id="password" class="w-full mb-3" inputClass="w-full" 
             :class="{ 'p-invalid' : passwordInvalid }" v-model="password" 
             toggleMask @keyup.enter="register" >
               <template #header>

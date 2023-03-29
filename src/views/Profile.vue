@@ -146,10 +146,10 @@ export default {
     }
   },
   async mounted() {
+    console.log('Profile mounted')
     this.getProfile()
 
     let formData = new FormData() 
-
 
     const token = this.$store.state.token.token
     console.log('token')
