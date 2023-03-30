@@ -22,7 +22,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 
 // Localhost debug
-self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+// self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 // const appCheck = initializeAppCheck(firebaseApp, {
 //   provider: new ReCaptchaV3Provider('6LcTdI8kAAAAACUbokBXW8XxlpED2Jrx2BS2rTWu'),
 
