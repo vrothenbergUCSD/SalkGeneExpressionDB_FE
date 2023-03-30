@@ -21,9 +21,19 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 
+// Localhost debug
 self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+// const appCheck = initializeAppCheck(firebaseApp, {
+//   provider: new ReCaptchaV3Provider('6LcTdI8kAAAAACUbokBXW8XxlpED2Jrx2BS2rTWu'),
+
+//   // Optional argument. If true, the SDK automatically refreshes App Check
+//   // tokens as needed.
+//   isTokenAutoRefreshEnabled: true
+// });
+
+
 const appCheck = initializeAppCheck(firebaseApp, {
-  provider: new ReCaptchaV3Provider('6LcTdI8kAAAAACUbokBXW8XxlpED2Jrx2BS2rTWu'),
+  provider: new ReCaptchaV3Provider('6LdnxEUlAAAAAImoXr09nDxAoE1eRQn-IDSuGBZW'),
 
   // Optional argument. If true, the SDK automatically refreshes App Check
   // tokens as needed.
