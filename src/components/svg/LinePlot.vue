@@ -72,8 +72,8 @@ const eye_h = 10
 d3.selection.prototype.transition_attributes = function(
   attr_name, opacity, duration=animationInterval) {
   this.transition()
-      .ease(Math.sqrt)
-      .duration(duration)
+      // .ease(Math.sqrt)
+      // .duration(duration)
       .attr(attr_name, opacity)
   return this
 }
@@ -316,6 +316,7 @@ export default {
       // console.log('LinePlot resized', this.windowWidth, this.windowHeight)
     },
     update_datasets() {
+      // Process gene expression and sample data into groups for visualization 
       console.log('update_datasets')
       const start = Date.now()
       this.genes_str_arr = this.genes.map((d) => d.name)
@@ -611,16 +612,7 @@ export default {
 
       // Animation transition time in ms
       var animationInterval = this.animationInterval
-
-      // var color = d3.scaleOrdinal(d3.schemeCategory10);
-      // var color = d3.scaleSequential().domain([1,categories]).interpolator(d3.interpolateSinebow)
       
-      // TODO: More color schemes, color blind, user customized colors, etc.
-      // this.color = d3.scaleSequential(d3.interpolateWarm)
-      
-      
-
-
       // Create the X axis
       this.x.domain([0, d3.max(this.expression_merged, (d) => d.time_point )])
       var x = this.x
@@ -664,8 +656,6 @@ export default {
                 
             },
             (update) => {
-              // console.log('line update')
-              // console.log(update)
               update
                 .attr('id', d => `line_${d[0]}`)
                 .attr("d", d => d3.line()
@@ -705,8 +695,8 @@ export default {
               .attr("cx", d => x(d.time_point))
               .attr("cy", d => y(d.gene_expression_norm_avg))
               .attr("r", 2)
-              .transition_attributes('fill-opacity', d => 
-                this.sumstat_visibility[d.identifier])
+              .transition_attributes('opacity', d => 
+                this.sumstat_visibility[d.identifier] ? 1 : 0)
           },
           (update) => {
             // console.log('dot update')
@@ -714,15 +704,15 @@ export default {
             update.attr('cx', d => x(d.time_point))
               .attr('cy', d => y(d.gene_expression_norm_avg))
               .attr('stroke', d => this.getHSL(d.identifier))
-              .attr("fill", d => {
+              .attr('fill', d => {
                 const group = d.identifier.split('_').at(-1);
                 return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
               })
-              .transition_attributes('fill-opacity', d =>
-                this.sumstat_visibility[d.identifier])
+              .transition_attributes('opacity', d =>
+                this.sumstat_visibility[d.identifier] ? 1 : 0)
               .attr('id', d => `dot_${d.identifier}`)
           },
-          (exit) => exit.transition_attributes('fill-opacity', 0).remove()
+          (exit) => exit.transition_attributes('opacity', 0).remove()
         )
       
       // Draw error bars
@@ -1309,19 +1299,26 @@ export default {
     },
     toggleVisibility(newOpacity, id) {
       // TODO: Toggle eye one level up if all child eyes are set to on or off
+      console.log('toggleVisibility: ' + newOpacity)
 
       const lines = d3.selectAll(`[id^='line_${id}']`)
       lines.transition_attributes('stroke-opacity', newOpacity)
       const matching_keys = Object.keys(this.sumstat_visibility).filter(e => e.includes(id))
       matching_keys.forEach(e => this.sumstat_visibility[e] = newOpacity)
+      console.log(this.sumstat_visibility)
 
       const avgPoints = d3.select('#avgPoints').selectAll(`[id^='dot_${id}']`)
       avgPoints.transition_attributes('fill-opacity', newOpacity)
+      console.log(avgPoints)
+      console.log(newOpacity)
+      
+      avgPoints.transition_attributes('stroke-opacity', newOpacity)
       avgPoints._groups[0].forEach(e => e.__data__.visible = newOpacity)
 
       if (this.showReplicatePoints) {
         const replicatePoints = d3.select('#replicatePoints').selectAll(`[id^='dot_${id}']`)
         replicatePoints.transition_attributes('fill-opacity', newOpacity)
+        replicatePoints.transition_attributes('stroke-opacity', newOpacity)
         replicatePoints._groups[0].forEach(e => e.__data__.visible = newOpacity)
       }
       

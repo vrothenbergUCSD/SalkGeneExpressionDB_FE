@@ -42,7 +42,7 @@ const appCheck = initializeAppCheck(firebaseApp, {
 
 getToken(appCheck)
   .then(() => {
-    console.log('getToken success!!!!')
+    console.log('getToken success!')
   })
   .catch((error) => {
     console.log('getToken fail!')
@@ -53,8 +53,6 @@ const auth = getAuth()
 const firestore = getFirestore(firebaseApp)
 const storage = getStorage(firebaseApp)
 const functions = getFunctions(firebaseApp)
-
-
 
 export {
   firebaseApp,
