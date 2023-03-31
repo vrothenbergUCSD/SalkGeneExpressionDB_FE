@@ -64,21 +64,23 @@
           <Accordion :multiple="true" :activeIndex="[0, 1, 2]">
             <AccordionTab header="Filters">
               <div v-if="!this.datasets_filter_warning">
-                <div class="font-semibold mb-1 text-sm">
+                <div class="font-semibold mb-1 text-sm flex flex-row">
+                  <div class="flex justify-start">
                   Datasets
-                  <span class="font-light">
+                  <span class="font-light ml-1">
                     {{ this.number_datasets_selected() }}
                   </span>
                 </div>
-                <div id="selection_count">
-
-
+                  <div id="update-button" class="flex grow justify-end">
+                    <Button class="align-middle" style="height: 1.375rem; font-size:0.5rem;" 
+                    label="Update" @click="get_datasets" :loading="this.getting_datasets" />
+                  </div>             
                 </div>
                 <div class="p-1 border my-3 rounded">
                   <DataTable :value="this.species_filtered" v-model:selection="this.species_selected"
                     class="p-datatable-sm p-datatable-species" stripedRows :scrollable="true" scrollHeight="200px"
                     :loading="loading" selectionMode="multiple" :metaKeySelection="false"
-                    @row-select="update_lookup_table()" @row-unselect="update_lookup_table()"
+                    @row-select="" @row-unselect="update_lookup_table()"
                     @row-select-all="update_lookup_table()" @row-unselect-all="update_lookup_table()">
                     <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
                     <Column field="name" header="Species"></Column>
@@ -412,7 +414,8 @@ export default {
     // await this.get_datasets()
 
     // Line chart at index 1
-    this.index = 0
+    // Bar = 0, Line = 1
+    this.index = 1
 
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
@@ -1152,6 +1155,17 @@ export default {
   :deep(.p-button) {
     padding: 0.4rem 0.5rem !important;
     font-size: 0.9rem !important;
+  }
+}
+
+#update-button {
+  :deep(.p-button) {
+    font-size: 0.75rem !important;
+    // font-weight: 100 !important;
+  }
+
+  :deep(.p-button-label) {
+    font-weight: 500 !important;
   }
 }
 
