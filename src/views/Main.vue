@@ -73,14 +73,15 @@
                 </div>
                   <div id="update-button" class="flex grow justify-end">
                     <Button class="align-middle" style="height: 1.375rem; font-size:0.5rem;" 
-                    label="Update" @click="get_datasets" :loading="this.getting_datasets" />
+                    label="Update" @click="get_datasets" 
+                    :loading="this.getting_datasets || this.getting_gene_data || this.loading_genes" />
                   </div>             
                 </div>
                 <div class="p-1 border my-3 rounded">
                   <DataTable :value="this.species_filtered" v-model:selection="this.species_selected"
                     class="p-datatable-sm p-datatable-species" stripedRows :scrollable="true" scrollHeight="200px"
                     :loading="loading" selectionMode="multiple" :metaKeySelection="false"
-                    @row-select="" @row-unselect="update_lookup_table()"
+                    @row-select="update_lookup_table()" @row-unselect="update_lookup_table()"
                     @row-select-all="update_lookup_table()" @row-unselect-all="update_lookup_table()">
                     <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
                     <Column field="name" header="Species"></Column>
@@ -279,6 +280,7 @@ import _ from 'underscore'
 
 import BarPlot from "@/components/svg/BarPlot.vue"
 import LinePlot from "@/components/svg/LinePlot.vue"
+import HeatMap from "@/components/svg/HeatMap.vue"
 
 import DataService from "@/services/DataService.js"
 
@@ -299,6 +301,7 @@ export default {
 
     BarPlot,
     LinePlot,
+    HeatMap,
 
   },
   DataService: null,
@@ -306,15 +309,21 @@ export default {
     return {
       items: [
         {
+          label: 'Line',
+          icon: 'pi pi-fw pi-chart-line',
+          current_component: 'LinePlot',
+        },
+        {
           label: 'Histogram',
           icon: 'pi pi-fw pi-chart-bar',
           current_component: 'BarPlot',
         },
         {
-          label: 'Line',
-          icon: 'pi pi-fw pi-chart-line',
-          current_component: 'LinePlot',
+          label: 'Heat Map',
+          icon: 'pi pi-fw pi-th-large',
+          current_component: 'HeatMap'
         }
+        
       ],
       index: null,
       current_component: null,
@@ -413,9 +422,9 @@ export default {
     await this.update_lookup_table()
     // await this.get_datasets()
 
-    // Line chart at index 1
-    // Bar = 0, Line = 1
-    this.index = 1
+    // Line chart at index 0
+    // Line = 0, Bar = 1, Heat Map = 2 
+    this.index = 2
 
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
@@ -501,6 +510,11 @@ export default {
         this.getting_datasets = false
         this.got_datasets = false
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No datasets selected', life: 5000 });
+        return
+      } else if (this.selected_metadata.length > 8) {
+        this.getting_datasets = false
+        this.got_datasets = false
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Too many datasets selected.\nSelect 8 or fewer.', life: 5000 });
         return
       }
       this.selected_metadata.forEach((e) => {
@@ -628,14 +642,22 @@ export default {
           const table_obj_index = this.gene_expression_data_tables_all
             .findIndex(e => e.table_name == t)
           const sample_table_name = t.replace('gene_expression_data', 'sample_metadata')
+          // console.log(this.sample_metadata_tables_all)
           const sample_metadata = this.sample_metadata_tables_all.find(e =>
             e.table_name == sample_table_name)
+          // console.log('sample_metadata')
+          // console.log(sample_metadata)
           const sample_metadata_lookup = sample_metadata.data.reduce(
             (obj, item) => (obj[item.sample_name] = item, obj), {})
+          // console.log('sample_metadata_lookup')
+          // console.log(sample_metadata_lookup)
 
           const table_obj_genes = [...new Set(table_obj.data.map(item => item.gene_id))]
           const genes_arr = genes.map(d => d.name)
           const genes_to_add = _.difference(genes_arr, table_obj_genes)
+
+          console.log(table_obj)
+          console.log(sample_metadata_lookup)
 
           // Check if all genders in table 
           const table_obj_genders = [...new Set(table_obj.data.map(item =>
@@ -694,6 +716,7 @@ export default {
           return table_obj
         } else {
           // Table does not exist, query 
+          console.log('Table does not exist')
           const result = await DataService
             .getExpressionDataByGenesGendersConditions(genes_str, genders_str, conditions_str, t)
           
@@ -701,7 +724,7 @@ export default {
             table_name: t,
             data: result.data
           }
-          this.gene_expression_data_tables_all.push(new_table_obj)
+          this.gene_expression_data_tables_all.push(JSON.parse(JSON.stringify(new_table_obj)))
           return new_table_obj
         } 
         
@@ -831,29 +854,66 @@ export default {
       // Get each subset of all datasets for each filter grouping, excluding its
       //  own additional filter conditions to prevent prematurely locking in a selection
       this.species_result = this.filter_metadata_except('species')
+      console.log('this.species_result')
+      console.log(this.species_result)
       this.experiment_result = this.filter_metadata_except('experiment')
+      console.log('this.experiment_result')
+      console.log(this.experiment_result)
       this.year_result = this.filter_metadata_except('year')
+      console.log('this.year_result')
+      console.log(this.year_result)
       this.tissue_result = this.filter_metadata_except('tissue')
+      console.log('this.tissue_result')
+      console.log(this.tissue_result)
       this.gender_result = this.filter_metadata_except('gender')
+      console.log('this.gender_result')
+      console.log(this.gender_result)
       this.condition_result = this.filter_metadata_except('condition')
+      console.log('this.condition_result')
+      console.log(this.condition_result)
 
-      // console.log('this.species_result')
-      // console.log(this.species_result)
-
-      this.species_filtered = this.build_list([...new Set(this.species_result.map(item => item.species))].sort())
-      this.experiment_filtered = this.build_list([...new Set(this.experiment_result.map(item => item.experiment))].sort())
-      this.year_filtered = this.build_list([...new Set(this.year_result.map(item => item.year))].sort())
-      this.tissue_filtered = this.build_list([...new Set(this.tissue_result.map(item => item.tissue))].sort())
-
+      // this.species_filtered = this.build_list([...new Set(this.species_result.map(item => item.species))].sort())
+      this.species_filtered = this.build_list([...new Set(this.db_metadata.map(item => item.species))].sort())
+      console.log('species_filtered')
+      console.log(this.species_filtered)
+      // this.experiment_filtered = this.build_list([...new Set(this.experiment_result.map(item => item.experiment))].sort())
+      this.experiment_filtered = this.build_list([...new Set(this.db_metadata.map(item => item.experiment))].sort())
+      console.log('experiment_filtered')
+      console.log(this.experiment_filtered)
+      // this.year_filtered = this.build_list([...new Set(this.year_result.map(item => item.year))].sort())
+      this.year_filtered = this.build_list([...new Set(this.db_metadata.map(item => item.year))].sort())
+      
+      console.log('this.year_filtered')
+      console.log(this.year_filtered)
+      // this.tissue_filtered = this.build_list([...new Set(this.tissue_result.map(item => item.tissue))].sort())
+      this.tissue_filtered = this.build_list([...new Set(this.db_metadata.map(item => item.tissue))].sort())
+      
+      console.log('this.tissue_filtered')
+      console.log(this.tissue_filtered)
       // Get all genders in filtered list then flatten and get unique values
+      // this.gender_filtered = this.build_list([...new Set(
+      //   this.gender_result.map(item =>
+      //     [...new Set(item.gender.map(m => m.gender))]).flat()
+      // )].sort())
       this.gender_filtered = this.build_list([...new Set(
-        this.gender_result.map(item =>
+        this.db_metadata.map(item =>
           [...new Set(item.gender.map(m => m.gender))]).flat()
       )].sort())
+      console.log('this.gender_filtered')
+      console.log(this.gender_filtered)
+
+      // this.condition_filtered = this.build_list([...new Set(
+      //   this.condition_result.map(item =>
+      //     [...new Set(item.condition.map(m => m.condition))]).flat()
+      // )].sort())
       this.condition_filtered = this.build_list([...new Set(
-        this.condition_result.map(item =>
+        this.db_metadata.map(item =>
           [...new Set(item.condition.map(m => m.condition))]).flat()
       )].sort())
+      console.log('this.condition_filtered')
+      console.log(this.condition_filtered)
+
+      // BUG: Check if result is empty, 
 
       this.selected_metadata = _.intersection(
         this.species_result,
@@ -929,8 +989,9 @@ export default {
         const species_selected_names = this.species_selected.map(el => el.name)
         // console.log('species_selected_names')
         // console.log(species_selected_names)
+        // NOTE: Do not allow select all if empty
         // If no species selected, then skip filtering
-        if (species_selected_names.length)
+        // if (species_selected_names.length)
           filtered = filtered.filter(
             ({ species }) => species_selected_names.some(
               (s) => species.toLowerCase().includes(s.toLowerCase())))
@@ -942,7 +1003,7 @@ export default {
         const experiment_selected_names = this.experiment_selected.map(el => el.name)
         // console.log('experiment_selected_names')
         // console.log(experiment_selected_names)
-        if (experiment_selected_names.length)
+        // if (experiment_selected_names.length)
           filtered = filtered.filter(
             ({ experiment }) => experiment_selected_names.some(
               (s) => experiment.toLowerCase().includes(s.toLowerCase())))
@@ -953,7 +1014,7 @@ export default {
         const year_selected_names = this.year_selected.map(el => el.name)
         // console.log('year_selected_names')
         // console.log(year_selected_names)
-        if (year_selected_names.length)
+        // if (year_selected_names.length)
           filtered = filtered.filter(
             ({ year }) => year_selected_names.some(
               (s) => year.toLowerCase().includes(s.toLowerCase())))
@@ -965,7 +1026,7 @@ export default {
         const tissue_selected_names = this.tissue_selected.map(el => el.name)
         // console.log('tissue_selected_names')
         // console.log(tissue_selected_names)
-        if (tissue_selected_names.length)
+        // if (tissue_selected_names.length)
           filtered = filtered.filter(
             ({ tissue }) => tissue_selected_names.some(
               (s) => tissue.toLowerCase().includes(s.toLowerCase())))
@@ -977,7 +1038,7 @@ export default {
         const gender_selected_names = this.gender_selected.map(el => el.name)
         // console.log('gender_selected_names')
         // console.log(gender_selected_names)
-        if (gender_selected_names.length)
+        // if (gender_selected_names.length)
           filtered = filtered.filter(
             ({ gender }) => gender_selected_names.some(
               (s) => gender.some((gend) =>
@@ -990,7 +1051,7 @@ export default {
         const condition_selected_names = this.condition_selected.map(el => el.name)
         // console.log('condition_selected_names')
         // console.log(condition_selected_names)
-        if (condition_selected_names.length)
+        // if (condition_selected_names.length)
           filtered = filtered.filter(
             ({ condition }) => condition_selected_names.some(
               (s) => condition.some((cond) =>
