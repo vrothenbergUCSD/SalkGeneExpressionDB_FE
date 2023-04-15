@@ -140,9 +140,12 @@ export default {
       // console.log('signOut')
       const auth = getAuth()
       auth.signOut();
+      this.$store.commit("reset")
       // May need to re-direct to Home if on page requiring auth 
-      this.$router.push({ name: 'Home' })
+      this.$router.push({ name: 'About' })
       // window.location.reload();
+      console.log('this.$store.state')
+      console.log(this.$store.state)
 
     }
   }
