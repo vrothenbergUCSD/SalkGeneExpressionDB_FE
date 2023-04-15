@@ -8,21 +8,25 @@ import { firestore } from "@/firebase/firebaseInit";
 
 // Vue.use(Vuex);
 
+function defaultState() {
+  return {
+    count: 0,
+    user: null,
+    profileAdmin: null,
+    profileEmail: null,
+    profileFirstName: null,
+    profileLastName: null,
+    profileInstitution: null,
+    profileId: null,
+    profileInitials: null,
+    token: null,
+    profileUploader: null,
+  }
+}
+
 export default createStore({
   state() {
-    return {
-      count: 0,
-      user: null,
-      profileAdmin: null,
-      profileEmail: null,
-      profileFirstName: null,
-      profileLastName: null,
-      profileInstitution: null,
-      profileId: null,
-      profileInitials: null,
-      token: null,
-      profileUploader: null,
-    }
+    return defaultState()
   },
   getters: {
     getCount(state) {
@@ -67,6 +71,9 @@ export default createStore({
     setToken(state, payload) {
       state.token = payload
     },
+    reset(state) {
+      Object.assign(state, defaultState())
+    }
 
   },
   actions: {
