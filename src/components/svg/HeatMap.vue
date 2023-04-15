@@ -518,7 +518,7 @@ export default {
     initialize_heat_map() {
       console.log('initialize_heat_map')
       // set the dimensions and margins of the graph
-      this.margin = {top: 30, right: 10, bottom: 140, left: 80}
+      this.margin = {top: 30, right: 10, bottom: 140, left: 40}
 
       this.width = this.windowWidth * 0.6 - this.margin.left - this.margin.right,
       this.height = this.windowHeight * 0.55 - this.margin.top - this.margin.bottom;
@@ -557,7 +557,7 @@ export default {
       this.svg.append("text")
         .attr("class", "x-label")
         .attr("text-anchor", "middle")
-        .attr("x", this.width * this.drawable_width_scale / 2)
+        .attr("x", this.width * this.drawable_width_scale * 0.5)
         .attr("y", this.height * this.drawable_height_scale+40)
         .text("Time Point (ZT)");
 
@@ -567,10 +567,11 @@ export default {
       // this.svg.append("g")
       //   .attr("class","myYaxis")
       this.y = d3.scaleBand().range([this.height*this.drawable_height_scale, 0]);
-      this.yAxis = d3.axisLeft()
+      this.yAxis = d3.axisRight()
         .scale(this.y)
         .tickSize(0);
       this.svg.append("g")
+        .attr("transform", `translate(${this.width*this.drawable_width_scale}, 0)`)
         .attr("class","myYaxis")
 
       // // Y axis label 
@@ -647,8 +648,7 @@ export default {
       // console.log(this.sumstat)
 
       // Create the Y axis
-      this.y.domain(groups)
-        .padding(0.05);
+      this.y.domain(groups).padding(0.05);
       var y = this.y
       this.svg.selectAll('.myYaxis')
           .transition()
@@ -659,10 +659,10 @@ export default {
 
       this.svg.selectAll(".myYaxis")
           .selectAll("text")
-          .style("text-anchor", "end")
-          .attr("dx", "-.8em")
+          .style("text-anchor", "start")
+          .attr("dx", ".1em")
           .attr("dy", ".15em")
-          .attr("transform", "rotate(-45)")
+          .attr("transform", "rotate(45)")
 
       // Tissue > Gene > Group 
       console.log('this.avgPoints')

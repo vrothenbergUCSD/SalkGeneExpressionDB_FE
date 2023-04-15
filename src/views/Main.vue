@@ -81,8 +81,8 @@
                   <DataTable :value="this.species_filtered" v-model:selection="this.species_selected"
                     class="p-datatable-sm p-datatable-species" stripedRows :scrollable="true" scrollHeight="200px"
                     :loading="loading" selectionMode="multiple" :metaKeySelection="false"
-                    @row-select="update_lookup_table()" @row-unselect="update_lookup_table()"
-                    @row-select-all="update_lookup_table()" @row-unselect-all="update_lookup_table()">
+                    @row-select="update_lookup_table" @row-unselect="update_lookup_table()"
+                    @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table()">
                     <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
                     <Column field="name" header="Species"></Column>
                     <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
@@ -419,12 +419,12 @@ export default {
     this.condition_selected = [{ name: 'ALF' }, { name: 'TRF' }]
     this.genes_selected = [{ name: 'Clock' }]
 
-    await this.update_lookup_table()
-    // await this.get_datasets()
+    this.update_lookup_table()
+    await this.get_datasets()
 
     // Line chart at index 0
     // Line = 0, Bar = 1, Heat Map = 2 
-    this.index = 2
+    this.index = 0
 
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
@@ -434,8 +434,17 @@ export default {
       // Called only once by mounted()
       console.log('load_metadata')
       const start = Date.now()
-      // 
-      this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
+
+      let formData = new FormData()
+      let token = null
+      if (this.$store.state.token)
+        token = this.$store.state.token.token
+      formData.append('authorization', token)
+      console.log('formData')
+      console.log(formData)
+
+      this.db_metadata = await DataService.getDatasetsMetadata(formData).then(e => e.data)
+
       // Parse gender and condition fields
       this.db_metadata.forEach(e => {
         const genderStr = e.gender.replaceAll(/[']+/g, '"')
@@ -846,7 +855,7 @@ export default {
       const elapsed = Date.now() - start
       console.log('get_gene_data time elapsed: ', elapsed)
     },
-    async update_lookup_table() {
+    update_lookup_table() {
       // TODO: update_lookup_table optimize 
       // Called by dataset filter row select / unselect
       console.log('update_lookup_table')
@@ -969,7 +978,8 @@ export default {
       })
 
       // Performs API calls to Database on change to filters
-      await this.get_datasets()
+      // TODO: Make sure Update button calls this.get_datasets()
+      // await this.get_datasets()
 
       const elapsed = Date.now() - start
       console.log('update_lookup_table time elapsed: ', elapsed)
