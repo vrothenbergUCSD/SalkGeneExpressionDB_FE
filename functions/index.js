@@ -61,7 +61,7 @@ async function removeMemberGroup(removed_group_id, other_group_id) {
 }
 
 async function updateUsers(new_users, old_users, perm, group_id) {
-  // console.log('updateUsers', perm, group_id)
+  console.log('updateUsers', perm, group_id)
   const users_to_add = _.difference(new_users, old_users)
   const users_to_remove = _.difference(old_users, new_users)
   const remove_results = await Promise.all(users_to_remove.map(async (uid) => {
@@ -72,10 +72,10 @@ async function updateUsers(new_users, old_users, perm, group_id) {
   const add_results = await Promise.all(users_to_add.map(async (uid) => {
     return updatePermissionArray(uid, perm, group_id, true)
   }))
-  // console.log('add_results')
-  // console.log(add_results)
+  console.log('add_results')
+  console.log(add_results)
   const success = !(add_results.includes(false) || remove_results.includes(false))
-  // console.log('updateUsers:', success ? 'Success' : 'Fail')
+  console.log('updateUsers:', success ? 'Success' : 'Fail')
   return success
 }
 
@@ -281,15 +281,15 @@ exports.permissionGroupUpdate = functions.firestore
     // console.log('user_results')
     // console.log(user_results)
 
-    const group_results = await Promise.all([
-      updateGroups(after.admin_groups, before.admin_groups, 'admin', group_id),
-      updateGroups(after.editor_groups, before.editor_groups, 'editor', group_id),
-      updateGroups(after.reader_groups, before.reader_groups, 'reader', group_id)
-    ])
+    // const group_results = await Promise.all([
+    //   updateGroups(after.admin_groups, before.admin_groups, 'admin', group_id),
+    //   updateGroups(after.editor_groups, before.editor_groups, 'editor', group_id),
+    //   updateGroups(after.reader_groups, before.reader_groups, 'reader', group_id)
+    // ])
     // console.log('group_results')
     // console.log(group_results)
 
-    const success = !(user_results.includes(false) || group_results.includes(false))
+    const success = !(user_results.includes(false))
 
     console.log('permissionGroupUpdate:', success ? 'Success' : 'Fail')
     return success

@@ -59,31 +59,31 @@
           {{convertUserIDs(data.admin_users).join(", ")}}
         </template>
       </Column>
-      <Column field="admin-groups" header="Admin Groups" style="min-width: 12rem">
+      <!-- <Column field="admin-groups" header="Admin Groups" style="min-width: 12rem">
         <template #body="{data}">
           {{convertGroupIDs(data.admin_groups).join(", ")}}
         </template>
-      </Column>
+      </Column> -->
       <Column field="editor_users" header="Editors" style="min-width: 14rem">
         <template #body="{data}">
           {{convertUserIDs(data.editor_users).join(", ")}}
         </template>
       </Column>
-      <Column field="editor-groups" header="Editor Groups" style="min-width: 12rem">
+      <!-- <Column field="editor-groups" header="Editor Groups" style="min-width: 12rem">
         <template #body="{data}">
           {{convertGroupIDs(data.editor_groups).join(", ")}}
         </template>
-      </Column>
+      </Column> -->
       <Column field="reader_users" header="Readers" style="min-width: 6rem">
         <template #body="{data}">
           {{convertUserIDs(data.reader_users).join(", ")}}
         </template>
       </Column>
-      <Column field="reader-groups" header="Reader Groups" style="min-width: 12rem">
+      <!-- <Column field="reader-groups" header="Reader Groups" style="min-width: 12rem">
         <template #body="{data}">
           {{convertGroupIDs(data.reader_groups).join(", ")}}
         </template>
-      </Column>
+      </Column> -->
       
     </DataTable>
 
@@ -265,9 +265,9 @@
         <div class="field col">
           <div class="font-semibold">Add Users</div>
         </div>
-        <div class="field col">
+        <!-- <div class="field col">
           <div class="font-semibold">Inherit from Groups</div>
-        </div>
+        </div> -->
       </div>
       <div class="formgrid grid">
         <div class="field col">
@@ -290,7 +290,7 @@
             </template>
           </MultiSelect>
         </div>
-        <div class="field col">
+        <!-- <div class="field col">
           <label for="admin_groups">Admin Groups</label>
           <MultiSelect v-model="selected_admin_groups" :options="groups"
             optionLabel="name" placeholder="Select Admin Groups" class="multiselect-custom max-w-[400px]"
@@ -309,7 +309,7 @@
               </div>
             </template>
           </MultiSelect>
-        </div>
+        </div> -->
       </div>
       <div class="formgrid grid">
         <div class="field col">
@@ -333,7 +333,7 @@
             </template>
           </MultiSelect>
         </div>
-        <div class="field col">
+        <!-- <div class="field col">
           <label for="editor_groups">Editor Groups</label>
           <MultiSelect v-model="selected_editor_groups" :options="groups"
             optionLabel="name" placeholder="Select Editor Groups" class="multiselect-custom max-w-[400px]"
@@ -352,7 +352,7 @@
               </div>
             </template>
           </MultiSelect>
-        </div>
+        </div> -->
       </div>
       <div class="formgrid grid">
         <div class="field col">
@@ -376,7 +376,7 @@
             </template>
           </MultiSelect>
         </div>
-        <div class="field col">
+        <!-- <div class="field col">
           <label for="admin_groups">Reader Groups</label>
           <MultiSelect v-model="selected_reader_groups" :options="groups"
             optionLabel="name" placeholder="Select Reader Groups" class="multiselect-custom max-w-[400px]"
@@ -395,7 +395,7 @@
               </div>
             </template>
           </MultiSelect>
-        </div>
+        </div> -->
       </div>
       <template #footer>
         <div class="flex flex-row items-center justify-between">
@@ -552,11 +552,11 @@ export default {
         description: this.permissionGroup.description, 
         owner: this.$store.state.profileId,
         admin_users: this.selected_admin_users.map(user => user.uid), 
-        admin_groups: this.selected_admin_groups.map(group => group.group_id), 
+        // admin_groups: this.selected_admin_groups.map(group => group.group_id), 
         editor_users: this.selected_editor_users.map(user => user.uid),
-        editor_groups: this.selected_editor_groups.map(group => group.group_id),
+        // editor_groups: this.selected_editor_groups.map(group => group.group_id),
         reader_users: this.selected_reader_users.map(user => user.uid),
-        reader_groups: this.selected_reader_groups.map(group => group.group_id), 
+        // reader_groups: this.selected_reader_groups.map(group => group.group_id), 
       })
 
       this.permissionSubmitted = false
@@ -566,11 +566,11 @@ export default {
       ])
 
       this.selected_admin_users = []
-      this.selected_admin_groups = []
+      // this.selected_admin_groups = []
       this.selected_editor_users = []
-      this.selected_editor_groups = []
+      // this.selected_editor_groups = []
       this.selected_reader_users = []
-      this.selected_reader_groups = []
+      // this.selected_reader_groups = []
 
       this.hidePermissionGroupDialog()
     },
@@ -668,17 +668,18 @@ export default {
       console.log(this.permissionGroup)
       // TODO: Possible performance issues when filtering and users array is large, O(n*m)
       this.selected_admin_users = this.users.filter(user => this.permissionGroup.admin_users.includes(user.uid))
-      this.selected_admin_groups = this.groups.filter(group => this.permissionGroup.admin_groups.includes(group.group_id))
+      // this.selected_admin_groups = this.groups.filter(group => this.permissionGroup.admin_groups.includes(group.group_id))
       this.selected_editor_users = this.users.filter(user => this.permissionGroup.editor_users.includes(user.uid))
-      this.selected_editor_groups = this.groups.filter(group => this.permissionGroup.editor_groups.includes(group.group_id))
+      // this.selected_editor_groups = this.groups.filter(group => this.permissionGroup.editor_groups.includes(group.group_id))
       this.selected_reader_users = this.users.filter(user => this.permissionGroup.reader_users.includes(user.uid))
-      this.selected_reader_groups = this.groups.filter(group => this.permissionGroup.reader_groups.includes(group.group_id))
+      // this.selected_reader_groups = this.groups.filter(group => this.permissionGroup.reader_groups.includes(group.group_id))
     },
     hideEditPermissionGroupDialog() {
       this.editPermissionGroupDialog = false 
       this.editPermissionSubmitted = false
     },
     async updatePermissionGroup() {
+      console.log('updatePermissionGroup')
       this.editPermissionSubmitted = true
       // TODO: Validation error
       let validation_error = false
@@ -731,11 +732,11 @@ export default {
         description: this.permissionGroup.description, 
         datasets: this.permissionGroup.datasets,
         admin_users: this.selected_admin_users.map(user => user.uid), 
-        admin_groups: this.selected_admin_groups.map(group => group.group_id), 
+        // admin_groups: this.selected_admin_groups.map(group => group.group_id), 
         editor_users: this.selected_editor_users.map(user => user.uid),
-        editor_groups: this.selected_editor_groups.map(group => group.group_id),
+        // editor_groups: this.selected_editor_groups.map(group => group.group_id),
         reader_users: this.selected_reader_users.map(user => user.uid),
-        reader_groups: this.selected_reader_groups.map(group => group.group_id), 
+        // reader_groups: this.selected_reader_groups.map(group => group.group_id), 
       })
 
       await Promise.all([
@@ -781,7 +782,6 @@ export default {
       update_obj[user_type] = user_type_arr
       await updateDoc(docRef, update_obj)
     },
-
     async updateGroups(selected_groups, old_groups, user_type, group_id) {
       console.log('updateGroups')
       const groups_to_add = _.difference(selected_groups, old_groups)

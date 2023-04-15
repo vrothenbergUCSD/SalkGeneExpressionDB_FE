@@ -127,6 +127,11 @@
             <small class="p-error" v-if="submitted && dataset.institution.length > 100">
               Institution must be less than 100 characters.</small>
           </div>
+          <div class="field">
+            <label for="institution">DOI</label>
+            <InputText id="institution" v-model.trim="dataset.doi" required="false" 
+              autofocus />
+          </div>
 
           <div id="gene_expression" class="field">
             <div id="upload_gene_expression_data_error_panel" v-show="this.upload_gene_expression_data_error" class="my-3">
@@ -210,10 +215,10 @@
             </div>
           </div>
           <div class="flex flex-row items-center">
-            <div class="basis-1/3 pr-1">
+            <div class="w-1/3 pr-1">
               <label for="admin_groups">Admin Groups</label>
-              <MultiSelect v-model="selected_admin_groups" :options="groups"
-                optionLabel="name" placeholder="Select Admin Groups" class="multiselect-custom"
+              <MultiSelect v-model="selected_admin_groups" :options="groups" :maxSelectedLabels="3"
+                optionLabel="name" placeholder="Select Admin Groups" class="multiselect-custom text-sm w-full"
                 :filter="true" display="chip">
                 <template #value="slotProps">
                   <div class="p-multiselect-token text-sm" v-for="option of slotProps.value" :key="option.uid">
@@ -230,10 +235,10 @@
                 </template>
               </MultiSelect>
             </div>
-            <div class="basis-1/3 px-1">
+            <div class="w-1/3 px-1">
               <label for="editor_groups">Editor Groups</label>
-              <MultiSelect v-model="selected_editor_groups" :options="groups"
-                optionLabel="name" placeholder="Select Editor Groups" class="multiselect-custom"
+              <MultiSelect v-model="selected_editor_groups" :options="groups" :maxSelectedLabels="3"
+                optionLabel="name" placeholder="Select Editor Groups" class="multiselect-custom text-sm w-full"
                 :filter="true" display="chip">
                 <template #value="slotProps">
                   <div class="p-multiselect-token text-sm" v-for="option of slotProps.value" :key="option.uid">
@@ -250,10 +255,10 @@
                 </template>
               </MultiSelect>
             </div>
-            <div class="basis-1/3 pl-1">
+            <div class="w-1/3 pl-1">
               <label for="reader_groups">Reader Groups</label>
-              <MultiSelect v-model="selected_reader_groups" :options="groups"
-                optionLabel="name" placeholder="Select Reader Groups" class="multiselect-custom"
+              <MultiSelect v-model="selected_reader_groups" :options="groups" :maxSelectedLabels="3"
+                optionLabel="name" placeholder="Select Reader Groups" class="multiselect-custom text-sm w-full"
                 :filter="true" display="chip">
                 <template #value="slotProps">
                   <div class="p-multiselect-token text-sm" v-for="option of slotProps.value" :key="option.uid">
@@ -437,7 +442,12 @@ export default {
   },
   methods: {
     async load_metadata() {
-      this.db_metadata = await DataService.getDatasetsMetadata().then(e => e.data)
+      let formData = new FormData() 
+      const token = this.$store.state.token.token
+      formData.append('authorization', token)
+      console.log('formData')
+      console.log(formData)
+      this.db_metadata = await DataService.getDatasetsMetadata(formData).then(e => e.data)
     },
     async getOwnedDatasets() {
       console.log('getOwnedDatasets')
@@ -461,67 +471,116 @@ export default {
       this.owned_datasets = this.db_metadata.filter(e => e.owner == userId)
       this.loading = false
     },
-    editDataset(d) {
-      this.datasetDialog = true
+    async editDataset(d) {
+      console.log('editDataset')
+      
       this.dataset = {...d}
+      console.log(this.dataset)
+      console.log('this.groups')
+      console.log(this.groups)
+
+      this.selected_admin_groups = await this.getDatasetGroups(this.dataset.admin_groups)
+      this.selected_editor_groups = await this.getDatasetGroups(this.dataset.editor_groups)
+      this.selected_reader_groups = await this.getDatasetGroups(this.dataset.reader_groups)
+
+      console.log('this.selected_reader_groups')
+      console.log(this.selected_reader_groups)
+      this.datasetDialog = true
+
     },
     hideDatasetDialog() {
       this.datasetDialog = false
       this.submitted = false
     },
     async saveDataset() {
+      console.log('saveDataset')
       this.submitted = true
-      if (this.dataset.species.trim()) {
-        this.datasetDialog = false;
-        this.dataset = {};
-      }
+      // if (this.dataset.species.trim()) {
+      //   console.log('fail')
+      //   console.log(this.dataset.species)
+      //   console.log(this.dataset.species.trim())
+      //   this.datasetDialog = false;
+      //   this.dataset = {};
+      // }
 
       let validation_error = false
+      let validation_message = ""
+
+      if (!this.dataset.experiment) {
+        // Experiment required
+        validation_error = true 
+        validation_message = validation_message.concat("Missing experiment.\n")
+      }
 
       // Validate
       if (!this.dataset.species) {
         // Species required
         validation_error = true
+        validation_message = validation_message.concat("Missing species.\n")
       }
 
       if (!this.dataset.tissue) {
         // Tissue required
         validation_error = true
-      }
-
-      if (!this.dataset.experiment) {
-        // Experiment required 
-        validation_error = true
+        validation_message = validation_message.concat("Missing tissue.\n")
       }
 
       if (!this.dataset.year) {
         // Year required
         validation_error = true
+        validation_message = validation_message.concat("Missing year.\n")
       } else if (this.dataset.year < 1900 || this.dataset.year > 2100) {
         // Year must be non-silly
         validation_error = true
+        validation_message = validation_message.concat("Invalid year.\n")
       }
 
-      if (this.institution && this.institution.length > 100) {
+      if (this.dataset.institution && this.dataset.institution.length > 100) {
         // Institution must be less than 100 characters
         validation_error = true
+        validation_message = validation_message.concat("Invalid institution length.\n")
+        
       }
+
+      // Validate doi 
+      if (this.dataset.doi) {
+        RegExp.escape = function (string) {
+          return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+        };
+        const pat = '\\b(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?!["&\'])\\S)+)\\b'
+        const re = new RegExp(pat)
+        // console.log('this.doi', this.doi)
+        // console.log('re:', re)
+        var found = re.exec(this.dataset.doi);
+        // console.log(found)
+        if (!found) {
+          console.log('ERROR: Invalid DOI format.')
+          validation_error = true
+          validation_message = validation_message.concat("Invalid DOI.\n")
+        }
+      }
+
 
       if (validation_error) {
         this.submitted = false
+        this.$toast.add({ severity: 'error', summary: 'Validation Error', detail: validation_message, life: 10000 });
+
         return
       }
 
+      // Verify all data tables are provided
+
+      console.log('reader_groups')
+      console.log(this.selected_reader_groups)
+      console.log(this.selected_reader_groups.map(group => group.group_id))
 
       const docRef = doc(firestore, "datasets", this.dataset.id)
+
       await updateDoc(docRef, {
         doi: this.dataset.doi,
         experiment: this.dataset.experiment, 
-        gene_expression_data_table_name: this.dataset.gene_expression_data_table_name,
-        gene_metadata_table_name: this.dataset.gene_metadata_table_name, 
         institution: this.dataset.institution, 
         otherInformation: this.dataset.otherInformation,
-        sample_metadata_table_name: this.dataset.sample_metadata_table_name,
         species: this.dataset.species,
         tissue: this.dataset.tissue,
         year: this.dataset.year,
@@ -530,113 +589,124 @@ export default {
         admin_groups: this.selected_admin_groups.map(group => group.group_id),
       })
 
-      let api_result = await this.post_dataset()
+      if (this.upload_gene_metadata_file 
+        && this.upload_sample_metadata_file 
+        && this.upload_gene_expression_data_file) 
+      {
+        let api_result = await this.post_dataset()
 
-      console.log('api_result')
-      console.log(api_result)
-      if (api_result.status != 200) {
-        this.$toast.add({severity: 'error', summary: 'Error', detail: 'HTTP Error', life: 10000});
-        this.upload_files_error = true
-        this.upload_files_error_log.push(`ERROR: ${api_result.statusText}`)
-      } else {
-        this.$toast.add({severity: 'success', summary: 'Success', detail: 'Dataset Uploaded', life: 10000});
-        console.log('BigQuery: Successfully uploaded dataset tables.')
-      }
-
-      for (let i = 0; i < api_result.data.errorLog.length; i++) {
-        if (api_result.data.errorLog[i].length > 0) {
-          this.upload_files_error_log.concat(api_result.data.errorLog[i]) 
+        console.log('api_result')
+        console.log(api_result)
+        if (api_result.status != 200) {
+          this.$toast.add({severity: 'error', summary: 'Error', detail: 'HTTP Error', life: 10000});
+          this.upload_files_error = true
+          this.upload_files_error_log.push(`ERROR: ${api_result.statusText}`)
+        } else {
+          this.$toast.add({severity: 'success', summary: 'Success', detail: 'Dataset Uploaded', life: 10000});
+          console.log('BigQuery: Successfully uploaded dataset tables.')
         }
-      } 
 
-      if (this.upload_files_error_log.length > 0) {
-        this.$toast.add({severity: 'error', summary: 'Error', detail: 'Error Uploading', life: 10000});
+        for (let i = 0; i < api_result.data.errorLog.length; i++) {
+          if (api_result.data.errorLog[i].length > 0) {
+            this.upload_files_error_log.concat(api_result.data.errorLog[i]) 
+          }
+        } 
+
+        if (this.upload_files_error_log.length > 0) {
+          this.$toast.add({severity: 'error', summary: 'Error', detail: 'Error Uploading', life: 10000}); 
+        }
+
+        this.permissionSubmitted = false
+        await Promise.all([
+          this.getGroups(),
+          this.getOwnedGroups(),
+        ])
+        
       }
-
-      this.permissionSubmitted = false
-      await Promise.all([
-        this.getGroups(),
-        this.getOwnedGroups(),
-      ])
-      
+      this.getOwnedDatasets()
       this.hideDatasetDialog()
     },
-    async createPermissionGroup() {
-      this.permissionGroup = {
-        'name': null,
-        'description': null,
-        'admin_users': [],
-        'admin_groups': [],
-        'editor_users': [],
-        'editor_groups': [],
-        'reader_users': [],
-        'reader_groups': [],
-        'datasets': [],
-      }
-      this.selected_admin_users = this.users
-        .filter(user => user.uid == this.$store.state.profileId)
-      this.permissionGroupDialog = true      
-    },
-    hidePermissionGroupDialog() {
-      this.permissionGroupDialog = false
-    },
-    async savePermissionGroup(event) {
-      console.log('savePermissionGroup')
-      this.permissionSubmitted = true 
-      if (!this.permissionGroup.name) {
-        // Name required
-        return
-      }
+    // async createPermissionGroup() {
+    //   this.permissionGroup = {
+    //     'name': null,
+    //     'description': null,
+    //     'admin_users': [],
+    //     'admin_groups': [],
+    //     'editor_users': [],
+    //     'editor_groups': [],
+    //     'reader_users': [],
+    //     'reader_groups': [],
+    //     'datasets': [],
+    //   }
+    //   this.selected_admin_users = this.users
+    //     .filter(user => user.uid == this.$store.state.profileId)
+    //   this.permissionGroupDialog = true      
+    // },
+    // hidePermissionGroupDialog() {
+    //   this.permissionGroupDialog = false
+    // },
+    // async savePermissionGroup(event) {
+    //   console.log('savePermissionGroup')
+    //   this.permissionSubmitted = true 
+    //   if (!this.permissionGroup.name) {
+    //     // Name required
+    //     return
+    //   }
 
-      if (this.permissionGroup.description && this.permissionGroup.description.length > 100) {
-        // Description too long
-        return 
-      }
+    //   if (this.permissionGroup.description && this.permissionGroup.description.length > 100) {
+    //     // Description too long
+    //     return 
+    //   }
 
-      // Update user information, set roles 
-      this.permissionGroup.admin_users.forEach((u) => {
-        console.log('admin: ', u)
-        console.log(u)
-      })
-      
-      // Save to Firestore
-      const docRef = await addDoc(collection(firestore, 'permission_groups'), {
-        name: this.permissionGroup.name,
-        datasets: [],
-        description: this.permissionGroup.description, 
-        owner: this.$store.state.profileId,
-        admin_users: this.selected_admin_users.map(user => user.uid), 
-        admin_groups: this.selected_admin_groups.map(group => group.group_id), 
-        editor_users: this.selected_editor_users.map(user => user.uid),
-        editor_groups: this.selected_editor_groups.map(group => group.group_id),
-        reader_users: this.selected_reader_users.map(user => user.uid),
-        reader_groups: this.selected_reader_groups.map(group => group.group_id), 
-      })
+    //   // Update user information, set roles 
+    //   this.permissionGroup.admin_users.forEach((u) => {
+    //     console.log('admin: ', u)
+    //     console.log(u)
+    //   })
 
-      this.permissionSubmitted = false
-      await Promise.all([
-        this.getGroups(),
-        this.getOwnedGroups(),
-      ])
+    //   // console.log('reader_groups')
+    //   // console.log(this.selected_reader_groups)
+    //   // console.log(this.selected_reader_groups.map(group => group.group_id))
+
       
-      this.hidePermissionGroupDialog()
-    },
-    showDeletePermissionGroupDialog() {
-      this.deletePermissionGroupDialog = true
-    },
-    hideDeletePermissionGroupDialog() {
-      this.deletePermissionGroupDialog = false
-      this.deletePermissionGroupSubmitted = false
-    },
-    async deletePermissionGroup() {
-      this.deletePermissionGroupSubmitted = true
-      console.log('deletePermissionGroup')
-      const docRef = doc(firestore, "permission_groups", this.permissionGroup.group_id)
-      await deleteDoc(docRef)
+    //   // Save to Firestore
+    //   const docRef = await addDoc(collection(firestore, 'permission_groups'), {
+    //     name: this.permissionGroup.name,
+    //     datasets: [],
+    //     description: this.permissionGroup.description, 
+    //     owner: this.$store.state.profileId,
+    //     admin_users: this.selected_admin_users.map(user => user.uid), 
+    //     // admin_groups: this.selected_admin_groups.map(group => group.group_id), 
+    //     editor_users: this.selected_editor_users.map(user => user.uid),
+    //     // editor_groups: this.selected_editor_groups.map(group => group.group_id),
+    //     reader_users: this.selected_reader_users.map(user => user.uid),
+    //     // reader_groups: this.selected_reader_groups.map(group => group.group_id), 
+    //   })
+
+    //   this.permissionSubmitted = false
+    //   await Promise.all([
+    //     this.getGroups(),
+    //     this.getOwnedGroups(),
+    //   ])
       
-      this.hideDeletePermissionGroupDialog()
-      this.hideEditPermissionGroupDialog()
-    },
+    //   this.hidePermissionGroupDialog()
+    // },
+    // showDeletePermissionGroupDialog() {
+    //   this.deletePermissionGroupDialog = true
+    // },
+    // hideDeletePermissionGroupDialog() {
+    //   this.deletePermissionGroupDialog = false
+    //   this.deletePermissionGroupSubmitted = false
+    // },
+    // // async deletePermissionGroup() {
+    // //   this.deletePermissionGroupSubmitted = true
+    // //   console.log('deletePermissionGroup')
+    // //   const docRef = doc(firestore, "permission_groups", this.permissionGroup.group_id)
+    // //   await deleteDoc(docRef)
+      
+    // //   this.hideDeletePermissionGroupDialog()
+    // //   this.hideEditPermissionGroupDialog()
+    // // },
     async getUsers() {
       console.log('getUsers')
       const q = query(collection(firestore, "users"))
@@ -664,6 +734,25 @@ export default {
           ...doc.data()
         })
       });
+    },
+    async getDatasetGroups(group_arr) {
+      console.log('getDatasetGroups')
+      console.log(group_arr)
+      const q = query(collection(firestore, "permission_groups"))
+      const querySnapshot = await getDocs(q);
+      let selected_groups = []
+      querySnapshot.forEach((doc) => {
+        // doc.data() is never undefined for query doc snapshots
+        // console.log(doc.id, " => ", doc.data());
+        if (group_arr.includes(doc.id)) {
+          selected_groups.push({ 
+            group_id : doc.id,
+            ...doc.data()
+          })
+        }
+      });
+      console.log(selected_groups)
+      return selected_groups
     },
     async getOwnedGroups() {
       console.log('getOwnedGroups')
@@ -701,74 +790,15 @@ export default {
       console.log(this.permissionGroup)
       // TODO: Possible performance issues when filtering and users array is large, O(n*m)
       this.selected_admin_users = this.users.filter(user => this.permissionGroup.admin_users.includes(user.uid))
-      this.selected_admin_groups = this.groups.filter(group => this.permissionGroup.admin_groups.includes(group.group_id))
+      // this.selected_admin_groups = this.groups.filter(group => this.permissionGroup.admin_groups.includes(group.group_id))
       this.selected_editor_users = this.users.filter(user => this.permissionGroup.editor_users.includes(user.uid))
-      this.selected_editor_groups = this.groups.filter(group => this.permissionGroup.editor_groups.includes(group.group_id))
+      // this.selected_editor_groups = this.groups.filter(group => this.permissionGroup.editor_groups.includes(group.group_id))
       this.selected_reader_users = this.users.filter(user => this.permissionGroup.reader_users.includes(user.uid))
-      this.selected_reader_groups = this.groups.filter(group => this.permissionGroup.reader_groups.includes(group.group_id))
+      // this.selected_reader_groups = this.groups.filter(group => this.permissionGroup.reader_groups.includes(group.group_id))
     },
     hideEditPermissionGroupDialog() {
       this.editPermissionGroupDialog = false 
       this.editPermissionSubmitted = false
-    },
-    async updatePermissionGroup() {
-      this.editPermissionSubmitted = true
-      // TODO: Validation error
-      let validation_error = false
-
-      if (!this.permissionGroup.name) {
-        // Name required
-        validation_error = true
-      } else if (this.permissionGroup.name.length > 100) {
-        // Name too long
-        validation_error = true
-      }
-
-      if (this.permissionGroup.description && this.permissionGroup.description.length > 100) {
-        // Description too long
-        validation_error = true
-      }
-
-      if (validation_error) {
-        this.editPermissionSubmitted = false
-        return
-      }
-
-      console.log('this.permissionGroup')
-      console.log(this.permissionGroup)
-
-      const group_id = this.permissionGroup.group_id
-
-      // await Promise.all([
-      //   this.updateUsers(this.selected_admin_users, 'admin', group_id),
-      //   this.updateUsers(this.selected_editor_users, 'editor', group_id),
-      //   this.updateUsers(this.selected_reader_users, 'reader', group_id),
-      //   this.updateGroups(this.selected_admin_groups, 'admin', group_id),
-      //   this.updateGroups(this.selected_editor_groups, 'editor', group_id),
-      //   this.updateGroups(this.selected_reader_groups, 'reader', group_id),
-      // ])
-
-      const docRef = doc(firestore, "permission_groups", this.permissionGroup.group_id)
-      await updateDoc(docRef, {
-        name: this.permissionGroup.name,
-        group_id: this.permissionGroup.group_id,
-        description: this.permissionGroup.description, 
-        datasets: this.permissionGroup.datasets,
-        admin_users: this.selected_admin_users.map(user => user.uid), 
-        admin_groups: this.selected_admin_groups.map(group => group.group_id), 
-        editor_users: this.selected_editor_users.map(user => user.uid),
-        editor_groups: this.selected_editor_groups.map(group => group.group_id),
-        reader_users: this.selected_reader_users.map(user => user.uid),
-        reader_groups: this.selected_reader_groups.map(group => group.group_id), 
-      })
-
-      await Promise.all([
-        this.getGroups(),
-        this.getOwnedGroups(),
-      ])
-      
-      this.hideEditPermissionGroupDialog()
-
     },
     async updateUsers(selected_users, user_type, group_id) {
       await Promise.all(selected_users.map(async (user) => {
@@ -1185,7 +1215,7 @@ export default {
       formData.append('sample_metadata_filename', this.upload_sample_metadata_filename)
       formData.append('gene_expression_data_filename', this.upload_gene_expression_data_filename)
 
-      // let api_result = await DataService.postDataset(formData)
+      let api_result = await DataService.postDataset(formData)
       const time_elapsed = (Date.now() - start) / 1000
       console.log(`post_dataset: Time elapsed: ${time_elapsed}s`)
       this.uploading = false
@@ -1232,6 +1262,7 @@ export default {
   .p-multiselect-label:not(.p-placeholder) {
     padding-top: .25rem;
     padding-bottom: .25rem;
+
   }
 
   .permission-item-value {
