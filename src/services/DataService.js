@@ -55,12 +55,21 @@ class DataService {
       url += `&conditions=${conditions}`
     return http.get(url)
   }
-  async getDatabaseMetadata() {
-    return http.get('database_metadata/data')
+  // Defunct
+  // async getDatabaseMetadata() {
+  //   return http.get('database_metadata/data')
+  // }
+  
+  // TODO: Pass formData for authentication
+  async getDatasetsMetadata(formData) {
+    return http.post('datasets_metadata/data', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
   }
-  async getDatasetsMetadata() {
-    return http.get('datasets_metadata/data')
-  }
+
+  // TODO: Make sure gene list is updated based on new datasets (low priority?)
   async getGeneList() {
     return http.get('datasets_metadata/genes')
   }
