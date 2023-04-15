@@ -63,9 +63,24 @@
         </div>
       </div>
 
+      <div class="p-fluid grid formgrid">
+        <div class="field col-8 pr-2">
+          <div>
+            <label class="block text-900 font-medium mb-2">Dataset Visibility</label>
+            <Checkbox inputId="publicize" v-model="publicize" :binary="true" class="align-middle"/>
+            <label for="publicize" class="ml-2 align-middle"> Public </label>
+          </div>
 
-      <Button label="Save Details" @click="save" class="my-3" />
-      <div v-show="saveMsg" class="my-3">{{ saveMsg }}</div>
+        </div>
+        <div class="field col-2 ">
+          <Button label="Save Details" @click="save" class="" />
+      <!-- <div v-show="saveMsg" class="">{{ saveMsg }}</div> -->
+
+        </div>
+      </div>
+
+
+      
 
       <!-- <div v-show="databaseTablePrefix" class="my-3">
         Database Table Prefix: <span class="font-mono pl-3">{{ databaseTablePrefix }}</span>
@@ -296,6 +311,7 @@ import InputNumber from 'primevue/inputnumber'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import Textarea from 'primevue/textarea'
 import Panel from 'primevue/panel'
 import ScrollPanel from 'primevue/scrollpanel'
@@ -320,6 +336,7 @@ export default {
     DataTable,
     Column,
     Button,
+    Checkbox,
     Textarea,
     Panel,
     ScrollPanel,
@@ -462,15 +479,17 @@ export default {
 
       conditions_json: null,
       genders_json: null,
+
+      publicize: true,
     }
   },
   mounted() {
     // Testing
     console.log('Mounted - Testing')
-    this.experiment = 'TRF Experiment'
-    this.year = 2019
+    this.experiment = 'WFF Experiment'
+    this.year = 2020
     this.institution = 'Salk Institute'
-    this.species = 'Mus Musculus'
+    this.species = 'Mus musculus'
     this.tissue = ''
   },
   methods: {
@@ -816,7 +835,7 @@ export default {
         this.tissueErrorMsg = "Tissue required."
         errors = true
       } else {
-        this.tissue = this.tissue.replace(/ /g, "_")
+        // this.tissue = this.tissue.replace(/ /g, "_")
         this.tissueInvalid = false
       }
 
@@ -849,6 +868,10 @@ export default {
       const gene_metadata_table_name = `${this.databaseTablePrefix}_gene_metadata`
       const sample_metadata_table_name = `${this.databaseTablePrefix}_sample_metadata`
       const gene_expression_data_table_name = `${this.databaseTablePrefix}_gene_expression_data`
+
+      let reader_groups_arr = []
+      if (this.publicize)
+        reader_groups_arr = ["bnY67RcVyAS0lpIpS1GE"]
 
       let metadata = {
         owner: this.$store.state.profileId,
@@ -984,6 +1007,7 @@ export default {
           this.upload_sample_metadata_file = null
           this.upload_gene_expression_data_filename = 'Select'
           this.upload_gene_expression_data_file = null
+          this.tissue = ''
 
           
         }  else {
