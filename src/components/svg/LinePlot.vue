@@ -342,7 +342,8 @@ export default {
           })
           e.experiment = metadata.experiment
           e.year = metadata.year
-          e.institution = metadata.institution         
+          e.institution = metadata.institution     
+             
           
           // "TRF_2018_Mouse_Adrenal_gene_expression_data_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"
           let sample_table = table.replace('gene_expression_data', 'sample_metadata')
@@ -373,30 +374,32 @@ export default {
           }
           e.species = species[0]
 
+          e.experiment_year_species = e.experiment + ' ' + e.year + ' ' + e.species
+
           const age_months = [...new Set(e.data.map(item => item.age_months))];
           if (age_months.length > 1) {
-            // Samples vary in age
+            // Samples vary in age, shouldn't happen with existing datasets
             console.error('WARNING: More than 1 age in ', table)
           }
-          e.age_months = age_months[0]
+          e.age_months = age_months.join(',')
 
           const data_type = [...new Set(e.data.map(item => item.data_type))];
           if (data_type.length > 1) {
-            // More than 1 data type
+            // More than 1 data type, shouldn't happen
             console.error('WARNING: More than 1 data type in ', table)
           }
           e.data_type = data_type[0]
 
           const gender = [...new Set(e.data.map(item => item.gender))];
           if (gender.length > 1) {
-            // More than 1 gender
+            // More than 1 gender, may happen
             console.error('WARNING: More than 1 gender in ', table)
           }
-          e.gender = gender[0]
+          e.gender = gender.join(',')
 
           const tissue = [...new Set(e.data.map(item => item.tissue))];
           if (tissue.length > 1) {
-            // More than 1 gender
+            // More than 1 tissue, shouldn't happen
             console.error('WARNING: More than 1 tissue in ', table)
           }
           e.tissue = tissue[0]
@@ -404,25 +407,72 @@ export default {
           this.expression_merged = this.expression_merged.concat(e.data)
         })
 
+        console.log('this.expression_merged.forEach')
         this.expression_merged.forEach((e) => {
+          console.log(e)
           e.time_point = parseInt(e.time_point.split('ZT')[1])
-          e.replicate = e.sample_name.split('-').at(-1)
-          e.identifier = `${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.group_name}`
+          if (e.sample_name.includes('-'))
+            e.replicate = e.sample_name.split('-').at(-1)
+          else
+            e.replicate = e.sample_name.split('_').at(-1)
+          e.identifier = `${e.experiment}_${e.year}_${e.species}_${e.tissue.replaceAll(' ', '-')}_${e.gene_id}_${e.gender}_${e.group_name}`
         })
 
         // Sort data points alphanumerically on sample_name 
         const sortAlphaNum = (a, b) => a.sample_name.toString().localeCompare(b.sample_name, 'en', { numeric: true })
         this.expression_merged.sort(sortAlphaNum)
 
+        const grouped_species = _.groupBy(this.expression_merged, e => `${e.species}`)
+
+        console.log('grouped_species')
+        console.log(grouped_species)
+
+        const grouped_species_experiment = Object.keys(grouped_species).map((species) => {
+          return [species, _.groupBy(grouped_species[species], e => `${e.experiment}`)]
+        })
+
+        console.log('grouped_species_experiment')
+        console.log(grouped_species_experiment)
+
+        // const grouped_species_experiment_year = Object.keys(grouped_species_experiment).map((key) => {
+        //   return [key, _.groupBy(grouped_species_experiment[key], e => `${e.year}`)]
+        // })
+        const grouped_species_experiment_year = grouped_species_experiment.map((species) => {
+          return [species[0], Object.keys(species[1]).map((experiment) => {
+            return [experiment, _.groupBy(species[1][experiment], (e) => {
+              return `${e.year}`
+            })]
+          })]
+        })
+        console.log('grouped_species_experiment_year')
+        console.log(grouped_species_experiment_year)
+
+        const grouped_species_experiment_year_tissue = grouped_species_experiment_year.map((species) => {
+          return [species[0], Object.keys(species[1]).map((experiment) => {
+            return [experiment[0], Object.keys(experiment[1]).map((year) => {
+              return [year, _.groupBy(experiment[1][year], (e) => {
+                return `${e.tissue.replaceAll(' ', '-')}`
+              })]
+            })]
+          })]
+        })
+
+        console.log('grouped_species_experiment_year_tissue')
+        console.log(grouped_species_experiment_year_tissue)
+
+        
+
+        
+
         const grouped_tissue = _.groupBy(this.expression_merged, e => `${e.tissue.replaceAll(' ', '-')}`)
 
-        const grouped_tissue_gene = Object.keys(grouped_tissue).map((key) => {
-          return [key, _.groupBy(grouped_tissue[key], e => `${e.gene_id}`)]
+        const grouped_tissue_gene = Object.keys(grouped_tissue).map((tissue) => {
+          return [tissue, _.groupBy(grouped_tissue[tissue], e => `${e.gene_id}`)]
         })
 
         const grouped_tissue_gene_groupname = grouped_tissue_gene.map((tissue) => {
-          return [tissue[0], Object.keys(tissue[1]).map((key) => {
-            return [key, _.groupBy(tissue[1][key], function(e) {
+          return [tissue[0], Object.keys(tissue[1]).map((gene) => {
+            return [gene, _.groupBy(tissue[1][gene], function(e) {
               return `${e.group_name}`
             })]
           })]
@@ -827,6 +877,9 @@ export default {
       const eye_y_offset = 9
       const eye_w = 10
       const eye_h = 10
+
+      console.log('this.expression_normalized')
+      console.log(this.expression_normalized)
 
       this.svg.select('#legend')
       .selectAll(".legend_tissue")
