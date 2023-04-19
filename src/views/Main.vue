@@ -424,7 +424,7 @@ export default {
 
     // Line chart at index 0
     // Line = 0, Bar = 1, Heat Map = 2 
-    this.index = 0
+    this.index = 1
 
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
