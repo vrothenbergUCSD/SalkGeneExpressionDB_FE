@@ -460,6 +460,68 @@ export default {
         console.log('grouped_species_experiment_year_tissue')
         console.log(grouped_species_experiment_year_tissue)
 
+        // TODO: ChatGPT code
+        // 
+
+        // const grouped_species = _.groupBy(this.expression_merged, e => `${e.species}`);
+
+        // const grouped_species_experiment = Object.keys(grouped_species).map((species) => {
+        //   return [species, _.groupBy(grouped_species[species], e => `${e.experiment}`)];
+        // });
+
+        // const grouped_species_experiment_year = grouped_species_experiment.map((species) => {
+        //   return [species[0], Object.keys(species[1]).map((experiment) => {
+        //     return [experiment, _.groupBy(species[1][experiment], e => `${e.year}`)];
+        //   })];
+        // });
+
+        // const grouped_species_experiment_year_tissue = grouped_species_experiment_year.map((species) => {
+        //   return [species[0], species[1].map((experiment) => {
+        //     return [experiment[0], Object.keys(experiment[1]).map((year) => {
+        //       return [year, _.groupBy(experiment[1][year], e => `${e.tissue.replaceAll(' ', '-')}`)];
+        //     })];
+        //   })];
+        // });
+
+        // const grouped_species_experiment_year_tissue_gene = grouped_species_experiment_year_tissue.map((species) => {
+        //   return [species[0], species[1].map((experiment) => {
+        //     return [experiment[0], experiment[1].map((year) => {
+        //       return [year[0], Object.keys(year[1]).map((tissue) => {
+        //         return [tissue, _.groupBy(year[1][tissue], e => `${e.gene_id}`)];
+        //       })];
+        //     })];
+        //   })];
+        // });
+
+        // const grouped_species_experiment_year_tissue_gene_gender = grouped_species_experiment_year_tissue_gene.map((species) => {
+        //   return [species[0], species[1].map((experiment) => {
+        //     return [experiment[0], experiment[1].map((year) => {
+        //       return [year[0], year[1].map((tissue) => {
+        //         return [tissue[0], Object.keys(tissue[1]).map((gene) => {
+        //           return [gene, _.groupBy(tissue[1][gene], e => `${e.gender}`)];
+        //         })];
+        //       })];
+        //     })];
+        //   })];
+        // });
+
+        // const grouped_species_experiment_year_tissue_gene_gender_groupname = grouped_species_experiment_year_tissue_gene_gender.map((species) => {
+        //   return [species[0], species[1].map((experiment) => {
+        //     return [experiment[0], experiment[1].map((year) => {
+        //       return [year[0], year[1].map((tissue) => {
+        //         return [tissue[0], tissue[1].map((gene) => {
+        //           return [gene[0], Object.keys(gene[1]).map((gender) => {
+        //             return [gender, _.groupBy(gene[1][gender], e => `${e.group_name}`)];
+        //           })];
+        //         })];
+        //       })];
+        //     })];
+        //   })];
+        // });
+
+        // // You can continue with the rest of your existing code for processing each group.
+
+
         
 
         
