@@ -37,7 +37,7 @@ export default createStore({
     increment(state) {
       state.count++
     },
-    updateUser(state, payload) {
+    async updateUser(state, payload) {
       state.user = payload
     },
     setProfileInfo(state, doc) {
@@ -80,21 +80,18 @@ export default createStore({
     async getCurrentUser({ commit, dispatch }, user) {
       // const dataBase = await firestore.collection("users").doc(firebase.auth().currentUser.uid);
       // const dbResults = await dataBase.get();
-      // console.log('getCurrentUser')
-      // console.log(user)
-
+      // console.log('Store: getCurrentUser')
+      console.log(user)
       const result = await getDoc(doc(firestore, 'users', user.uid))
-        .catch((err) => {
-          console.log('Fail after getDoc')
-          console.log(err)
-        })
-      // console.log('After result')
       if (result.exists()) {
-        // console.log('Result exists')
+        // console.log('Store: Result exists')
         commit("setProfileInfo", result);
         commit("setProfileInitials");
+
         const token = await user.getIdTokenResult();
+        // console.log('Store: ' + token)
         commit("setToken", token)
+        
         await Promise.all([
           dispatch("getAdmin"),
           dispatch("getUploader"),

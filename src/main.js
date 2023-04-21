@@ -4,6 +4,7 @@ import { router } from '@/router'
 import { PrimeVue } from "@/primevue"
 import ToastService from 'primevue/toastservice'
 // import { VueReCaptcha } from 'vue-recaptcha-v3'
+import { getAuth } from "firebase/auth";
 
 import App from './App.vue'
 

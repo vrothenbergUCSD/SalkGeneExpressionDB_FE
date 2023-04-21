@@ -27,7 +27,7 @@ export default {
       navigation: null,
     }
   },
-  created() {
+  async created() {
     console.log('App created')
 
     // Read the status data locally and write it to vuex when loading the page
@@ -41,23 +41,23 @@ export default {
       );
     }
 
-    //Save the status data in vuex to sessionStorage before page refresh
+    // Save the status data in vuex to sessionStorage before page refresh
     window.addEventListener(
     	"beforeunload",()=>{
     	sessionStorage.setItem("store",JSON.stringify(this.$store.state));
     });
 
     const auth = getAuth()
-    
     auth.onAuthStateChanged((user) => {
       this.$store.commit("updateUser", user)
       if (user) {
-        console.log("Before getCurrentUser")
+        console.log("App: Before getCurrentUser")
         this.$store.dispatch("getCurrentUser", user)
       }
+      console.log('App: After auth state changed')
     })
 
-  }
+  },
 }
 </script>
 

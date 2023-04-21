@@ -283,6 +283,7 @@ import LinePlot from "@/components/svg/LinePlot.vue"
 import HeatMap from "@/components/svg/HeatMap.vue"
 
 import DataService from "@/services/DataService.js"
+import { getAuth } from "firebase/auth";
 
 export default {
   name: "Main",
@@ -397,6 +398,18 @@ export default {
     }
   },
   async mounted() {
+    // First check if user exists 
+    console.log('Main mounted')
+
+    let user = await this.user_logged_in()
+    // if (user) {
+    //   console.log('Yeah')
+    //   console.log(user)
+    // } else {
+    //   console.log('No')
+    // }
+
+
     // Populate array with all genes
     console.log('Main mounted, await datasets metadata: ')
     const start = Date.now()
@@ -430,6 +443,41 @@ export default {
     console.log('Main mounted time elapsed ', elapsed)
   },
   methods: {
+    async user_logged_in() {
+      try {
+        // console.log('Trying')
+        const auth = getAuth()
+        await new Promise(async (resolve, reject) =>
+          auth.onAuthStateChanged(
+              async user => {
+                if (user) {
+                  // Yes User is signed in.
+                  // console.log('Main: User is there') 
+                  // console.log(user)
+                  await this.$store.commit("updateUser", user)
+                  if (user) {
+                    // console.log("Main: Before getCurrentUser")
+                    await this.$store.dispatch("getCurrentUser", user)
+                  }
+                  // console.log('Main: After auth state changed')
+                  resolve('User is there', user);
+                } else {
+                  // No user is not signed in.
+                  // console.log('No user')
+                  reject('There is no user');
+                }
+              },
+              // Prevent console errors
+              error => reject(error)
+            )
+          )
+        return true
+      } catch (error) {
+        // console.log('Catch')
+        // console.log(error)
+        return false
+      }
+      },
     async load_metadata() {
       // Called only once by mounted()
       console.log('load_metadata')
@@ -439,9 +487,11 @@ export default {
       let token = null
       if (this.$store.state.token)
         token = this.$store.state.token.token
+      // console.log('token')
+      // console.log(token)
       formData.append('authorization', token)
-      console.log('formData')
-      console.log(formData)
+      // console.log('formData')
+      // console.log(formData)
 
       this.db_metadata = await DataService.getDatasetsMetadata(formData).then(e => e.data)
 
