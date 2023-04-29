@@ -2087,6 +2087,7 @@ export default {
     toggleVisibility(newOpacity, id) {
       // TODO: Toggle eye one level up if all child eyes are set to on or off
       console.log('toggleVisibility: ' + newOpacity)
+      console.log('id: ' + id)
 
       const lines = d3.selectAll(`[id^='line_${id}']`)
       lines.transition_attributes('stroke-opacity', newOpacity)
@@ -2141,12 +2142,19 @@ export default {
     tissueClick(evt, i) {
       // Toggle visibility of Tissue data for every child gene and group
       // console.log('tissueClick')
+      // console.log(evt)
       // console.log(i)
       const tissue_root = evt.currentTarget.parentNode
-      // TODO: Fix split
-      const id = i[0]
-      // const id = i[1][0][1][0][1][0].identifier.split('_')[0]
-      // console.log('id', id)
+      // console.log('tissue_root')
+      // console.log(tissue_root)
+      const tissue = i[0]
+      const groups = i[1][0][1][0][1]
+      const group_key = Object.keys(groups)[0]
+      const sample = groups[group_key][0]
+      const id = sample.identifier
+      const index = id.indexOf(tissue);
+      const id_prefix = id.substring(0, index + tissue.length);
+
       const opacity = tissue_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
 
@@ -2155,16 +2163,21 @@ export default {
       eyesOn.forEach(e => e.setAttribute('opacity', newOpacity))
       eyesOff.forEach(e => e.setAttribute('opacity', opacity))
 
-      this.toggleVisibility(newOpacity, id)
+      this.toggleVisibility(newOpacity, id_prefix)
     },
     geneClick(evt, i) {
       // Toggle visibility of Tissue_Gene data for both groups
-      // console.log('geneClick')
+      console.log('geneClick')
       const gene_root = evt.currentTarget.parentNode
-      // TODO: Fix split
-      const id = i[0]
-      // const id = i[1][0][1][0].identifier.split('_').slice(0,-1).join('_')
-      // console.log('id', id)
+
+      const gene = i[0]
+      console.log('gene', gene)
+      const groups = i[1][0][1]
+      const group_key = Object.keys(groups)[0]
+      const sample = groups[group_key][0]
+      const id = sample.identifier
+      const index = id.indexOf(gene);
+      const id_prefix = id.substring(0, index + gene.length);
       
       const opacity = gene_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
@@ -2173,16 +2186,21 @@ export default {
       eyesOn.forEach(e => e.setAttribute('opacity', newOpacity))
       eyesOff.forEach(e => e.setAttribute('opacity', opacity))
       
-      this.toggleVisibility(newOpacity, id)
+      this.toggleVisibility(newOpacity, id_prefix)
     },
     genderClick(evt, i) {
       // Toggle visibility of Tissue_Gene data for both groups
       // console.log('genderClick')
       const gender_root = evt.currentTarget.parentNode
-      // TODO: Fix split
-      const id = i[0]
-      // const id = i[1][0][1][0].identifier.split('_').slice(0,-1).join('_')
-      // console.log('id', id)
+      
+      const gender = i[0]
+      // console.log('gender', gender)
+      const groups = i[1]
+      const group_key = Object.keys(groups)[0]
+      const sample = groups[group_key][0]
+      const id = sample.identifier
+      const index = id.indexOf(gender);
+      const id_prefix = id.substring(0, index + gender.length);
       
       const opacity = gender_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
@@ -2191,14 +2209,14 @@ export default {
       eyesOn.forEach(e => e.setAttribute('opacity', newOpacity))
       eyesOff.forEach(e => e.setAttribute('opacity', opacity))
       
-      this.toggleVisibility(newOpacity, id)
+      this.toggleVisibility(newOpacity, id_prefix)
     },
     groupnameClick(evt, i) {
       // Toggle visibility of Tissue_Gene_Groupname data
-      // console.log('groupnameClick')
+      console.log('groupnameClick')
       const groupname_root = evt.currentTarget.parentNode
       const id = i[1][0].identifier
-      // console.log('id', id)
+      console.log('id', id)
       
       const opacity = groupname_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
