@@ -732,7 +732,6 @@ export default {
               enter.append('path')
                 .attr('class', 'line')
                 .attr('id', d => {
-                  // console.log('d[0] ' + d[0])
                   return `line_${d[0]}`})
                 .attr("d", (d) => d3.line()
                   .curve(d3.curveMonotoneX)
@@ -742,16 +741,15 @@ export default {
                 .attr("fill", "none")
                 .attr("stroke-width", 1.5)
                 .attr("stroke-dasharray", d => {
-                  // console.log('d')
-                  // console.log(d)
-                  // const test = d[1].group_index
+                  console.log('stroke-dasharray')
+                  console.log('d')
+                  console.log(d)
                   // const group = d[0].split('_').at(-1)
-                  return d[1].group_index == 1 ? null : ('3,3');
+                  return d[1][0].group_index == 1 ? null : ('3,3');
                 })
                 // d[0] = Mus musculus_TRF Experiment_2018_Adrenal gland_Clock_Male_TRF_ZT22
                 .attr("stroke", d => {
-                  // console.log('d[0] ' + d[0])
-                  return this.getHSL(d[0])})
+                  return this.getHSL(d[1][0])})
                 .transition_attributes('stroke-opacity', d => 
                   this.sumstat_visibility[d[0]])
                 
@@ -765,7 +763,7 @@ export default {
                   .y((d) => y(d.gene_expression_norm))
                   (d[1]))
                 .attr('stroke', d => {
-                  return this.getHSL(d[0])
+                  return this.getHSL(d[1][0])
                 })
                 .transition_attributes('stroke-opacity', d => 
                   this.sumstat_visibility[d[0]])
@@ -792,16 +790,9 @@ export default {
               .attr('class', 'dot')
               .attr('id', d => `dot_${d.identifier}`)
               .attr('stroke', d => {
-                // console.log('d')
-                // console.log(d)
-                return this.getHSL(d.identifier)})
+                return this.getHSL(d)})
               .attr("fill", d => {
-                // console.log('d')
-                // console.log(d)
-                return d.group_index ? d3.color('white') : this.getHSL(d.identifier);
-                
-                // const group = d.identifier.split('_').at(-1);
-                // return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
+                return d.group_index ? d3.color('white') : this.getHSL(d);
               })
               .attr("cx", d => x(d.time_point))
               .attr("cy", d => y(d.gene_expression_norm_avg))
@@ -814,13 +805,9 @@ export default {
             // console.log(update)
             update.attr('cx', d => x(d.time_point))
               .attr('cy', d => y(d.gene_expression_norm_avg))
-              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr('stroke', d => this.getHSL(d))
               .attr('fill', d => {
-                // console.log('d')
-                // console.log(d)
-                return d.group_index ? d3.color('white') : this.getHSL(d.identifier);
-                // const group = d.identifier.split('_').at(-1);
-                // return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
+                return d.group_index ? d3.color('white') : this.getHSL(d);
               })
               .transition_attributes('opacity', d =>
                 this.sumstat_visibility[d.identifier] ? 1 : 0)
@@ -861,7 +848,7 @@ export default {
                 p.lineTo(x(d.time_point+0.25), y(d.gene_expression_norm_avg + d.std_err))
                 return p.toString()
               })
-              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr('stroke', d => this.getHSL(d))
               .attr('stroke-width', 1.5)
               .transition_attributes('stroke-opacity', d => 
                 (this.sumstat_visibility[d.identifier] && this.showErrorBars) ? 1 : 0)
@@ -884,7 +871,7 @@ export default {
                 p.lineTo(x(d.time_point+0.25), y(d.gene_expression_norm_avg + d.std_err))
                 return p.toString()
               })
-              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr('stroke', d => this.getHSL(d))
               .transition_attributes('stroke-opacity', d => 
                 (this.sumstat_visibility[d.identifier] && this.showErrorBars) ? 1 : 0)
             
@@ -905,17 +892,12 @@ export default {
             // console.log('dot enter')
             // console.log(enter)
             enter.append("circle")
-              // .attr("class", "dot")
               .attr('class', 'dot')
               .attr('id', d => {
-                // console.log('d')
-                // console.log(d)
                 return `dot_${d.identifier}`})
-              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr('stroke', d => this.getHSL(d))
               .attr("fill", d => {
-                return d.group_index ? d3.color('white') : this.getHSL(d.identifier);
-                // const group = d.identifier.split('_').at(-1);
-                // return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
+                return d.group_index ? d3.color('white') : this.getHSL(d);
               })
               .attr("cx", d => x(d.time_point))
               .attr("cy", d => y(d.gene_expression_norm))
@@ -928,11 +910,9 @@ export default {
             // console.log(update)
             update.attr('cx', d => x(d.time_point))
               .attr('cy', d => y(d.gene_expression_norm))
-              .attr('stroke', d => this.getHSL(d.identifier))
+              .attr('stroke', d => this.getHSL(d))
               .attr("fill", d => {
-                return d.group_index ? d3.color('white') : this.getHSL(d.identifier);
-                // const group = d.identifier.split('_').at(-1);
-                // return group == 'TRF' ? this.getHSL(d.identifier) : d3.color('white');
+                return d.group_index ? d3.color('white') : this.getHSL(d);
               })
               .transition_attributes('opacity', d => 
                 (this.sumstat_visibility[d.identifier] && this.showReplicatePoints) ? 1 : 0)
@@ -1193,21 +1173,16 @@ export default {
                             .transition_attributes('opacity', 1)
                             .attr('class', 'legend_gender')
                             .style('fill', d => {
-                              // console.log('d')
-                              // console.log(d)
                               const key = Object.keys(d[1])[0]
                               const id = d[1][key][0].identifier
-                              // console.log(id)
-                              // return this.getHSL(id)
+                              return this.getHSL(d[1][key][0], true)
                             })
                             .attr('transform', (d,i) => {
                               const yOffset = this.legendY_spacing * d[2]
-                              // const yOffset = this.legendY_spacing*(1+i*(num_groups))
                               return `translate(${eye_x_offset}, ${yOffset})`})
                             gender_root.append('g')
                             .attr('class', 'eyes')
                             .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                            // TODO: Implement genderClick
                             .on('click', this.genderClick)
                             .append_eyes()
 
@@ -1233,13 +1208,8 @@ export default {
 
                           gender_root.selectAll('.legend_groupname')
                             .data(d => {
-                              console.log('d ' + typeof(d))
-                              console.log(d)
-                              console.log(Object.keys(d[1]))
                               const d_arr = Object.keys(d[1]).map((groupname) => {
                                 return [groupname, d[1][groupname]]})
-                              console.log('d_arr')
-                              console.log(d_arr)
                               return d_arr
                             })
                             .join(
@@ -1250,15 +1220,7 @@ export default {
                                   .transition_attributes('opacity', 1)
                                   .attr('class', 'legend_groupname')
                                   .style('fill', d => {
-                                    // console.log('ok')
-                                    // console.log('d')
-                                    // console.log(d)
-                                    // const keys = Object.keys(d)
-                                    // console.log('keys')
-                                    // console.log(keys)
-                                    const id = d[1][0].identifier
-                                    console.log('id' + id)
-                                    return this.getHSL(id)
+                                    return this.getHSL(d[1][0])
                                   })
                                   .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                                     this.legendY_spacing * (i+1)
@@ -1274,10 +1236,7 @@ export default {
                                     .attr('class', 'text_info')
                                   text_info.append('text')
                                     .attr('class', 'legend_groupname_text')
-                                    .text(d => {
-                                      // console.log('text d')
-                                      // console.log(d)
-                                      return d[0]})
+                                    .text(d => { return d[0] })
                                     .attr('text-anchor', 'left')
                                     .attr('font-size', '0.7em')
                                     .attr('opacity', 1)
@@ -1307,20 +1266,13 @@ export default {
           return experiment_root
         },
         (update) => {
-          console.log('update experiment')
-          console.log(update)
+          // console.log('update experiment')
+          // console.log(update)
           const experiment_root = update.transition_attributes('opacity', 1)
             .attr('transform', (d,i) => {
-              const yOffset = experiment_y_offset
-              // const xOffset = i*max_len_experiment_name*font_size + eye_x_offset + eye_w + 100
               const xOffset = experimentNamesWidths.slice(0, i).reduce((acc, cur) => {
                 return acc + cur.width + eye_x_offset + eye_w;
               }, 0);
-              // console.log('d')
-              // console.log(d)
-              // console.log('i: ' + i)
-              // console.log('yOffset: ' + yOffset)
-              // console.log('xOffset: ' + xOffset)
               return `translate(${xOffset}, ${experiment_y_offset})`
               })
 
@@ -1334,7 +1286,6 @@ export default {
               const text_select = text_info.select('text')
               const groups = text_select._groups[0]
               const width = groups[i].getBBox().width
-              // console.log('width', width)
               return text_info.select('text')._groups[0][i].getBBox().width+5})
 
           update.selectAll('.legend_tissue')
@@ -1348,7 +1299,6 @@ export default {
               tissue_root.attr('class', 'legend_tissue')
                 .style('fill', d3.rgb("#222"))
                 .attr('transform', (d,i) => {
-                  console.log(d)
                   return `translate(${eye_x_offset}, ${this.legendY_spacing * d[2]})`})
               tissue_root.append('g')
                 .attr('class', 'eyes')
@@ -1381,18 +1331,12 @@ export default {
                 .data(d => d[1])
                 .join(
                   (enter) => {
-                    console.log('experiment update > tissue enter > gene enter')
-                    console.log(enter)
+                    // console.log('experiment update > tissue enter > gene enter')
+                    // console.log(enter)
                     const gene_root = enter.append('g')
                       .attr('class', 'legend_gene')
-                      // .style('fill', d => {
-                      //   // Gene should not have a color. 
-                      //   // console.log(d)
-                      //   // return this.getHSL(d[1][0][1][0].identifier, true)
-                      // })
-                      .attr('transform', (d,i) => {
-                        console.log(d)
-                        return `translate(${eye_x_offset}, ${this.legendY_spacing * d[2]})`})
+                      .attr('transform', (d,i) => { return `translate(${eye_x_offset}, 
+                        ${this.legendY_spacing * d[2]})`})
                       .transition_attributes('opacity', 1)
                     gene_root.append('g')
                       .attr('class', 'eyes')
@@ -1422,14 +1366,14 @@ export default {
                       .data(d => d[1])
                       .join(
                         (enter) => {
-                          console.log('experiment update > tissue enter > gene enter > gender enter')
-                          console.log(enter)
+                          // console.log('experiment update > tissue enter > gene enter > gender enter')
+                          // console.log(enter)
                           const gender_root = enter.append('g')
                             .transition_attributes('opacity', 1)
                             .attr('class', 'legend_gender')
                             .style('fill', d => {
-                              console.log('d')
-                              console.log(d)
+                              // console.log('d')
+                              // console.log(d)
                               const key = Object.keys(d[1])[0]
                               const id = d[1][key][0].identifier
                               // console.log(id)
@@ -1437,12 +1381,10 @@ export default {
                             })
                             .attr('transform', (d,i) => {
                               const yOffset = this.legendY_spacing * d[2]
-                              // const yOffset = this.legendY_spacing*(1+i*(num_groups))
                               return `translate(${eye_x_offset}, ${yOffset})`})
                             gender_root.append('g')
                             .attr('class', 'eyes')
                             .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                            // TODO: Implement genderClick
                             .on('click', this.genderClick)
                             .append_eyes()
 
@@ -1468,14 +1410,8 @@ export default {
 
                           gender_root.selectAll('.legend_groupname')
                             .data(d => {
-                              // console.log('d ' + typeof(d))
-                              // console.log(d)
-                              // console.log(Object.keys(d[1]))
-                              const d_arr = Object.keys(d[1]).map((groupname) => {
+                              return Object.keys(d[1]).map((groupname) => {
                                 return [groupname, d[1][groupname]]})
-                              // console.log('d_arr')
-                              // console.log(d_arr)
-                              return d_arr
                             })
                             .join(
                               (enter) => {
@@ -1485,14 +1421,7 @@ export default {
                                   .transition_attributes('opacity', 1)
                                   .attr('class', 'legend_groupname')
                                   .style('fill', d => {
-                                    // console.log('ok')
-                                    // console.log('d')
-                                    // console.log(d)
-                                    // const keys = Object.keys(d)
-                                    // console.log('keys')
-                                    // console.log(keys)
-                                    const id = d[1][0].identifier
-                                    return this.getHSL(id)
+                                    return this.getHSL(d[1][0])
                                   })
                                   .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                                     this.legendY_spacing * (i+1)
@@ -1508,11 +1437,8 @@ export default {
                                     .attr('class', 'text_info')
                                   text_info.append('text')
                                     .attr('class', 'legend_groupname_text')
-                                    .text(d => {
-                                      console.log('text d')
-                                      console.log(d)
-                                      return d[0]
-                                    })
+                                    .text(d => { 
+                                      return d[0]})
                                     .attr('text-anchor', 'left')
                                     .attr('font-size', '0.7em')
                                     .attr('opacity', 1)
@@ -1539,12 +1465,11 @@ export default {
               return tissue_root
             },
             (update) => {
-              console.log('experiment update > tissue update')
-              console.log(update)
+              // console.log('experiment update > tissue update')
+              // console.log(update)
               const tissue_root = update.transition_attributes('opacity', 1)
                 .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                   this.legendY_spacing * d[2]
-                  // this.legendY_spacing*(i*(1+(num_genes*(num_groups + 1))))
                   })`)
               tissue_root.select('.legend_tissue_text')
                 .text(d => d[0].replaceAll('-', ' '))
@@ -1556,21 +1481,18 @@ export default {
                   const text_select = text_info.select('text')
                   const groups = text_select._groups[0]
                   const width = groups[i].getBBox().width
-                  // console.log('width', width)
                   return text_info.select('text')._groups[0][i].getBBox().width+5})
 
               update.selectAll('.legend_gene')
                 .data(d => d[1])
                 .join(
                   (enter) => {
-                    console.log('experiment update > tissue update > gene enter')
-                    console.log(enter)
+                    // console.log('experiment update > tissue update > gene enter')
+                    // console.log(enter)
                     const gene_root = enter.append('g')
                       .attr('class', 'legend_gene')
-                      // .style('fill', d => this.getHSL(d[1][0][1][0].identifier, true))
                       .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                         this.legendY_spacing * d[2]
-                        // this.legendY_spacing *(1 + i * (1 + num_groups))
                         })`)
                       .transition_attributes('opacity', 1)
                     gene_root.append('g')
@@ -1601,12 +1523,11 @@ export default {
                     .data(d => d[1])
                     .join(
                       (enter) => {
-                        console.log('experiment update > tissue update > gene enter > gender enter')
-                        console.log(enter)
+                        // console.log('experiment update > tissue update > gene enter > gender enter')
+                        // console.log(enter)
                         const gender_root = enter.append('g')
                           .transition_attributes('opacity', 1)
                           .attr('class', 'legend_gender')
-                          // .style('fill', d => this.getHSL(d[1][0].identifier))
                           .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                             this.legendY_spacing * d[2]
                             })`)
@@ -1638,19 +1559,13 @@ export default {
                         
                         gender_root.selectAll('.legend_groupname')
                         .data(d => {
-                              // console.log('d ' + typeof(d))
-                              // console.log(d)
-                              // console.log(Object.keys(d[1]))
-                              const d_arr = Object.keys(d[1]).map((groupname) => {
+                              return Object.keys(d[1]).map((groupname) => {
                                 return [groupname, d[1][groupname]]})
-                              // console.log('d_arr')
-                              // console.log(d_arr)
-                              return d_arr
                             })
                         .join(
                           (enter) => {
-                            console.log('experiment update > tissue update > gene enter > gender enter > groupname enter')
-                            console.log(enter)
+                            // console.log('experiment update > tissue update > gene enter > gender enter > groupname enter')
+                            // console.log(enter)
                             const groupname_root = enter.append('g')
                               .transition_attributes('opacity', 1)
                               .attr('class', 'legend_groupname')
@@ -1720,7 +1635,6 @@ export default {
                         const gender_root = enter.append('g')
                           .transition_attributes('opacity', 1)
                           .attr('class', 'legend_gender')
-                          // .style('fill', d => this.getHSL(d[1][0].identifier))
                           .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                             this.legendY_spacing * d[2]
                             })`)
@@ -1768,7 +1682,7 @@ export default {
                             const groupname_root = enter.append('g')
                               .transition_attributes('opacity', 1)
                               .attr('class', 'legend_groupname')
-                              .style('fill', d => this.getHSL(d[1][0].identifier))
+                              .style('fill', d => this.getHSL(d[1][0]))
                               .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                                 this.legendY_spacing * (i+1)
                                 })`)
@@ -1799,30 +1713,6 @@ export default {
                               .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
                             return groupname_root
                           },
-                          // (update) => {
-                          //   // console.log('tissue update > gene update > groupname update')
-                          //   // console.log(update)
-                          //   const groupname_root = update.attr('transform', (d,i) => `translate(${eye_x_offset}, ${
-                          //     this.legendY_spacing * (i+1)
-                          //     })`)
-                          //     .style('fill', d => {
-                          //       // console.log('d[1][0].identifier' + d[1][0].identifier)
-                          //       return this.getHSL(d[1][0].identifier)
-                          //     })
-                          //     .transition_attributes('opacity', 1)
-                          //   groupname_root.select('.legend_groupname_text')
-                          //     .text(d => d[0])   
-                          //   const text_info = groupname_root.select('.text_info')
-                          //   text_info.select('.info')
-                          //     .attr('x', (d,i) => {
-                          //       // const text_select = text_info.select('text')
-                          //       // const groups = text_select._groups[0]
-                          //       // const width = groups[i].getBBox().width
-                          //       // console.log('width', width)
-                          //       return text_info.select('text')._groups[0][i].getBBox().width+5})
-                              
-                          // },
-                          // (exit) => exit.transition_attributes('opacity', 0).remove()
                         )
                         return gender_root
                       },
@@ -1832,10 +1722,6 @@ export default {
                         const gender_root = update.attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                           this.legendY_spacing * d[2]
                           })`)
-                          // .style('fill', d => {
-                          //   // console.log('d[1][0].identifier' + d[1][0].identifier)
-                          //   return this.getHSL(d[0])
-                          // })
                           .transition_attributes('opacity', 1)
                         gender_root.select('.legend_gender_text')
                           .text(d => d[0])   
@@ -1866,7 +1752,7 @@ export default {
                               const groupname_root = enter.append('g')
                                 .transition_attributes('opacity', 1)
                                 .attr('class', 'legend_groupname')
-                                .style('fill', d => this.getHSL(d[1][0].identifier))
+                                .style('fill', d => this.getHSL(d[1][0]))
                                 .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                                   this.legendY_spacing * (i+1)
                                   })`)
@@ -1906,7 +1792,7 @@ export default {
                                 })`)
                                 .style('fill', d => {
                                   // console.log('d[1][0].identifier' + d[1][0].identifier)
-                                  return this.getHSL(d[1][0].identifier)
+                                  return this.getHSL(d[1][0])
                                 })
                                 .transition_attributes('opacity', 1)
                               groupname_root.select('.legend_groupname_text')
@@ -1989,18 +1875,27 @@ export default {
         )
 
     },
-    getHSL(name, gene=false) {
+    getHSL(sample, gender=false) {
       // Differentiates groups by making one darker and one lighter
       // cat_map["Mus musculus_TRF Experiment_2018_Amygdala_Clock_Male_TRF"] = 0.75
       const shade_factor = 3
       // console.log('getHSL')
-      // console.log(name)
+      // console.log(sample)
+      let name 
+      let group_index
+      if (typeof(sample) == 'object') {
+        name = sample.identifier
+        group_index = sample.group_index
+      } else {
+        name = sample
+        group_index = 0
+        gender = true
+      }
+      
       const name_split = name.split('_')
-      // console.log(name_split)
       let id
       if (name_split.length > 6) {
         // ['Mus musculus', 'TRF Experiment', '2018', 'Adrenal gland', 'Clock', 'Male', 'ALF', 'ZT12']
-        // console.log('8')
         id = name_split.slice(0, 6).join('_')
       } else {
         console.error('getHSL: unexpected name length')
@@ -2012,11 +1907,12 @@ export default {
       let hsl = d3.hsl(this.color(this.cat_map.get(id)))
       // console.log(hsl)
       
-      // If gene flag is true, use unshaded base color 
-      // if (!gene) {
-      //   const factor = 1 + (((group === 'ALF') - 0.5) / shade_factor)
-      //   hsl.l *= factor
-      // }
+      // If gender flag is true, use unshaded base color 
+      if (!gender) {
+        const factor = 1 + (((group_index === 0) - 0.5) / shade_factor)
+        hsl.l *= factor
+      }
+
       return hsl
     },
     popover_text(d) {
@@ -2213,8 +2109,9 @@ export default {
     },
     groupnameClick(evt, i) {
       // Toggle visibility of Tissue_Gene_Groupname data
-      console.log('groupnameClick')
+      // console.log('groupnameClick')
       const groupname_root = evt.currentTarget.parentNode
+      // console.log(i[1][0])
       const id = i[1][0].identifier
       console.log('id', id)
       

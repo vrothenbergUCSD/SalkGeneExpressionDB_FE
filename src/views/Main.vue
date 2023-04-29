@@ -426,18 +426,18 @@ export default {
     // Default selection
     this.species_selected = [{ name: 'Mus musculus' }]
     this.experiment_selected = [{ name: 'TRF Experiment' }]
-    this.year_selected = [{ name: '2018'}]
-    this.tissue_selected = [{ name: 'Adrenal' }, { name: 'Amygdala'}]
+    this.year_selected = [{ name: '2018'}, { name: '2019'}]
+    this.tissue_selected = [{ name: 'Adrenal' }, { name: 'BAT'}]
     this.gender_selected = [{ name: 'Male' }, { name: 'Female'}]
     this.condition_selected = [{ name: 'ALF' }, { name: 'TRF' }]
-    this.genes_selected = [{ name: 'Clock' }]
+    this.genes_selected = [{ name: 'Clock' }, { name: 'Arnt' }]
 
     this.update_lookup_table()
     await this.get_datasets()
 
     // Line chart at index 0
     // Line = 0, Bar = 1, Heat Map = 2 
-    this.index = 1
+    this.index = 0
 
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
