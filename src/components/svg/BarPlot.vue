@@ -540,11 +540,9 @@ export default {
               groupname[1].forEach((sample) => {
                 sample.gene_expression_norm = (sample.gene_expression - min) / (max - min)
               })
-
               const mean = _.reduce(groupname[1], function(memo, v) { 
                 return memo + v.gene_expression; 
               }, 0) / groupname[1].length
-
               const groupname_stats = {
                 min: min,
                 max: max, 
@@ -565,8 +563,13 @@ export default {
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]))
 
+        console.log('this.expression_normalized_flattened')
+        console.log(this.expression_normalized_flattened)
         const grouped_norm = _.groupBy(this.expression_normalized_flattened, e => 
           `${e.gene_id}_${e.tissue.replaceAll(' ', '-')}_${e.group_name}_ZT${e.time_point}`)
+        console.log('grouped_norm')
+        console.log(grouped_norm)
+        
 
         this.expression_normalized_averaged = _.mapObject(grouped_norm, function(val, key) {
           let o = JSON.parse(JSON.stringify(val[0]))
@@ -1248,8 +1251,8 @@ export default {
     },
     getHSL(data, gene=false) {
       // Differentiates groups by making one darker and one lighter
-      console.log('getHSL')
-      console.log(data)
+      // console.log('getHSL')
+      // console.log(data)
       const name = data.identifier
       const shade_factor = 3
       // cat = Adrenal-gland_Clock
