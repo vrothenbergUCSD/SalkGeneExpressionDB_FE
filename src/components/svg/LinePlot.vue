@@ -63,57 +63,40 @@ import eyeOffUrl from '@/assets/eye-off.svg'
 import infoUrl from '@/assets/info.svg'
 
 const animationInterval = 250
-const eye_x_offset = 7
-const eye_y_offset = 7
-const eye_w = 7
-const eye_h = 7
+// const eye_x_offset = 7
+// const eye_y_offset = 7
+// const eye_w = 7
+// const eye_h = 7
 // Custom function, reduces redundant code for transitions
 // Opacity transition, fade in / out
 d3.selection.prototype.transition_attributes = function(
   attr_name, opacity, duration=animationInterval) {
-  this.transition()
+  return this.transition()
       // .ease(Math.sqrt)
       // .duration(duration)
       .attr(attr_name, opacity)
-  return this
 }
 
-// Add toggle visibility SVG icons
-d3.selection.prototype.append_eyes = function() {
-  this.append('svg:image')
-    .attr('class', 'eye')
-    .attr("xlink:href", eyeUrl)
-    .attr('type', "image/svg+xml")
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('width', eye_w)
-    .attr('height', eye_h)
-    .attr('opacity', 1)
-  this.append('svg:image')
-    .attr('class', 'eye-off')
-    .attr("xlink:href", eyeOffUrl)
-    .attr('type', "image/svg+xml")
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('width', eye_w)
-    .attr('height', eye_h)
-    .attr('opacity', 0)
-  return this
-}
-
-// // Add info tooltip SVG icons
-// d3.selection.prototype.append_info = function() {
+// // Add toggle visibility SVG icons
+// d3.selection.prototype.append_eyes = function() {
 //   this.append('svg:image')
-//   .attr('class', 'info')
-//   .attr("xlink:href", infoUrl)
-//   .attr('type', "image/svg+xml")
-//   .attr('x', (d,i) => text_info.select('text')._groups[0][i].getBBox().width+5)
-//   .attr('y', -eye_y_offset)
-//   .attr('width', 10)
-//   .attr('height', 10)
-//   .attr('opacity', 1)
-//   .on('mouseover', this.infoHover)
-//   .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+//     .attr('class', 'eye')
+//     .attr("xlink:href", eyeUrl)
+//     .attr('type', "image/svg+xml")
+//     .attr('x', 0)
+//     .attr('y', 0)
+//     .attr('width', eye_w)
+//     .attr('height', eye_h)
+//     .attr('opacity', 1)
+//   this.append('svg:image')
+//     .attr('class', 'eye-off')
+//     .attr("xlink:href", eyeOffUrl)
+//     .attr('type', "image/svg+xml")
+//     .attr('x', 0)
+//     .attr('y', 0)
+//     .attr('width', eye_w)
+//     .attr('height', eye_h)
+//     .attr('opacity', 0)
 //   return this
 // }
 
@@ -423,6 +406,9 @@ export default {
         // Sort data points alphanumerically on sample_name 
         const sortAlphaNum = (a, b) => a.sample_name.toString().localeCompare(b.sample_name, 'en', { numeric: true })
         this.expression_merged.sort(sortAlphaNum)
+
+        console.log('this.expression_merged')
+        console.log(this.expression_merged)
 
         const grouped_species = _.groupBy(this.expression_merged, e => `${e.species}`);
 
@@ -792,7 +778,7 @@ export default {
               .attr('stroke', d => {
                 return this.getHSL(d)})
               .attr("fill", d => {
-                return d.group_index ? d3.color('white') : this.getHSL(d);
+                return d.group_index ? this.getHSL(d) : d3.color('white');
               })
               .attr("cx", d => x(d.time_point))
               .attr("cy", d => y(d.gene_expression_norm_avg))
@@ -807,13 +793,13 @@ export default {
               .attr('cy', d => y(d.gene_expression_norm_avg))
               .attr('stroke', d => this.getHSL(d))
               .attr('fill', d => {
-                return d.group_index ? d3.color('white') : this.getHSL(d);
+                return d.group_index ? this.getHSL(d) : d3.color('white');
               })
               .transition_attributes('opacity', d =>
                 this.sumstat_visibility[d.identifier] ? 1 : 0)
               .attr('id', d => `dot_${d.identifier}`)
           },
-          (exit) => exit.transition_attributes('opacity', 0).remove()
+          (exit) => exit.remove()
         )
       
       console.log('\n\nthis.errorBarsData')
@@ -897,7 +883,7 @@ export default {
                 return `dot_${d.identifier}`})
               .attr('stroke', d => this.getHSL(d))
               .attr("fill", d => {
-                return d.group_index ? d3.color('white') : this.getHSL(d);
+                return d.group_index ? this.getHSL(d) : d3.color('white');
               })
               .attr("cx", d => x(d.time_point))
               .attr("cy", d => y(d.gene_expression_norm))
@@ -912,7 +898,7 @@ export default {
               .attr('cy', d => y(d.gene_expression_norm))
               .attr('stroke', d => this.getHSL(d))
               .attr("fill", d => {
-                return d.group_index ? d3.color('white') : this.getHSL(d);
+                return d.group_index ? this.getHSL(d) : d3.color('white');
               })
               .transition_attributes('opacity', d => 
                 (this.sumstat_visibility[d.identifier] && this.showReplicatePoints) ? 1 : 0)
@@ -934,41 +920,20 @@ export default {
       // console.log('num_experiments: ' + num_experiments)
       console.log(this.expression_normalized)
 
-      // // const max_num_experiments = this.getMaxLengthOfArraysNLevelsDown(this.expression_normalized, 0)
-      // // console.log('max_num_experiments: ' + max_num_experiments)
-
-
-      // // const num_tissues = this.expression_normalized[0][1].length
-      // // const num_tissues = this.getMaxLengthOfArraysNLevelsDown(this.expression_normalized, 1)
-      // // console.log('num_tissues: ' + num_tissues)
-      // // const max_num_tissues = this.getMaxLengthOfArraysNLevelsDown(this.expression_normalized, 1)
-      // // console.log('max_num_tissues: ' + max_num_tissues)
-      // console.log(this.expression_normalized[0][1])
-
-      // // const num_genes = this.expression_normalized[0][1][0][1].length
-      // const num_genes = this.getMaxLengthOfArraysNLevelsDown(this.expression_normalized, 2)
-      // console.log('num_genes: ' + num_genes)
-      // // console.log('max_num_genes: ' + max_num_genes)
-      // console.log(this.expression_normalized[0][1][0][1])
-
-      // // const num_genders = this.expression_normalized[0][1][0][1][0][1].length
-      // const num_genders = this.getMaxLengthOfArraysNLevelsDown(this.expression_normalized, 3)
-      // console.log('num_genders: ' + num_genders)
-      // // const max_num_genders = this.getMaxLengthOfArraysNLevelsDown(this.expression_normalized, 3)
-      // // console.log('max_num_genders ' + max_num_genders)
-      // console.log(this.expression_normalized[0][1][0][1][0][1])
-
-      // // const num_groups = Object.keys(this.expression_normalized[0][1][0][1][0][1][0][1]).length
-      // const num_groups = this.getMaxLengthOfArraysNLevelsDown(this.expression_normalized, 4)
-      // console.log('num_groups: ' + num_groups)
-      // // const max_num_groups = this.getMaxLengthOfArraysNLevelsDown(this.expression_normalized, 4)
-      // // console.log('max_num_groups: ' + max_num_groups)
-      // console.log(this.expression_normalized[0][1][0][1][0][1][0][1])
-
-      const experiment_names = this.expression_normalized.map(d => d[0])
-      const max_len_experiment_name = Math.max(...experiment_names.map(d => d.length))
-      console.log('max_len_experiment_name: ' + max_len_experiment_name)
-      const font_size = 10
+      const font_size = 10 // '1.0em'
+      const self = this
+      
+      
+      const eye_w = font_size * 0.9
+      const eye_x_offset = eye_w * 1.2
+      // const eye_w = '1.5em'
+      const eye_h = font_size * 0.9
+      const eye_y_offset = eye_h * 0.8
+      // const eye_h = '1.5em'
+      const experiment_y_offset = 10
+      const text_info_x_offset = 5
+      const text_info_margin_bottom = 5
+      const text_info_font_size = '0.7em'
 
       function getTextWidth(text, font) {
         const canvas = document.createElement("canvas");
@@ -980,9 +945,12 @@ export default {
 
       const experimentNamesWidths = this.expression_normalized.map(d => {
         const text = d[0].replaceAll('_', ' ');
-        const width = getTextWidth(text, `${font_size}px sans-serif`);
+        const width = getTextWidth(text, `${font_size} sans-serif`);
         return { name: d[0], width };
       });
+
+      // console.log('experimentNamesWidths')
+      // console.log(experimentNamesWidths)
       
       // // Add current index to each element as position 2 in the array
       // this.expression_normalized_indexed = this.expression_normalized.map((d, i) => {
@@ -992,23 +960,17 @@ export default {
       // console.log(this.expression_normalized_indexed)
 
       
-
+      // Count the depth of each level
       this.expression_normalized.forEach((experiment, experimentIndex) => {
-        // experiment[2] = counter++
         let tissue_counter = 1;
-
         experiment[1].forEach((tissue, tissueIndex) => {
           let gene_counter = 1;
           tissue[2] = tissue_counter++
-
           tissue[1].forEach((gene, geneIndex) => {
             let gender_counter = 1;
             gene[2] = gene_counter++
-            // lookupTable[`gene-${experimentIndex}-${tissueIndex}-${geneIndex}`] = counter++;
-
             gene[1].forEach((gender, genderIndex) => {
               gender[2] = gender_counter++
-              
               const num_groups = Object.keys(gender[1]).length
               gender_counter += num_groups
             });
@@ -1019,17 +981,59 @@ export default {
       });
 
 
-      // const yOffsetLUT = createLookupTable(this.expression_normalized);
-      // console.log('yOffsetLUT')
-      // console.log(yOffsetLUT)
+      // Helper function to append an svg image to the parent node of an element
+      function appendSvgImage(element, text_info_x_offset, eye_y_offset, eye_w, eye_h, self) {
+        d3.select(element.parentNode) // Select the parent (text_info) node
+          .append('svg:image')
+          .attr('class', 'info')
+          .attr("xlink:href", infoUrl)
+          .attr('type', "image/svg+xml")
+          .attr('x', () => element.getBBox().width + text_info_x_offset)
+          .attr('y', -eye_y_offset)
+          .attr('width', eye_w)
+          .attr('height', eye_h)
+          .attr('opacity', 1)
+          .on('mouseover', self.infoHover)
+          .on('mouseout', () => self.svg.selectAll('.info-tooltip').remove());
+      }
 
+      // Helper function to append text to the parent node of an element
+      function appendLegendTextWithTransition(parent, className, fontSize = '0.7em', onEndCallback) {
+        const textElement = parent.append('text')
+          .attr('class', className)
+          .text(d => d[0].replaceAll('_', ' ').replaceAll('-', ' '))
+          .attr('text-anchor', 'left')
+          .attr('font-size', fontSize)
+          .attr('opacity', 1);
 
+        textElement.transition().on('end', function() {
+          onEndCallback(this);
+        });
+        return textElement;
+      } 
 
-      const eye_x_offset = 8
-      const eye_y_offset = 6
-      const eye_w = 8
-      const eye_h = 8
-      const experiment_y_offset = 10
+      function append_eyes(selection) {
+        selection.append('svg:image')
+          .attr('class', 'eye')
+          .attr("xlink:href", eyeUrl)
+          .attr('type', "image/svg+xml")
+          .attr('x', 0)
+          .attr('y', 0)
+          .attr('width', eye_w)
+          .attr('height', eye_h)
+          .attr('opacity', 1)
+        selection.append('svg:image')
+          .attr('class', 'eye-off')
+          .attr("xlink:href", eyeOffUrl)
+          .attr('type', "image/svg+xml")
+          .attr('x', 0)
+          .attr('y', 0)
+          .attr('width', eye_w)
+          .attr('height', eye_h)
+          .attr('opacity', 0)
+        return selection;
+      }
+
 
       console.log('this.expression_normalized')
       console.log(this.expression_normalized)
@@ -1047,130 +1051,77 @@ export default {
             .style('fill', d3.rgb("#222"))
             .attr('transform', (d,i) => {
               console.log('Enter experiment')
-              const yOffset = experiment_y_offset
-              // const xOffset = i*max_len_experiment_name*font_size + eye_x_offset + eye_w + 100
               const xOffset = experimentNamesWidths.slice(0, i).reduce((acc, cur) => {
                 return acc + cur.width + eye_x_offset + eye_w;
               }, 0);
-              
-              console.log('d')
-              console.log(d)
-              console.log('i: ' + i)
-              console.log('yOffset: ' + yOffset)
-              console.log('xOffset: ' + xOffset)
-              return `translate(${xOffset}, ${yOffset})`
+              console.log(`xOffset: ${xOffset}`)
+              return `translate(${xOffset}, ${experiment_y_offset})`
             })
-
-            experiment_root.append('g')
+          const eyesSelection = experiment_root.append('g')
             .attr('class', 'eyes')
             .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
             .on('click', this.experimentClick)
-            .append_eyes()
+          append_eyes(eyesSelection)
+            
           const text_info = experiment_root.append('g')
             .attr('class', 'text_info')
-          text_info.append('text')
-            .attr('class', 'legend_experiment_text')
-            .text(d => d[0].replaceAll('_', ' '))
-            .attr('text-anchor', 'left')
-            .attr('font-size', '0.7em')
-            .attr('opacity', 1)
-            .transition_attributes('opacity', 1)
-          text_info.append('svg:image')
-            .attr('class', 'info')
-            .attr("xlink:href", infoUrl)
-            .attr('type', "image/svg+xml")
-            .attr('x', (d,i) => {            
-              return experiment_root.nodes()[i].querySelector('text').getBBox().width+5})
-            .attr('y', -eye_y_offset)
-            .attr('width', eye_w)
-            .attr('height', eye_h)
-            .attr('opacity', 1)
-            .on('mouseover', this.infoHover)
-            .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
-
+          
+          appendLegendTextWithTransition(text_info, 'legend_experiment_text', text_info_font_size, function(textElement) {
+            appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+          });
 
           experiment_root.selectAll('.legend_tissue')
             .data(d => d[1])
             .join(
             (enter) => {
               // Create root g element to position child text elements
-              console.log('tissue enter')
-              console.log(enter)
+              // console.log('tissue enter')
+              // console.log(enter)
               const tissue_root = enter.append('g')
               tissue_root.attr('class', 'legend_tissue')
                 .style('fill', d3.rgb("#222"))
                 .attr('transform', (d,i) => {
                   return `translate(${eye_x_offset}, ${this.legendY_spacing * d[2]})`})
-              tissue_root.append('g')
+              const eyesSelection = tissue_root.append('g')
                 .attr('class', 'eyes')
                 .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                 .on('click', this.tissueClick)
-                .append_eyes()
+              append_eyes(eyesSelection)
+              
               const text_info = tissue_root.append('g')
                 .attr('class', 'text_info')
-              text_info.append('text')
-                .attr('class', 'legend_tissue_text')
-                .text(d => d[0].replaceAll('-', ' '))
-                .attr('text-anchor', 'left')
-                .attr('font-size', '0.7em')
-                .attr('opacity', 1)
-                .transition_attributes('opacity', 1)
-              text_info.append('svg:image')
-                .attr('class', 'info')
-                .attr("xlink:href", infoUrl)
-                .attr('type', "image/svg+xml")
-                .attr('x', (d,i) => {
-                  return tissue_root.nodes()[i].querySelector('text').getBBox().width+5})
-                .attr('y', -eye_y_offset)
-                .attr('width', eye_w)
-                .attr('height', eye_h)
-                .attr('opacity', 1)
-                .on('mouseover', this.infoHover)
-                .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+              appendLegendTextWithTransition(text_info, 'legend_tissue_text', text_info_font_size, function(textElement) {
+                appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+              });
 
               tissue_root.selectAll('.legend_gene')
                 .data(d => d[1])
                 .join(
                   (enter) => {
-                    console.log('gene enter')
-                    console.log(enter)
+                    // console.log('gene enter')
+                    // console.log(enter)
                     const gene_root = enter.append('g')
                       .attr('class', 'legend_gene')
                       .attr('transform', (d,i) => {
                         return `translate(${eye_x_offset}, ${this.legendY_spacing * d[2]})`})
-                      .transition_attributes('opacity', 1)
-                    gene_root.append('g')
+                    const eyeSelection = gene_root.append('g')
                       .attr('class', 'eyes')
                       .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                       .on('click', this.geneClick)
-                      .append_eyes()
+                    append_eyes(eyeSelection)
                     const text_info = gene_root.append('g')
                       .attr('class', 'text_info')
-                    text_info.append('text')
-                      .attr('class', 'legend_gene_text')
-                      .text(d => d[0])
-                      .attr('text-anchor', 'left')
-                      .attr('font-size', '0.7em')
-                    text_info.append('svg:image')
-                      .attr('class', 'info')
-                      .attr("xlink:href", infoUrl)
-                      .attr('type', "image/svg+xml")
-                      .attr('x', (d,i) => gene_root.nodes()[i].querySelector('text').getBBox().width+5)
-                      .attr('y', -eye_y_offset)
-                      .attr('width', eye_w)
-                      .attr('height', eye_h)
-                      .attr('opacity', 1)
-                      .on('mouseover', this.infoHover)
-                      .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
-                      
+                    appendLegendTextWithTransition(text_info, 'legend_gene_text', text_info_font_size, function(textElement) {
+                      appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+                    })
+
                     gene_root.selectAll('.legend_gender')
                       .data(d => d[1])
                       .join(
                         (enter) => {
-                          console.log('gender enter')
-                          console.log(enter)
+                          // console.log('gender enter')
+                          // console.log(enter)
                           const gender_root = enter.append('g')
-                            .transition_attributes('opacity', 1)
                             .attr('class', 'legend_gender')
                             .style('fill', d => {
                               const key = Object.keys(d[1])[0]
@@ -1180,31 +1131,17 @@ export default {
                             .attr('transform', (d,i) => {
                               const yOffset = this.legendY_spacing * d[2]
                               return `translate(${eye_x_offset}, ${yOffset})`})
-                            gender_root.append('g')
+                          const eyeSelection = gender_root.append('g')
                             .attr('class', 'eyes')
                             .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                             .on('click', this.genderClick)
-                            .append_eyes()
+                          append_eyes(eyeSelection)
 
                           const text_info = gender_root.append('g')
                             .attr('class', 'text_info')
-                          text_info.append('text')
-                            .attr('class', 'legend_gender_text')
-                            .text(d => d[0])
-                            .attr('text-anchor', 'left')
-                            .attr('font-size', '0.7em')
-                            .attr('opacity', 1)
-                          text_info.append('svg:image')
-                            .attr('class', 'info')
-                            .attr("xlink:href", infoUrl)
-                            .attr('type', "image/svg+xml")
-                            .attr('x', (d,i) => gender_root.nodes()[i].querySelector('text').getBBox().width+5)
-                            .attr('y', -eye_y_offset)
-                            .attr('width', eye_w)
-                            .attr('height', eye_h)
-                            .attr('opacity', 1)
-                            .on('mouseover', this.infoHover)
-                            .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                          appendLegendTextWithTransition(text_info, 'legend_gender_text', text_info_font_size, function(textElement) {
+                            appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+                          });
 
                           gender_root.selectAll('.legend_groupname')
                             .data(d => {
@@ -1214,10 +1151,9 @@ export default {
                             })
                             .join(
                               (enter) => {
-                                console.log('groupname enter')
-                                console.log(enter)
+                                // console.log('groupname enter')
+                                // console.log(enter)
                                 const groupname_root = enter.append('g')
-                                  .transition_attributes('opacity', 1)
                                   .attr('class', 'legend_groupname')
                                   .style('fill', d => {
                                     return this.getHSL(d[1][0])
@@ -1226,49 +1162,41 @@ export default {
                                     this.legendY_spacing * (i+1)
                                     })`)
                                   
-                                  groupname_root.append('g')
+                                const eyeSelection = groupname_root.append('g')
                                   .attr('class', 'eyes')
                                   .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                                   .on('click', this.groupnameClick)
-                                  .append_eyes()
+                                append_eyes(eyeSelection)
 
                                   const text_info = groupname_root.append('g')
                                     .attr('class', 'text_info')
-                                  text_info.append('text')
-                                    .attr('class', 'legend_groupname_text')
-                                    .text(d => { return d[0] })
-                                    .attr('text-anchor', 'left')
-                                    .attr('font-size', '0.7em')
-                                    .attr('opacity', 1)
-                                  text_info.append('svg:image')
-                                    .attr('class', 'info')
-                                    .attr("xlink:href", infoUrl)
-                                    .attr('type', "image/svg+xml")
-                                    .attr('x', (d,i) => groupname_root.nodes()[i].querySelector('text').getBBox().width+5)
-                                    .attr('y', -eye_y_offset)
-                                    .attr('width', eye_w)
-                                    .attr('height', eye_h)
-                                    .attr('opacity', 1)
-                                    .on('mouseover', this.infoHover)
-                                    .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
-                                  return groupname_root
+                                  appendLegendTextWithTransition(text_info, 'legend_groupname_text', text_info_font_size, function(textElement) {
+                                    appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+                                  });
+
+                                 return groupname_root
                               },
+                              (exit) => exit.remove()
                             )
                           return gender_root
                         },
+                        (exit) => exit.remove()
                       )
                     return gene_root
-                  }
+                  },
+                  (exit) => exit.remove()
                 )
               return tissue_root
             },
+            (exit) => exit.remove()
           )
           return experiment_root
         },
         (update) => {
-          // console.log('update experiment')
-          // console.log(update)
-          const experiment_root = update.transition_attributes('opacity', 1)
+          
+          console.log('update experiment')
+          console.log(update)
+          const experiment_root = update
             .attr('transform', (d,i) => {
               const xOffset = experimentNamesWidths.slice(0, i).reduce((acc, cur) => {
                 return acc + cur.width + eye_x_offset + eye_w;
@@ -1293,39 +1221,24 @@ export default {
           .join(
             (enter) => {
               // Create root g element to position child text elements
-              console.log('experiment update > tissue enter')
-              console.log(enter)
+              // console.log('experiment update > tissue enter')
+              // console.log(enter)
               const tissue_root = enter.append('g')
               tissue_root.attr('class', 'legend_tissue')
                 .style('fill', d3.rgb("#222"))
                 .attr('transform', (d,i) => {
                   return `translate(${eye_x_offset}, ${this.legendY_spacing * d[2]})`})
-              tissue_root.append('g')
+              const eyeSelection = tissue_root.append('g')
                 .attr('class', 'eyes')
                 .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                 .on('click', this.tissueClick)
-                .append_eyes()
+              append_eyes(eyeSelection)
               const text_info = tissue_root.append('g')
                 .attr('class', 'text_info')
-              text_info.append('text')
-                .attr('class', 'legend_tissue_text')
-                .text(d => d[0].replaceAll('-', ' '))
-                .attr('text-anchor', 'left')
-                .attr('font-size', '0.7em')
-                .attr('opacity', 1)
-                .transition_attributes('opacity', 1)
-              text_info.append('svg:image')
-                .attr('class', 'info')
-                .attr("xlink:href", infoUrl)
-                .attr('type', "image/svg+xml")
-                .attr('x', (d,i) => {
-                  return tissue_root.nodes()[i].querySelector('text').getBBox().width+5})
-                .attr('y', -eye_y_offset)
-                .attr('width', eye_w)
-                .attr('height', eye_h)
-                .attr('opacity', 1)
-                .on('mouseover', this.infoHover)
-                .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+              appendLegendTextWithTransition(text_info, 'legend_tissue_text', text_info_font_size, function(textElement) {
+                appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+              })
+
 
               tissue_root.selectAll('.legend_gene')
                 .data(d => d[1])
@@ -1337,30 +1250,16 @@ export default {
                       .attr('class', 'legend_gene')
                       .attr('transform', (d,i) => { return `translate(${eye_x_offset}, 
                         ${this.legendY_spacing * d[2]})`})
-                      .transition_attributes('opacity', 1)
-                    gene_root.append('g')
+                    const eyeSelection = gene_root.append('g')
                       .attr('class', 'eyes')
                       .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                       .on('click', this.geneClick)
-                      .append_eyes()
+                    append_eyes(eyeSelection)
                     const text_info = gene_root.append('g')
                       .attr('class', 'text_info')
-                    text_info.append('text')
-                      .attr('class', 'legend_gene_text')
-                      .text(d => d[0])
-                      .attr('text-anchor', 'left')
-                      .attr('font-size', '0.7em')
-                    text_info.append('svg:image')
-                      .attr('class', 'info')
-                      .attr("xlink:href", infoUrl)
-                      .attr('type', "image/svg+xml")
-                      .attr('x', (d,i) => gene_root.nodes()[i].querySelector('text').getBBox().width+5)
-                      .attr('y', -eye_y_offset)
-                      .attr('width', eye_w)
-                      .attr('height', eye_h)
-                      .attr('opacity', 1)
-                      .on('mouseover', this.infoHover)
-                      .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                    appendLegendTextWithTransition(text_info, 'legend_gene_text', text_info_font_size, function(textElement) {
+                      appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+                    })
                       
                     gene_root.selectAll('.legend_gender')
                       .data(d => d[1])
@@ -1369,7 +1268,6 @@ export default {
                           // console.log('experiment update > tissue enter > gene enter > gender enter')
                           // console.log(enter)
                           const gender_root = enter.append('g')
-                            .transition_attributes('opacity', 1)
                             .attr('class', 'legend_gender')
                             .style('fill', d => {
                               // console.log('d')
@@ -1382,31 +1280,18 @@ export default {
                             .attr('transform', (d,i) => {
                               const yOffset = this.legendY_spacing * d[2]
                               return `translate(${eye_x_offset}, ${yOffset})`})
-                            gender_root.append('g')
+                          const eyeSelection = gender_root.append('g')
                             .attr('class', 'eyes')
                             .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                             .on('click', this.genderClick)
-                            .append_eyes()
+                          append_eyes(eyeSelection)
 
                           const text_info = gender_root.append('g')
                             .attr('class', 'text_info')
-                          text_info.append('text')
-                            .attr('class', 'legend_gender_text')
-                            .text(d => d[0])
-                            .attr('text-anchor', 'left')
-                            .attr('font-size', '0.7em')
-                            .attr('opacity', 1)
-                          text_info.append('svg:image')
-                            .attr('class', 'info')
-                            .attr("xlink:href", infoUrl)
-                            .attr('type', "image/svg+xml")
-                            .attr('x', (d,i) => gender_root.nodes()[i].querySelector('text').getBBox().width+5)
-                            .attr('y', -eye_y_offset)
-                            .attr('width', eye_w)
-                            .attr('height', eye_h)
-                            .attr('opacity', 1)
-                            .on('mouseover', this.infoHover)
-                            .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                          appendLegendTextWithTransition(text_info, 'legend_gender_text', text_info_font_size, function(textElement) {
+                            appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+                          })
+
 
                           gender_root.selectAll('.legend_groupname')
                             .data(d => {
@@ -1415,10 +1300,9 @@ export default {
                             })
                             .join(
                               (enter) => {
-                                console.log('experiment update > tissue enter > gene enter > gender enter > groupname enter')
-                                console.log(enter)
+                                // console.log('experiment update > tissue enter > gene enter > gender enter > groupname enter')
+                                // console.log(enter)
                                 const groupname_root = enter.append('g')
-                                  .transition_attributes('opacity', 1)
                                   .attr('class', 'legend_groupname')
                                   .style('fill', d => {
                                     return this.getHSL(d[1][0])
@@ -1427,47 +1311,36 @@ export default {
                                     this.legendY_spacing * (i+1)
                                     })`)
                                   
-                                  groupname_root.append('g')
+                                const eyeSelection = groupname_root.append('g')
                                   .attr('class', 'eyes')
                                   .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                                   .on('click', this.groupnameClick)
-                                  .append_eyes()
+                                append_eyes(eyeSelection)
 
                                   const text_info = groupname_root.append('g')
                                     .attr('class', 'text_info')
-                                  text_info.append('text')
-                                    .attr('class', 'legend_groupname_text')
-                                    .text(d => { 
-                                      return d[0]})
-                                    .attr('text-anchor', 'left')
-                                    .attr('font-size', '0.7em')
-                                    .attr('opacity', 1)
-                                  text_info.append('svg:image')
-                                    .attr('class', 'info')
-                                    .attr("xlink:href", infoUrl)
-                                    .attr('type', "image/svg+xml")
-                                    .attr('x', (d,i) => groupname_root.nodes()[i].querySelector('text').getBBox().width+5)
-                                    .attr('y', -eye_y_offset)
-                                    .attr('width', eye_w)
-                                    .attr('height', eye_h)
-                                    .attr('opacity', 1)
-                                    .on('mouseover', this.infoHover)
-                                    .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                                  appendLegendTextWithTransition(text_info, 'legend_groupname_text', text_info_font_size, function(textElement) {
+                                    appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+                                  })
+
                                   return groupname_root
                               },
+                              (exit) => exit.remove()
                             )
                           return gender_root
                         },
+                        (exit) => exit.remove()
                       )
                     return gene_root
-                  }
+                  },
+                  (exit) => exit.remove()
                 )
               return tissue_root
             },
             (update) => {
               // console.log('experiment update > tissue update')
               // console.log(update)
-              const tissue_root = update.transition_attributes('opacity', 1)
+              const tissue_root = update
                 .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                   this.legendY_spacing * d[2]
                   })`)
@@ -1475,13 +1348,19 @@ export default {
                 .text(d => d[0].replaceAll('-', ' '))
 
               const text_info = tissue_root.select('.text_info')
-
               text_info.select('.info')
-                .attr('x', (d,i) => {
-                  const text_select = text_info.select('text')
-                  const groups = text_select._groups[0]
-                  const width = groups[i].getBBox().width
-                  return text_info.select('text')._groups[0][i].getBBox().width+5})
+                .each(function(d, i) {
+                  const textElement = d3.select(this.parentNode).select('text').node();
+                  const textElementWidth = textElement.getBBox().width;
+                  d3.select(this).attr('x', textElementWidth + text_info_x_offset);
+              })
+
+              // text_info.select('.info')
+              //   .attr('x', (d,i) => {
+              //     const text_select = text_info.select('text')
+              //     const groups = text_select._groups[0]
+              //     const width = groups[i].getBBox().width
+              //     return text_info.select('text')._groups[0][i].getBBox().width+5})
 
               update.selectAll('.legend_gene')
                 .data(d => d[1])
@@ -1494,30 +1373,16 @@ export default {
                       .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                         this.legendY_spacing * d[2]
                         })`)
-                      .transition_attributes('opacity', 1)
-                    gene_root.append('g')
+                    const eyeSelection = gene_root.append('g')
                       .attr('class', 'eyes')
                       .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                       .on('click', this.geneClick)
-                      .append_eyes()
+                    append_eyes(eyeSelection)
                     const text_info = gene_root.append('g')
                       .attr('class', 'text_info')
-                    text_info.append('text')
-                      .attr('class', 'legend_gene_text')
-                      .text(d => d[0])
-                      .attr('text-anchor', 'left')
-                      .attr('font-size', '0.7em')
-                    text_info.append('svg:image')
-                      .attr('class', 'info')
-                      .attr("xlink:href", infoUrl)
-                      .attr('type', "image/svg+xml")
-                      .attr('x', (d,i) => gene_root.nodes()[i].querySelector('text').getBBox().width+5)
-                      .attr('y', -eye_y_offset)
-                      .attr('width', eye_w)
-                      .attr('height', eye_h)
-                      .attr('opacity', 1)
-                      .on('mouseover', this.infoHover)
-                      .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                    appendLegendTextWithTransition(text_info, 'legend_gene_text', text_info_font_size, function(textElement) {
+                      appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+                    })
                     
                     gene_root.selectAll('.legend_gender')
                     .data(d => d[1])
@@ -1526,36 +1391,21 @@ export default {
                         // console.log('experiment update > tissue update > gene enter > gender enter')
                         // console.log(enter)
                         const gender_root = enter.append('g')
-                          .transition_attributes('opacity', 1)
                           .attr('class', 'legend_gender')
                           .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                             this.legendY_spacing * d[2]
                             })`)
-                            gender_root.append('g')
+                        const eyeSelection = gender_root.append('g')
                           .attr('class', 'eyes')
                           .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                           .on('click', this.genderClick)
-                          .append_eyes()
+                        append_eyes(eyeSelection)
                         const text_info = gender_root.append('g')
                           .attr('class', 'text_info')
-                        text_info.append('text')
-                          .attr('class', 'legend_gender_text')
-                          .text(d => d[0])
-                          .attr('text-anchor', 'left')
-                          .attr('font-size', '0.7em')
-                          .attr('opacity', 1)
-                          .style('margin-bottom', 5)
-                        text_info.append('svg:image')
-                          .attr('class', 'info')
-                          .attr("xlink:href", infoUrl)
-                          .attr('type', "image/svg+xml")
-                          .attr('x', (d,i) => gender_root.nodes()[i].querySelector('text').getBBox().width+5)
-                          .attr('y', -eye_y_offset)
-                          .attr('width', eye_w)
-                          .attr('height', eye_h)
-                          .attr('opacity', 1)
-                          .on('mouseover', this.infoHover)
-                          .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                        appendLegendTextWithTransition(text_info, 'legend_gender_text', text_info_font_size, function(textElement) {
+                          appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+                        })
+
                         
                         gender_root.selectAll('.legend_groupname')
                         .data(d => {
@@ -1567,102 +1417,78 @@ export default {
                             // console.log('experiment update > tissue update > gene enter > gender enter > groupname enter')
                             // console.log(enter)
                             const groupname_root = enter.append('g')
-                              .transition_attributes('opacity', 1)
                               .attr('class', 'legend_groupname')
                               .style('fill', d => this.getHSL(d[1][0].identifier))
                               .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                                 this.legendY_spacing * (i+1)
                                 })`)
-                            groupname_root.append('g')
+                            const eyeSelection = groupname_root.append('g')
                               .attr('class', 'eyes')
                               .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                               .on('click', this.groupnameClick)
-                              .append_eyes()
+                            append_eyes(eyeSelection)
                             const text_info = groupname_root.append('g')
                               .attr('class', 'text_info')
-                            text_info.append('text')
-                              .attr('class', 'legend_groupname_text')
-                              .text(d => d[0])
-                              .attr('text-anchor', 'left')
-                              .attr('font-size', '0.7em')
-                              .attr('opacity', 1)
-                              .style('margin-bottom', 5)
-                            text_info.append('svg:image')
-                              .attr('class', 'info')
-                              .attr("xlink:href", infoUrl)
-                              .attr('type', "image/svg+xml")
-                              .attr('x', (d,i) => groupname_root.nodes()[i].querySelector('text').getBBox().width+5)
-                              .attr('y', -eye_y_offset)
-                              .attr('width', eye_w)
-                              .attr('height', eye_h)
-                              .attr('opacity', 1)
-                              .on('mouseover', this.infoHover)
-                              .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                            appendLegendTextWithTransition(text_info, 'legend_groupname_text', text_info_font_size, function(textElement) {
+                              appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+                            })
                             return groupname_root
-                          }
+                          },
+                          (exit) => exit.remove()
                         )
                         return gender_root
-                      }
+                      },
+                      (exit) => exit.remove()
                     )
                     return gene_root
                   },
                   (update) => {
-                    console.log('experiment update > tissue update > gene update')
-                    console.log(update)
+                    // console.log('experiment update > tissue update > gene update')
+                    // console.log(update)
                     const gene_root = update.attr('transform', (d,i) => {
                       const yOffset = this.legendY_spacing * d[2]
                       return `translate(${eye_x_offset}, ${yOffset
                       })`
                     })
-                      .transition_attributes('opacity', 1)
                     gene_root.select('.legend_gene_text')
                       .text(d => d[0])
                     const text_info = gene_root.select('.text_info')
                     text_info.select('.info')
-                      .attr('x', (d,i) => {
-                        const text_select = text_info.select('text')
-                        const groups = text_select._groups[0]
-                        const width = groups[i].getBBox().width
-                        // console.log('width', width)
-                        return text_info.select('text')._groups[0][i].getBBox().width+5})
+                      .each(function(d, i) {
+                        const textElement = d3.select(this.parentNode).select('text').node();
+                        const textElementWidth = textElement.getBBox().width;
+                        d3.select(this).attr('x', textElementWidth + text_info_x_offset);
+                    })
+                    // text_info.select('.info')
+                    //   .attr('x', (d,i) => {
+                    //     const text_select = text_info.select('text')
+                    //     const groups = text_select._groups[0]
+                    //     const width = groups[i].getBBox().width
+                    //     // console.log('width', width)
+                    //     return text_info.select('text')._groups[0][i].getBBox().width+5})
                     
                     update.selectAll('.legend_gender')
                     .data(d => d[1])
                     .join(
                       (enter) => {
-                        console.log('experiment update > tissue update > gene update > gender enter')
-                        console.log(enter)
+                        // console.log('experiment update > tissue update > gene update > gender enter')
+                        // console.log(enter)
                         const gender_root = enter.append('g')
-                          .transition_attributes('opacity', 1)
                           .attr('class', 'legend_gender')
                           .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                             this.legendY_spacing * d[2]
                             })`)
-                            gender_root.append('g')
+                        const eyeSelection = gender_root.append('g')
                           .attr('class', 'eyes')
                           .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                           .on('click', this.genderClick)
-                          .append_eyes()
+                        append_eyes(eyeSelection)
                         const text_info = gender_root.append('g')
                           .attr('class', 'text_info')
-                        text_info.append('text')
-                          .attr('class', 'legend_gender_text')
-                          .text(d => d[0])
-                          .attr('text-anchor', 'left')
-                          .attr('font-size', '0.7em')
-                          .attr('opacity', 1)
-                          .style('margin-bottom', 5)
-                        text_info.append('svg:image')
-                          .attr('class', 'info')
-                          .attr("xlink:href", infoUrl)
-                          .attr('type', "image/svg+xml")
-                          .attr('x', (d,i) => gender_root.nodes()[i].querySelector('text').getBBox().width+5)
-                          .attr('y', -eye_y_offset)
-                          .attr('width', eye_w)
-                          .attr('height', eye_h)
-                          .attr('opacity', 1)
-                          .on('mouseover', this.infoHover)
-                          .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                        appendLegendTextWithTransition(text_info, 'legend_gender_text', text_info_font_size, function(textElement) {
+                          appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+                        })
+
                         
                         enter.selectAll('.legend_groupname')
                         .data(d => {
@@ -1677,116 +1503,86 @@ export default {
                             })
                         .join(
                           (enter) => {
-                            console.log('experiment update > tissue update > gene update > gender enter > groupname enter')
-                            console.log(enter)
+                            // console.log('experiment update > tissue update > gene update > gender enter > groupname enter')
+                            // console.log(enter)
                             const groupname_root = enter.append('g')
-                              .transition_attributes('opacity', 1)
                               .attr('class', 'legend_groupname')
                               .style('fill', d => this.getHSL(d[1][0]))
                               .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                                 this.legendY_spacing * (i+1)
                                 })`)
-                            groupname_root.append('g')
+                            const eyeSelection = groupname_root.append('g')
                               .attr('class', 'eyes')
                               .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                               .on('click', this.groupnameClick)
-                              .append_eyes()
+                            append_eyes(eyeSelection)
                             const text_info = groupname_root.append('g')
                               .attr('class', 'text_info')
-                            text_info.append('text')
-                              .attr('class', 'legend_groupname_text')
-                              .text(d => d[0])
-                              .attr('text-anchor', 'left')
-                              .attr('font-size', '0.7em')
-                              .attr('opacity', 1)
-                              .style('margin-bottom', 5)
-                            text_info.append('svg:image')
-                              .attr('class', 'info')
-                              .attr("xlink:href", infoUrl)
-                              .attr('type', "image/svg+xml")
-                              .attr('x', (d,i) => groupname_root.nodes()[i].querySelector('text').getBBox().width+5)
-                              .attr('y', -eye_y_offset)
-                              .attr('width', eye_w)
-                              .attr('height', eye_h)
-                              .attr('opacity', 1)
-                              .on('mouseover', this.infoHover)
-                              .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                            appendLegendTextWithTransition(text_info, 'legend_groupname_text', text_info_font_size, function(textElement) {
+                              appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+                            })
                             return groupname_root
                           },
+                          (exit) => exit.remove()
                         )
                         return gender_root
                       },
                       (update) => {
-                        console.log('experiment update > tissue update > gene update > gender update')
-                        console.log(update)
+                        // console.log('experiment update > tissue update > gene update > gender update')
+                        // console.log(update)
                         const gender_root = update.attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                           this.legendY_spacing * d[2]
                           })`)
-                          .transition_attributes('opacity', 1)
                         gender_root.select('.legend_gender_text')
                           .text(d => d[0])   
                         const text_info = gender_root.select('.text_info')
                         text_info.select('.info')
-                          .attr('x', (d,i) => {
-                            // const text_select = text_info.select('text')
-                            // const groups = text_select._groups[0]
-                            // const width = groups[i].getBBox().width
-                            // console.log('width', width)
-                            return text_info.select('text')._groups[0][i].getBBox().width+5})
+                          .each(function(d, i) {
+                            const textElement = d3.select(this.parentNode).select('text').node();
+                            const textElementWidth = textElement.getBBox().width;
+                            d3.select(this).attr('x', textElementWidth + text_info_x_offset);
+                        })
+
+
+                        // text_info.select('.info')
+                        //   .attr('x', (d,i) => {
+                        //     // const text_select = text_info.select('text')
+                        //     // const groups = text_select._groups[0]
+                        //     // const width = groups[i].getBBox().width
+                        //     // console.log('width', width)
+                        //     return text_info.select('text')._groups[0][i].getBBox().width+5})
 
                         update.selectAll('.legend_groupname')
                           .data(d => {
-                              // console.log('d ' + typeof(d))
-                              // console.log(d)
-                              // console.log(Object.keys(d[1]))
                               const d_arr = Object.keys(d[1]).map((groupname) => {
                                 return [groupname, d[1][groupname]]})
-                              // console.log('d_arr')
-                              // console.log(d_arr)
                               return d_arr
                             })
                           .join(
                             (enter) => {
-                              console.log('experiment update > tissue update > gene update > gender update > groupname enter')
-                              console.log(enter)
+                              // console.log('experiment update > tissue update > gene update > gender update > groupname enter')
+                              // console.log(enter)
                               const groupname_root = enter.append('g')
-                                .transition_attributes('opacity', 1)
                                 .attr('class', 'legend_groupname')
                                 .style('fill', d => this.getHSL(d[1][0]))
                                 .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                                   this.legendY_spacing * (i+1)
                                   })`)
-                              groupname_root.append('g')
+                              const eyeSelection = groupname_root.append('g')
                                 .attr('class', 'eyes')
                                 .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
                                 .on('click', this.groupnameClick)
-                                .append_eyes()
+                              append_eyes(eyeSelection)
                               const text_info = groupname_root.append('g')
                                 .attr('class', 'text_info')
-                              text_info.append('text')
-                                .attr('class', 'legend_groupname_text')
-                                .text(d => d[0])
-                                .attr('text-anchor', 'left')
-                                .attr('font-size', '0.7em')
-                                .attr('opacity', 1)
-                                .style('margin-bottom', 5)
-                              text_info.append('svg:image')
-                                .attr('class', 'info')
-                                .attr("xlink:href", infoUrl)
-                                .attr('type', "image/svg+xml")
-                                .attr('x', (d,i) => {
-                                  return groupname_root.nodes()[i].querySelector('text').getBBox().width+5})
-                                .attr('y', -eye_y_offset)
-                                .attr('width', eye_w)
-                                .attr('height', eye_h)
-                                .attr('opacity', 1)
-                                .on('mouseover', this.infoHover)
-                                .on('mouseout', () => this.svg.selectAll('.info-tooltip').remove())
+                              appendLegendTextWithTransition(text_info, 'legend_groupname_text', text_info_font_size, function(textElement) {
+                                appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
+                              })
                               return groupname_root
                             },
                             (update) => {
-                              console.log('experiment update > tissue update > gene update > groupname update')
-                              console.log(update)
+                              // console.log('experiment update > tissue update > gene update > groupname update')
+                              // console.log(update)
                               const groupname_root = update.attr('transform', (d,i) => `translate(${eye_x_offset}, ${
                                 this.legendY_spacing * (i+1)
                                 })`)
@@ -1794,34 +1590,30 @@ export default {
                                   // console.log('d[1][0].identifier' + d[1][0].identifier)
                                   return this.getHSL(d[1][0])
                                 })
-                                .transition_attributes('opacity', 1)
                               groupname_root.select('.legend_groupname_text')
-                                .text(d => d[0])   
+                                .text(d => d[0])
                               const text_info = groupname_root.select('.text_info')
-                              text_info.select('.info')
-                                .attr('x', (d,i) => {
-                                  // const text_select = text_info.select('text')
-                                  // const groups = text_select._groups[0]
-                                  // const width = groups[i].getBBox().width
-                                  // console.log('width', width)
-                                  return text_info.select('text')._groups[0][i].getBBox().width+5})
-                                
-                            },
-                            (exit) => exit.transition_attributes('opacity', 0).remove()
-                          )
 
+                              text_info.select('.info')
+                                .each(function(d, i) {
+                                  const textElement = d3.select(this.parentNode).select('text').node();
+                                  const textElementWidth = textElement.getBBox().width;
+                                  d3.select(this).attr('x', textElementWidth + text_info_x_offset);
+                              })
+                            },
+                            (exit) => exit.remove()
+                          )
                       },
-                      (exit) => exit.transition_attributes('opacity', 0).remove()
+                      (exit) => exit.remove()
                     )
-                  
                   },  
-                  (exit) => exit.transition_attributes('opacity', 0).remove()
+                  (exit) => exit.remove()
                 )
             },
-            (exit) => exit.transition_attributes('opacity', 0).remove()
+            (exit) => exit.remove()
           )     
         },
-        (exit) => exit.transition_attributes('opacity', 0).remove()
+        (exit) => exit.remove()
       )
       // Set flag that SVG has been fully generated at least once
       this.complete = true
@@ -1982,8 +1774,8 @@ export default {
     },
     toggleVisibility(newOpacity, id) {
       // TODO: Toggle eye one level up if all child eyes are set to on or off
-      console.log('toggleVisibility: ' + newOpacity)
-      console.log('id: ' + id)
+      // console.log('toggleVisibility: ' + newOpacity)
+      // console.log('id: ' + id)
 
       const lines = d3.selectAll(`[id^='line_${id}']`)
       lines.transition_attributes('stroke-opacity', newOpacity)
@@ -2018,13 +1810,13 @@ export default {
     },
     experimentClick(evt, i) {
       // Toggle visibility of Experiment data for every child gene and group
-      console.log('experimentClick')
+      // console.log('experimentClick')
       //id="line_Mus-musculus_TRF-Experiment_2019_Adrenal-gland_Clock_Female_ALF"
       const experiment_root = evt.currentTarget.parentNode
       // TODO: Fix split
-      console.log(i[0])
+      // console.log(i[0])
       const id = i[0]
-      console.log('id', id)
+      // console.log('id', id)
       const opacity = experiment_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
 
@@ -2063,11 +1855,11 @@ export default {
     },
     geneClick(evt, i) {
       // Toggle visibility of Tissue_Gene data for both groups
-      console.log('geneClick')
+      // console.log('geneClick')
       const gene_root = evt.currentTarget.parentNode
 
       const gene = i[0]
-      console.log('gene', gene)
+      // console.log('gene', gene)
       const groups = i[1][0][1]
       const group_key = Object.keys(groups)[0]
       const sample = groups[group_key][0]
@@ -2113,7 +1905,7 @@ export default {
       const groupname_root = evt.currentTarget.parentNode
       // console.log(i[1][0])
       const id = i[1][0].identifier
-      console.log('id', id)
+      // console.log('id', id)
       
       const opacity = groupname_root.querySelector('.eye').getAttribute('opacity')
       const newOpacity = (opacity == 1) ? 0 : 1
@@ -2144,12 +1936,13 @@ export default {
         console.error('WARNING: More than 1 matching table for tissue', tissue)
       }
       const table_metadata = table_metadata_list[0]
+      console.log(table_metadata)
 
       // console.log(table_metadata)
       let text = `Experiment: ${table_metadata.experiment}\n`
       text += `Year: ${table_metadata.year}\n`
       text += `Species: ${table_metadata.species}\n`
-      text += `Number of Samples: ${table_metadata.data.length}\n`
+      // text += `Number of Samples: ${table_metadata.data.length}\n`
       text += `Data Type: ${table_metadata.data_type}\n`
       text += `Age (months): ${table_metadata.age_months}\n`
       return text
@@ -2179,7 +1972,7 @@ export default {
       text += `Year: ${table_metadata.year}\n`
       text += `Species: ${table_metadata.species}\n`
       text += `Gender: ${table_metadata.gender}\n`
-      text += `Number of Samples: ${table_metadata.data.length}\n`
+      // text += `Number of Samples: ${table_metadata.data.length}\n`
       text += `Data Type: ${table_metadata.data_type}\n`
       text += `Age (months): ${table_metadata.age_months}\n`
       
@@ -2274,17 +2067,18 @@ export default {
       const group_key = Object.keys(groups)[0]
       const sample = groups[group_key][0]
 
-      // console.log(sample)
+      let num_samples = 0;
+      for (let key in groups) {
+        if (groups.hasOwnProperty(key)) {
+          num_samples += groups[key].length;
+        }
+      }
 
       let text = `Gender: ${gender}\n`
       text += `Age (months): ${sample.age_months}\n`
       text += `Species: ${sample.species}\n`
       text += `Tissue: ${sample.tissue}\n`
-      text += `\nExpression Stats\n`
-      text += `Amplitude: ${Math.round(sample.amplitude*1000)/1000}\n`
-      text += `Min: ${Math.round(sample.min*1000)/1000}\n`
-      text += `Max: ${Math.round(sample.max*1000)/1000}\n`
-      text += `Mean: ${Math.round(sample.mean*1000)/1000}\n`
+      text += `Number of Samples: ${num_samples}\n`
       
       return text
     },
@@ -2294,14 +2088,13 @@ export default {
       const groupname = data[0]
       const sample = data[1][0]
       const stats = data[2]
-      
-      // console.log(sample)
 
-      let text = `Group: ${groupname}\n`
+      let text = `Condition: ${groupname}\n`
       text += `Age (months): ${sample.age_months}\n`
       text += `Gender: ${sample.gender}\n`
       text += `Species: ${sample.species}\n`
       text += `Tissue: ${sample.tissue}\n`
+      text += `Number of Samples: ${data[1].length}\n`
       text += `\nExpression Stats\n`
       text += `Amplitude: ${Math.round(sample.amplitude*1000)/1000}\n`
       text += `Min: ${Math.round(sample.min*1000)/1000}\n`
@@ -2392,7 +2185,7 @@ export default {
         hOffset = -h
       }
       text_selection.attr("transform", `translate(${-wOffset},${hOffset})`);
-      console.log('position: ' + x + ', ' + y + ', ' + w + ', ' + h)
+      // console.log('position: ' + x + ', ' + y + ', ' + w + ', ' + h)
 
       // Background dimensions relative to text size
       rect

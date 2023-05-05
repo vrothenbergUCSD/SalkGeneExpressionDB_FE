@@ -202,7 +202,8 @@
                 </div>
 
                 <div id="get-datasets" class="mt-1 text-center">
-                  <Button label="Get Datasets" @click="get_datasets" :loading="this.getting_datasets" />
+                  <Button label="Get Datasets" @click="get_datasets" 
+                  :loading="this.getting_datasets || this.getting_gene_data || this.loading_genes" />
                 </div>
               </div>
               <div v-else class="text-center font-semibold text-lg">
@@ -241,11 +242,11 @@
           <div v-if="this.got_datasets && this.got_gene_data">
             <div class="card mt-1">
               <div class="mx-auto w-3/4">
-                <TabMenu :model="items" v-model:activeIndex="index" />
+                <TabMenu :model="plots" v-model:activeIndex="index" />
               </div>
               <div v-if="index != null" class="mx-auto px-3 ">
                 <KeepAlive>
-                  <component :is="items[index].current_component" :genes="this.genes_selected"
+                  <component :is="plots[index].current_component" :genes="this.genes_selected"
                     :datasets="this.datasets" />
                 </KeepAlive>
               </div>
@@ -308,7 +309,7 @@ export default {
   DataService: null,
   data() {
     return {
-      items: [
+      plots: [
         {
           label: 'Line',
           icon: 'pi pi-fw pi-chart-line',
@@ -402,13 +403,6 @@ export default {
     console.log('Main mounted')
 
     let user = await this.user_logged_in()
-    // if (user) {
-    //   console.log('Yeah')
-    //   console.log(user)
-    // } else {
-    //   console.log('No')
-    // }
-
 
     // Populate array with all genes
     console.log('Main mounted, await datasets metadata: ')
@@ -425,14 +419,16 @@ export default {
 
     // Default selection
     this.species_selected = [{ name: 'Mus musculus' }]
-    this.experiment_selected = [{ name: 'TRF Experiment' }]
-    this.year_selected = [{ name: '2018'}, { name: '2019'}]
-    this.tissue_selected = [{ name: 'Adrenal' }, { name: 'BAT'}]
-    this.gender_selected = [{ name: 'Male' }, { name: 'Female'}]
-    this.condition_selected = [{ name: 'ALF' }, { name: 'TRF' }]
-    this.genes_selected = [{ name: 'Clock' }, { name: 'Arnt' }]
+    this.experiment_selected = [{ name: 'TRF Experiment' }, { name: 'WFF Experiment' }]
+    this.year_selected = [{ name: '2018'}, { name: '2020'}]
+    this.tissue_selected = [{ name: 'BAT'}]
+    this.gender_selected = [{ name: 'Male' }]
+    this.condition_selected = []
+    this.genes_selected = [{ name: 'Clock' }]
 
     this.update_lookup_table()
+
+    // TODO: Re-enable
     await this.get_datasets()
 
     // Line chart at index 0
@@ -594,7 +590,9 @@ export default {
       if (this.genes_selected.length)
         // If user has at least one selected genes call get_gene_data 
         // Updates chart with selected gene data for corresponding datasets
-        this.get_gene_data()
+        await this.get_gene_data()
+      console.log('this.datasets')
+      console.log(this.datasets)
 
       const elapsed = Date.now() - start
       console.log('get_datasets time elapsed: ', elapsed)
@@ -663,7 +661,7 @@ export default {
       const elapsed = Date.now() - start
       console.log('get_sample_metadata_tables elapsed: ', elapsed)
     },
-    check_combo(table_obj, sample_metadata_lookup, genes_arr, conditions_arr, genders_arr) {
+    check_combo(table_obj, sample_metadata_lookup, genes_arr) {
       // Check for missing combinations of gene condition and gender
       // Used for updating differential data, instead of downloading everything again
       for (let i = 0; i < genes_arr.length; i++) {
@@ -688,8 +686,15 @@ export default {
       console.log('get_gene_expression_data_tables')
       const start = Date.now()
       const genes_str = genes.map(d => d.name).toString()
+      console.log('genes_str')
+      console.log(genes_str)
       const genders_str = this.gender_selected.map(d => d.name).toString()
+      console.log('genders_str')
+      console.log(genders_str)
       const conditions_str = this.condition_selected.map(d => d.name).toString()
+      console.log('conditions_str')
+      console.log(conditions_str)
+      
       this.gene_expression_data_tables = await Promise.all(tables.map(async (t) => {
         // Check table in gene_expression_data_tables_all
         let table_obj = this.gene_expression_data_tables_all.find(e => e.table_name == t)
@@ -704,25 +709,29 @@ export default {
           // console.log(this.sample_metadata_tables_all)
           const sample_metadata = this.sample_metadata_tables_all.find(e =>
             e.table_name == sample_table_name)
-          // console.log('sample_metadata')
-          // console.log(sample_metadata)
+          console.log('sample_metadata')
+          console.log(sample_metadata)
           const sample_metadata_lookup = sample_metadata.data.reduce(
             (obj, item) => (obj[item.sample_name] = item, obj), {})
-          // console.log('sample_metadata_lookup')
-          // console.log(sample_metadata_lookup)
+          console.log('sample_metadata_lookup')
+          console.log(sample_metadata_lookup)
 
           const table_obj_genes = [...new Set(table_obj.data.map(item => item.gene_id))]
           const genes_arr = genes.map(d => d.name)
           const genes_to_add = _.difference(genes_arr, table_obj_genes)
-
+          console.log('genes_to_add')
+          console.log(genes_to_add)
+          
+          console.log('table_obj')
           console.log(table_obj)
           console.log(sample_metadata_lookup)
 
-          // Check if all genders in table 
-          const table_obj_genders = [...new Set(table_obj.data.map(item =>
-            sample_metadata_lookup[item.sample_name].gender))]
-          const genders_arr = this.gender_selected.map(d => d.name)
-          const genders_to_add = _.difference(genders_arr, table_obj_genders)
+          // // Check if all genders in table 
+          // const table_obj_genders = [...new Set(table_obj.data.map(item =>
+          //   sample_metadata_lookup[item.sample_name].gender))]
+
+          // const genders_arr = this.gender_selected.map(d => d.name)
+          // const genders_to_add = _.difference(genders_arr, table_obj_genders)
           // console.log('genders_to_add')
           // console.log(genders_to_add)
 
@@ -732,37 +741,36 @@ export default {
 
           // console.log('sample_metadata_lookup')
           // console.log(sample_metadata_lookup)
-          const table_obj_conditions = [...new Set(table_obj.data.map(item =>
-            sample_metadata_lookup[item.sample_name].condition))]
+          // const table_obj_conditions = [...new Set(table_obj.data.map(item =>
+          //   sample_metadata_lookup[item.sample_name].condition))]
           // console.log('table_obj_conditions')
           // console.log(table_obj_conditions)
-          const conditions_arr = this.condition_selected.map(d => d.name)
+          // const conditions_arr = this.condition_selected.map(d => d.name)
           // console.log('conditions_arr')
           // console.log(conditions_arr)
-          const conditions_to_add = _.difference(conditions_arr, table_obj_conditions)
+          // const conditions_to_add = _.difference(conditions_arr, table_obj_conditions)
           // console.log('conditions_to_add')
           // console.log(conditions_to_add)
 
           // Check if any combination of gene, condition and gender are missing
-          const combo_missing = this.check_combo(table_obj,
-            sample_metadata_lookup, genes_arr, conditions_arr, genders_arr)
+          // const combo_missing = this.check_combo(table_obj,
+          //   sample_metadata_lookup, genes_arr)
 
           if (genes_to_add.length
-            || conditions_to_add.length
-            || genders_to_add.length
-            || combo_missing) {
+            // || combo_missing
+            ) {
             // New data needed, run query
-
             const data = this.gene_expression_data_tables_all[table_obj_index].data
 
             const genes_str = genes_arr.toString()
-            const genders_str = genders_arr.toString()
-            const conditions_str = conditions_arr.toString()
+            // const genders_str = genders_arr.toString()
+            // const conditions_str = conditions_arr.toString()
 
             // console.log('Querying DataService.getExpressionData...')
             const result = await DataService
-              .getExpressionDataByGenesGendersConditions(
-                genes_str, genders_str, conditions_str, t)
+              .getExpressionDataByGenes(genes_str, t)
+              // .getExpressionDataByGenesGendersConditions(
+              //   genes_str, genders_str, conditions_str, t)
 
             // Union to only add data and not overwrite old results 
             const data_all = _.union(data, result.data)
@@ -772,21 +780,90 @@ export default {
           // Deep copy with [...]
           table_obj.data = [...this.gene_expression_data_tables_all[table_obj_index]
             .data].filter(item => genes_arr.indexOf(item.gene_id) !== -1)
-          return table_obj
+          
         } else {
           // Table does not exist, query 
           console.log('Table does not exist')
+          // Get all samples for table
+          //  Filter based on gender or condition afterwards
           const result = await DataService
-            .getExpressionDataByGenesGendersConditions(genes_str, genders_str, conditions_str, t)
+            .getExpressionDataByGenes(genes_str, t)
+            // .getExpressionDataByGenesGendersConditions(genes_str, genders_str, conditions_str, t)
           
-          const new_table_obj = {
+
+          table_obj = {
             table_name: t,
             data: result.data
           }
-          this.gene_expression_data_tables_all.push(JSON.parse(JSON.stringify(new_table_obj)))
-          return new_table_obj
+          this.gene_expression_data_tables_all.push(JSON.parse(JSON.stringify(table_obj)))
         } 
+        // After fetching table 
+        console.log('After fetching table')
+        console.log(table_obj)
+
+        // Get samples which are in one of the selected conditions
+        const sample_names = [...new Set(table_obj.data.map(item => item.sample_name))]
+        console.log('sample_names')
+        console.log(sample_names)
+
+        const sample_table_name = t.replace('gene_expression_data', 'sample_metadata')
+        // console.log(this.sample_metadata_tables_all)
+        const sample_metadata = this.sample_metadata_tables_all.find(e =>
+          e.table_name == sample_table_name)
+        console.log('sample_metadata')
+        console.log(sample_metadata)
+
+        let filtered_samples = sample_metadata.data
+        console.log('filtered_samples')
+        console.log(filtered_samples)
+
+        // Create condition property if does not exist 
+        filtered_samples.forEach(obj => {
+        if (!obj.hasOwnProperty('condition') && obj.hasOwnProperty('group_name')) {
+            Object.assign(obj, { condition: obj.group_name });
+          }
+        });
+
+        const conditions = this.condition_selected.map(d => d.name)
+        console.log('conditions')
+        console.log(conditions)
+
+        if (conditions.length)
+          filtered_samples = filtered_samples.filter(obj => 
+            conditions.includes(obj.condition));
+
+        console.log('filtered_samples')
+        console.log(filtered_samples)
         
+        const genders = this.gender_selected.map(d => d.name)
+        console.log('genders')
+        console.log(genders)
+
+        if (genders.length)
+          filtered_samples = filtered_samples.filter(obj => genders.includes(obj.gender));
+        console.log('filtered_samples')
+        console.log(filtered_samples)
+
+        const filtered_samples_names = filtered_samples.map(d => d.sample_name)
+        console.log('filtered_samples_names')
+        console.log(filtered_samples_names)
+
+        console.log('genes')
+        console.log(genes)
+        const genes_arr = genes.map(d => d.name)
+
+        let filtered_data = table_obj.data.filter(obj => genes_arr.includes(obj.gene_id));
+        console.log('filtered_data')
+        console.log(filtered_data)
+        
+        filtered_data = filtered_data.filter(obj => filtered_samples_names.includes(obj.sample_name));
+
+        console.log('filtered_data')
+        console.log(filtered_data)
+
+        table_obj.data = filtered_data
+
+        return table_obj
       }))
       console.log('this.gene_expression_data_tables')
       console.log(this.gene_expression_data_tables)
@@ -855,14 +932,8 @@ export default {
       const elapsed = Date.now() - start
       console.log('get_selected_gene_metadata elapsed:', elapsed)
     },
-    async get_genes_clicked() {
-      // TODO: get_genes_clicked Not used
-      // Get Genes button clicked
-      // Check if new datasets selected
-      this.get_gene_data()
-    },
     async get_gene_data() {
-      // console.log('get_gene_data')
+      console.log('get_gene_data')
       const start = Date.now()
 
       this.getting_gene_data = true
@@ -907,6 +978,7 @@ export default {
     },
     update_lookup_table() {
       // TODO: update_lookup_table optimize 
+      // BUG: update_lookup_table not working, empty sets with NaN% in table
       // Called by dataset filter row select / unselect
       console.log('update_lookup_table')
       const start = Date.now()
@@ -1040,85 +1112,89 @@ export default {
       //  locking in current filters, preventing adding new selections that are not 
       //  in the intersection, e.g. selecting Heart tissue would filter down all 
       //  datasets to only include those from Heart tissue, preventing selecting Liver, etc.
-      // console.log('filter_metadata_except: ' + except_category)
+      console.log('filter_metadata_except: ' + except_category)
       let filtered = this.db_metadata
       // console.log('this.db_metadata')
       // console.log(typeof(this.db_metadata))
-      // console.log(filtered)
+      console.log(filtered)
       if (except_category != 'species') {
         const species_selected_names = this.species_selected.map(el => el.name)
         // console.log('species_selected_names')
         // console.log(species_selected_names)
         // NOTE: Do not allow select all if empty
         // If no species selected, then skip filtering
-        // if (species_selected_names.length)
+        if (species_selected_names.length)
           filtered = filtered.filter(
             ({ species }) => species_selected_names.some(
               (s) => species.toLowerCase().includes(s.toLowerCase())))
       }
-
+      console.log('After species filter '  + filtered.length)
       // console.log(filtered)
 
       if (except_category != 'experiment') {
         const experiment_selected_names = this.experiment_selected.map(el => el.name)
         // console.log('experiment_selected_names')
         // console.log(experiment_selected_names)
-        // if (experiment_selected_names.length)
+        if (experiment_selected_names.length)
           filtered = filtered.filter(
             ({ experiment }) => experiment_selected_names.some(
               (s) => experiment.toLowerCase().includes(s.toLowerCase())))
       }
+      console.log('After experiment filter '  + filtered.length)
       // console.log(filtered)
 
       if (except_category != 'year') {
         const year_selected_names = this.year_selected.map(el => el.name)
         // console.log('year_selected_names')
         // console.log(year_selected_names)
-        // if (year_selected_names.length)
+        if (year_selected_names.length)
           filtered = filtered.filter(
             ({ year }) => year_selected_names.some(
               (s) => year.toLowerCase().includes(s.toLowerCase())))
       }
-
+      console.log('After year, filter length ' + filtered.length)
       // console.log(filtered)
 
       if (except_category != 'tissue') {
         const tissue_selected_names = this.tissue_selected.map(el => el.name)
         // console.log('tissue_selected_names')
         // console.log(tissue_selected_names)
-        // if (tissue_selected_names.length)
+        if (tissue_selected_names.length)
           filtered = filtered.filter(
             ({ tissue }) => tissue_selected_names.some(
               (s) => tissue.toLowerCase().includes(s.toLowerCase())))
       }
 
+      console.log('After tissue filter ' + filtered.length)
       // console.log(filtered)
 
       if (except_category != 'gender') {
         const gender_selected_names = this.gender_selected.map(el => el.name)
         // console.log('gender_selected_names')
         // console.log(gender_selected_names)
-        // if (gender_selected_names.length)
+        if (gender_selected_names.length)
           filtered = filtered.filter(
             ({ gender }) => gender_selected_names.some(
               (s) => gender.some((gend) =>
                 gend.gender.toLowerCase() == s.toLowerCase())))
       }
 
+      console.log('After gender filter '  + filtered.length)
       // console.log(filtered)
 
       if (except_category != 'condition') {
         const condition_selected_names = this.condition_selected.map(el => el.name)
         // console.log('condition_selected_names')
         // console.log(condition_selected_names)
-        // if (condition_selected_names.length)
+        if (condition_selected_names.length)
           filtered = filtered.filter(
             ({ condition }) => condition_selected_names.some(
               (s) => condition.some((cond) =>
                 cond.condition.toLowerCase() == s.toLowerCase())))
       }
 
-      // console.log(filtered)
+      console.log('After condition filter '  + filtered.length)
+      console.log(filtered)
 
       return filtered
     },

@@ -21,6 +21,8 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 
+
+
 // Localhost debug
 // self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 // const appCheck = initializeAppCheck(firebaseApp, {
@@ -33,8 +35,7 @@ const firebaseApp = initializeApp(firebaseConfig);
 
 
 const appCheck = initializeAppCheck(firebaseApp, {
-  provider: new ReCaptchaV3Provider('6LdnxEUlAAAAAImoXr09nDxAoE1eRQn-IDSuGBZW'),
-
+  provider: new ReCaptchaV3Provider('6LfcNuMlAAAAAPlp5De2jQJemODS0XUih2_WIMU-'),
   // Optional argument. If true, the SDK automatically refreshes App Check
   // tokens as needed.
   isTokenAutoRefreshEnabled: true

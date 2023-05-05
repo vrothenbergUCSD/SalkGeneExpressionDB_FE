@@ -4,7 +4,8 @@
     <DataTable :value="dataset" :scrollable="true"
       scrollDirection="both" class="p-datatable-sm" :paginator="true" :rows="10"
       paginatorTemplate="CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
-      :rowsPerPageOptions="[10,20,50]" currentPageReportTemplate="Showing {first} to {last} of {totalRecords}">
+      :rowsPerPageOptions="[10,20,50]" currentPageReportTemplate="Showing {first} to {last} of {totalRecords}"
+      style="font-size: 10px;">
       <Column field="gene_id" header="Gene ID" style="width: 10rem"></Column>
       <Column field="gene_expression" header="Gene Expression" style="width: 7rem">
         <template #body="slotProps">
@@ -52,6 +53,15 @@ export default {
 }
 </script>
 
-<style>
-
+<style scoped>
+  /* ::v-deep .p-datatable.p-datatable-sm .p-datatable-tbody > tr {
+    height: 24px !important;
+    margin-bottom: 0 !important;
+  }
+  
+  ::v-deep .p-datatable.p-datatable-sm .p-datatable-tbody > tr > td {
+    height: 24px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  } */
 </style>
