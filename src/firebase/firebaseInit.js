@@ -1,7 +1,7 @@
 
 // import firebase from "firebase";
 import { initializeApp } from "firebase/app";
-import { initializeAppCheck, ReCaptchaV3Provider, getToken } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaV3Provider, ReCaptchaEnterpriseProvider, getToken } from "firebase/app-check";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -23,23 +23,23 @@ const firebaseApp = initializeApp(firebaseConfig);
 
 
 
-// Localhost debug
+// // Localhost debug
 // self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 // const appCheck = initializeAppCheck(firebaseApp, {
-//   provider: new ReCaptchaV3Provider('6LcTdI8kAAAAACUbokBXW8XxlpED2Jrx2BS2rTWu'),
-
+  
+//   provider: new ReCaptchaV3Provider('debug'),
 //   // Optional argument. If true, the SDK automatically refreshes App Check
 //   // tokens as needed.
 //   isTokenAutoRefreshEnabled: true
 // });
 
-
 const appCheck = initializeAppCheck(firebaseApp, {
-  provider: new ReCaptchaV3Provider('6LfcNuMlAAAAAPlp5De2jQJemODS0XUih2_WIMU-'),
-  // Optional argument. If true, the SDK automatically refreshes App Check
-  // tokens as needed.
-  isTokenAutoRefreshEnabled: true
+  provider: new ReCaptchaEnterpriseProvider('6LdnxEUlAAAAAImoXr09nDxAoE1eRQn-IDSuGBZW'),
+  isTokenAutoRefreshEnabled: true // Set to true to allow auto-refresh.
 });
+
+
+
 
 getToken(appCheck)
   .then(() => {
