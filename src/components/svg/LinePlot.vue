@@ -305,10 +305,8 @@ export default {
       const start = Date.now()
       this.genes_str_arr = this.genes.map((d) => d.name)
       if (this.datasets) {
-        // console.log('this.datasets')
-        // console.log(this.datasets)
-
         this.expression_merged = []
+
         // Deep copy!
         this.gene_expression_data_tables = JSON.parse(JSON.stringify(this.datasets.gene_expression_data_tables))
         this.gene_metadata = JSON.parse(JSON.stringify(this.datasets.gene_metadata))
@@ -391,7 +389,6 @@ export default {
           this.expression_merged = this.expression_merged.concat(e.data)
         })
 
-        // console.log('this.expression_merged.forEach')
         this.expression_merged.forEach((e) => {
           // console.log(e)
           e.time_point = parseInt(e.time_point.split('ZT')[1])
@@ -412,36 +409,11 @@ export default {
 
         const grouped_species = _.groupBy(this.expression_merged, e => `${e.species}`);
 
-        // console.log('grouped_species');
-        // console.log(grouped_species);
-
-        // const grouped_species_experiment = Object.keys(grouped_species).map((species) => {
-        //   return [species, _.groupBy(grouped_species[species], e => `${e.experiment}`)];
-        // });
-
-        // console.log('grouped_species_experiment');
-        // console.log(grouped_species_experiment);
-
-        // const grouped_species_experiment_year = grouped_species_experiment.map((species) => {
-        //   return [species[0], Object.keys(species[1]).map((experiment) => {
-        //     // console.log(experiment) // Experiment name
-        //     // console.log(species[1][experiment])
-        //     // console.log(species[1][experiment])
-        //     return [experiment, _.groupBy(species[1][experiment], e => `${e.year.toString()}`)];
-        //   })];
-        // });
-
         const grouped_species_experiment_year = _.groupBy(this.expression_merged, e => `${e.species}_${e.experiment}_${e.year.toString()}`);
-
-        // console.log('grouped_species_experiment_year');
-        // console.log(grouped_species_experiment_year);
 
         const grouped_species_experiment_year_tissue = Object.keys(grouped_species_experiment_year).map((year) => {
           return [year, _.groupBy(grouped_species_experiment_year[year], e => `${e.tissue}`)];
         });
-
-        // console.log('grouped_species_experiment_year_tissue')
-        // console.log(grouped_species_experiment_year_tissue)
 
         const grouped_species_experiment_year_tissue_gene = grouped_species_experiment_year_tissue.map((year) => {
           return [year[0], Object.keys(year[1]).map((tissue) => {
@@ -449,53 +421,43 @@ export default {
           })];
         });
 
-        // console.log('grouped_species_experiment_year_tissue_gene')
-        // console.log(grouped_species_experiment_year_tissue_gene)
-
         const grouped_species_experiment_year_tissue_gene_gender = grouped_species_experiment_year_tissue_gene.map((year) => {
           return [year[0], year[1].map((tissue) => {
             return [tissue[0], Object.keys(tissue[1]).map((gene) => {
               return [gene, _.groupBy(tissue[1][gene], e => `${e.gender}`)];
             })];
           })];
- 
         });
-
-        console.log('grouped_species_experiment_year_tissue_gene_gender')
-        console.log(grouped_species_experiment_year_tissue_gene_gender)
 
         const grouped_species_experiment_year_tissue_gene_gender_groupname = grouped_species_experiment_year_tissue_gene_gender.map((year) => {
-              return [year[0].replaceAll(' ', '-'), year[1].map((tissue) => {
-                return [tissue[0].replaceAll(' ', '-'), tissue[1].map((gene) => {
-                  return [gene[0].replaceAll(' ', '-'), Object.keys(gene[1]).map((gender) => {
-                    const grouping = _.groupBy(gene[1][gender], e => `${e.group_name}`)
-                    const keys = Object.keys(grouping)
-                    for(let i = 0; i < keys.length; i++) {
-                      const key = keys[i]
-                      const max = Math.max.apply(Math, grouping[key].map(
-                        function(o) { return o.gene_expression; }))
-                      const min = Math.min.apply(Math, grouping[key].map(
-                        function(o) { return o.gene_expression; }))
-                      const mean = _.reduce(grouping[key], function(memo, v) { 
-                        return memo + v.gene_expression; 
-                      }, 0) / grouping[key].length
-                      grouping[key].forEach((sample) => {
-                        sample.gene_expression_norm = (sample.gene_expression - min) / (max - min)
-                        sample.group_index = i
-                        sample.min = min 
-                        sample.max = max
-                        sample.amplitude = max-min 
-                        sample.mean = mean
-                      })
-                    }
-                    return [gender, grouping];
-                  })];
-                })];
+          return [year[0].replaceAll(' ', '-'), year[1].map((tissue) => {
+            return [tissue[0].replaceAll(' ', '-'), tissue[1].map((gene) => {
+              return [gene[0].replaceAll(' ', '-'), Object.keys(gene[1]).map((gender) => {
+                const grouping = _.groupBy(gene[1][gender], e => `${e.group_name}`)
+                const keys = Object.keys(grouping)
+                for(let i = 0; i < keys.length; i++) {
+                  const key = keys[i]
+                  const max = Math.max.apply(Math, grouping[key].map(
+                    function(o) { return o.gene_expression; }))
+                  const min = Math.min.apply(Math, grouping[key].map(
+                    function(o) { return o.gene_expression; }))
+                  const mean = _.reduce(grouping[key], function(memo, v) { 
+                    return memo + v.gene_expression; 
+                  }, 0) / grouping[key].length
+                  grouping[key].forEach((sample) => {
+                    sample.gene_expression_norm = (sample.gene_expression - min) / (max - min)
+                    sample.group_index = i
+                    sample.min = min 
+                    sample.max = max
+                    sample.amplitude = max-min 
+                    sample.mean = mean
+                  })
+                }
+                return [gender, grouping];
               })];
+            })];
+          })];
         });
-
-        console.log('grouped_species_experiment_year_tissue_gene_gender_groupname')
-        console.log(grouped_species_experiment_year_tissue_gene_gender_groupname)
 
         this.expression_normalized = grouped_species_experiment_year_tissue_gene_gender_groupname
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized.map(e => e[1]))
@@ -509,14 +471,6 @@ export default {
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => {
           return [].concat.apply([], Object.values(e[1]));
         }));
-
-        console.log('this.expression_normalized_flattened')
-        console.log(this.expression_normalized_flattened)
-
-
-        console.log('this.legend_group_data')
-        console.log(this.legend_group_data)
-
 
         const grouped_norm = _.groupBy(this.expression_merged, e => 
           `${e.species}_${e.experiment}_${e.year}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}_ZT${e.time_point}`)
