@@ -765,6 +765,7 @@ export default {
         })       
         
       } else if (this.grouped_by == 'Time') {
+        console.log('Time')
         this.svg.select('.x-label').text('Time Point (ZT)')
         groups = [...this.time_points].filter(e => this.time_visibility[e])
         this.group_visibility = this.time_visibility
@@ -789,67 +790,81 @@ export default {
         })
         
         data = data.filter(e => this.time_visibility[e[0]])
+
+        console.log('data')
+        console.log(data)
       }
+
       
+
       
+      function formatLabel(label) {
+          var parts = label.split("_");
+          return [
+              parts.slice(0, 3).join(" ").replaceAll('-', ' '),
+              parts.slice(3, 4).join(" ").replaceAll('-', ' '),
+              parts.slice(4).join(" ").replaceAll('-', ' ')
+          ];
+      }
 
       this.x.domain(groups)
         .padding([0.1])
       var x = this.x
       this.svg.selectAll(".myXaxis").transition()
         .duration(this.animationInterval)
-        .call(this.xAxis);
+        .call(this.xAxis)
+        .end()
+        .then(() => {
+          if (this.grouped_by == 'Gene') {
+            this.svg.selectAll(".myXaxis .tick text")  // select all the text elements of the x-axis
+            .call(function(t) {  // t is the selection of all text elements
+              t.each(function(d) {  // for each text element, d is the data bound to the text element
+                // console.log('d')
+                // console.log(d)
+                var text = d3.select(this);  // select the current text element
+                text.text('');  // clear the current text
+                
+                // var words = d.split("_");  // split the label into lines
+                var lines = formatLabel(d)
+                for (var i = 0; i < lines.length; i++) {
+                  text.append("tspan")  // append a tspan for each line
+                    .text(lines[i])
+                    .attr("x", 0)
+                    .attr("dy", i ? "1.2em" : 0);  // adjust vertical position of the second and subsequent lines
+                }
+              });
+            });
 
-      if (this.grouped_by == 'Gene') {
-          
-        this.svg.selectAll('.myXaxis .tick text')
-          .selectAll('tspan')
-          .data(d => {
-            console.log('d')
-            console.log(d)
-            let text = d.replaceAll('-', ' ').split('_')
-            console.log('text')
-            console.log(text)
+            this.svg.selectAll(".myXaxis .tick line")
+              .attr("stroke" , "none")
 
-            const experiment = text.slice(0,3).join('_')
-            console.log('experiment')
-            console.log(experiment)
 
-            
-            let tissue = text[3]
-            const gene_group = text.slice(4, text.length).join(' ')
-            console.log('tissue ' + tissue)
-            console.log('gene_group ' + gene_group)
-            const result = [{ value: experiment }, { value: tissue }, { value: gene_group }]
-            console.log('result')
-            console.log(result)
-            return result;
-          })
-          .join(
-            (enter) => {
-              console.log('enter')
-              console.log(enter)
-              // Create the foreignObject elements
-              const lineHeight = 14;
-              const labelWrapperWidth = this.x.bandwidth();
+          }
+        
+        })
+        
 
-              enter.append('foreignObject')
-                .attr("width", labelWrapperWidth)
-                .attr("height", 3 * lineHeight)
-                .append("xhtml:div")
-                .style("line-height", `${lineHeight}px`)
-                .style("width", `${labelWrapperWidth}px`)
-                .style("word-wrap", "break-word")
-                .style("text-align", "center")
-                .selectAll('div')
-                .data(d => d)
-                .join('div')
-                .text(d => d.value);
-            },
-            (exit) => exit.remove()
-          );
+      // if (this.grouped_by == 'Gene') {
+      //   console.log('Gene grouping')
 
-      }
+      //   console.log(groups)
+
+      //   console.log('data')
+      //   console.log(data)
+
+      //   // Select the tick labels
+      //   let tickLabels = this.svg.selectAll('.myXaxis .tick text');
+      //   console.log('tickLabels')
+      //   console.log(tickLabels)
+
+      //   // Bind the groups data to the tick labels
+      //   tickLabels.data(groups);
+      //   // Update the text of each label
+      //   tickLabels.text(function(d) {
+      //     console.log('tickLabels.text d')
+      //     console.log(d)
+      //   });
+      // }
 
 
       this.xSubgroup = d3.scaleBand()
@@ -871,13 +886,16 @@ export default {
         .data(data)
         .join(
           (enter) => {
-            enter.append('g')
+            const bargroup = enter.append('g')
               .attr("transform", d => `translate(${x(d[0])}, 0)`)
               .attr("class", "bar-group")
               .attr('id', d => `group_${d[0]}`)
-              // .transition_attributes('opacity', d => this.group_visibility[d[0]])
-              .selectAll(".subgroup-rect")
-              .data(d => d[1])
+            bargroup.selectAll(".subgroup-rect")
+              .data(d => {
+                // console.log('subgroup-rect data')
+                // console.log(d)
+                return d[1]
+              })
               .join(
                 (enter) => {
                   enter.append('rect')
