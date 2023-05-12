@@ -78,11 +78,12 @@
                   </div>             
                 </div>
                 <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.species_error }">
-                  <DataTable :value="this.species_filtered" v-model:selection="this.species_selected"
+                  <DataTable :value="speciesWithFreq" v-model:selection="this.species_selected"
                     class="p-datatable-sm p-datatable-species" stripedRows :scrollable="true" scrollHeight="200px"
                     :loading="loading" selectionMode="multiple" :metaKeySelection="false"
                     @row-select="update_lookup_table" @row-unselect="update_lookup_table()"
-                    @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table()">
+                    @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table()"
+                    sortField="freq" :sortOrder="-1">
                     <Column selectionMode="multiple" headerStyle="width: 1rem" style="width: 1rem"></Column>
                     <Column field="name" header="Species" headerStyle="width: 10rem" style="width: 10rem"></Column>
                     <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
@@ -90,8 +91,10 @@
                         {{ get_count('species', slotProps.data.name) }}
                       </template>
                     </Column>
-                    <Column field="freq" header="Freq" headerStyle="width: 4rem" style="width: 4rem">
+                    <Column field="freq" header="Freq" sortable 
+                      headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
+                        <!-- {{ slotProps.data.freq }} -->
                         {{ get_freq('species', slotProps.data.name) }}
                       </template>
                     </Column>
@@ -99,10 +102,11 @@
                   <div v-show="this.species_error" class="text-sm text-red-600">No species selected </div>
                 </div>
                 <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.experiment_error }">
-                  <DataTable :value="experiment_filtered" v-model:selection="experiment_selected" class="p-datatable-sm"
+                  <DataTable :value="experimentWithFreq" v-model:selection="experiment_selected" class="p-datatable-sm"
                     stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" selectionMode="multiple"
                     :metaKeySelection="false" @row-select="update_lookup_table" @row-unselect="update_lookup_table"
-                    @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table">
+                    @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table"
+                    sortField="freq" :sortOrder="-1">
                     <Column selectionMode="multiple" headerStyle="width: 1rem" style="width: 1rem"></Column>
                     <Column field="name" header="Dataset" headerStyle="width: 10rem" style="width: 10rem"></Column>
                     <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
@@ -110,8 +114,10 @@
                         {{ get_count('experiment', slotProps.data.name) }}
                       </template>
                     </Column>
-                    <Column field="freq" header="Freq" headerStyle="width: 4rem" style="width: 4rem">
+                    <Column field="freq" header="Freq" sortable
+                      headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
+                        <!-- {{ slotProps.data.freq }} -->
                         {{ get_freq('experiment', slotProps.data.name) }}
                       </template>
                     </Column>
@@ -120,10 +126,11 @@
 
                 </div>
                 <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.year_error }">
-                  <DataTable :value="year_filtered" v-model:selection="year_selected" class="p-datatable-sm"
+                  <DataTable :value="yearWithFreq" v-model:selection="year_selected" class="p-datatable-sm"
                     stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" selectionMode="multiple"
                     :metaKeySelection="false" @row-select="update_lookup_table" @row-unselect="update_lookup_table"
-                    @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table">
+                    @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table"
+                    sortField="freq" :sortOrder="-1">
                     <Column selectionMode="multiple" headerStyle="width: 1rem" style="width: 1rem"></Column>
                     <Column field="name" header="Year" headerStyle="width: 10rem" style="width: 10rem"></Column>
                     <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
@@ -131,8 +138,10 @@
                         {{ get_count('year', slotProps.data.name) }}
                       </template>
                     </Column>
-                    <Column field="freq" header="Freq" headerStyle="width: 4rem" style="width: 4rem">
+                    <Column field="freq" header="Freq" sortable
+                      headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
+                        <!-- {{ slotProps.data.freq }} -->
                         {{ get_freq('year', slotProps.data.name) }}
                       </template>
                     </Column>
@@ -141,11 +150,14 @@
 
                 </div>
                 <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.tissue_error }">
-                  <DataTable :value="tissue_filtered" v-model:selection="tissue_selected" class="p-datatable-sm"
+                  <DataTable :value="tissueWithFreq" v-model:selection="tissue_selected" class="p-datatable-sm"
                     stripedRows selectionMode="multiple" :metaKeySelection="false" :scrollable="true"
-                    scrollHeight="200px" :loading="loading" @row-select="update_lookup_table"
-                    @row-unselect="update_lookup_table" @row-select-all="update_lookup_table"
-                    @row-unselect-all="update_lookup_table">
+                    scrollHeight="200px" :loading="loading" 
+                    @row-select="update_lookup_table"
+                    @row-unselect="update_lookup_table" 
+                    @row-select-all="update_lookup_table"
+                    @row-unselect-all="update_lookup_table"
+                    sortField="freq" :sortOrder="-1">
                     <Column selectionMode="multiple" headerStyle="width: 2rem" style="width: 2rem"></Column>
                     <Column field="name" header="Tissue" headerStyle="width: 10rem" style="width: 10rem"></Column>
                     <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
@@ -153,8 +165,10 @@
                         {{ get_count('tissue', slotProps.data.name) }}
                       </template>
                     </Column>
-                    <Column field="freq" header="Freq" headerStyle="width: 4rem" style="width: 4rem">
+                    <Column field="freq" header="Freq" sortable 
+                      headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
+                        <!-- {{ slotProps.data.freq }} -->
                         {{ get_freq('tissue', slotProps.data.name) }}
                       </template>
                     </Column>
@@ -165,11 +179,14 @@
                   Samples
                 </div>
                 <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.gender_error }">
-                  <DataTable :value="gender_filtered" v-model:selection="this.gender_selected" class="p-datatable-sm"
+                  <DataTable :value="genderWithFreq" v-model:selection="gender_selected" class="p-datatable-sm"
                     stripedRows selectionMode="multiple" :metaKeySelection="false" :scrollable="true"
-                    scrollHeight="200px" :loading="loading" @row-select="update_lookup_table"
-                    @row-unselect="update_lookup_table" @row-select-all="update_lookup_table"
-                    @row-unselect-all="update_lookup_table">
+                    scrollHeight="200px" :loading="loading" 
+                    @row-select="update_lookup_table"
+                    @row-unselect="update_lookup_table" 
+                    @row-select-all="update_lookup_table"
+                    @row-unselect-all="update_lookup_table"
+                    sortField="freq" :sortOrder="-1">
                     <Column selectionMode="multiple" headerStyle="width: 2rem" style="width: 2rem"></Column>
                     <Column field="name" header="Gender" style="text-align:left"></Column>
                     <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
@@ -177,8 +194,10 @@
                         {{ get_count('gender', slotProps.data.name) }}
                       </template>
                     </Column>
-                    <Column field="freq" header="Freq" headerStyle="width: 4rem" style="width: 4rem">
+                    <Column field="freq" header="Freq" sortable 
+                     headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
+                         <!-- {{ slotProps.data.freq }} -->
                         {{ get_freq('gender', slotProps.data.name) }}
                       </template>
                     </Column>
@@ -186,11 +205,14 @@
                   <div v-show="this.gender_error" class="text-sm text-red-600">No genders selected </div>
                 </div>
                 <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.condition_error }">
-                  <DataTable :value="condition_filtered" v-model:selection="this.condition_selected"
+                  <DataTable :value="conditionWithFreq" v-model:selection="condition_selected"
                     class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" :loading="loading"
-                    selectionMode="multiple" :metaKeySelection="false" @row-select="update_lookup_table"
-                    @row-unselect="update_lookup_table" @row-select-all="update_lookup_table"
-                    @row-unselect-all="update_lookup_table">
+                    selectionMode="multiple" :metaKeySelection="false" 
+                    @row-select="update_lookup_table"
+                    @row-unselect=" update_lookup_table" 
+                    @row-select-all="update_lookup_table"
+                    @row-unselect-all="update_lookup_table"
+                    sortField="freq" :sortOrder="-1">
                     <Column selectionMode="multiple" headerStyle="width: 2rem" style="width: 2rem"></Column>
                     <Column field="name" header="Condition" style="text-align:left"></Column>
                     <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
@@ -198,7 +220,8 @@
                         {{ get_count('condition', slotProps.data.name) }}
                       </template>
                     </Column>
-                    <Column field="freq" header="Freq" headerStyle="width: 4rem" style="width: 4rem">
+                    <Column field="freq" header="Freq" sortable 
+                    :sortFunction="() => customSort(this.condition_filtered, 'condition')" headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
                         {{ get_freq('condition', slotProps.data.name) }}
                       </template>
@@ -437,6 +460,16 @@ export default {
     this.condition_selected = [ { name: 'TRF' }, { name: 'ALF'}]
     this.genes_selected = [{ name: 'Clock' }]
 
+    this.$nextTick(() => {
+      this.species_selected = this.updateDefaultSelection('speciesWithFreq', this.species_selected);
+      this.experiment_selected = this.updateDefaultSelection('experimentWithFreq', this.experiment_selected);
+      this.year_selected = this.updateDefaultSelection('yearWithFreq', this.year_selected);
+      this.tissue_selected = this.updateDefaultSelection('tissueWithFreq', this.tissue_selected);
+      this.gender_selected = this.updateDefaultSelection('genderWithFreq', this.gender_selected);
+      this.condition_selected = this.updateDefaultSelection('conditionWithFreq', this.condition_selected);
+      
+    });
+
     this.update_lookup_table()
 
     // TODO: Re-enable
@@ -449,7 +482,63 @@ export default {
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
   },
+  computed: {
+    speciesWithFreq() {
+      return this.species_filtered.map(item => {
+        return {
+          ...item,
+          freq: this.get_freq('species', item.name)
+        };
+      });
+    },
+    experimentWithFreq() {
+      return this.experiment_filtered.map(item => {
+        return {
+          ...item,
+          freq: this.get_freq('experiment', item.name)
+        };
+      });
+    },
+    tissueWithFreq() {
+      return this.tissue_filtered.map(item => {
+        return {
+          ...item,
+          freq: this.get_freq('tissue', item.name)
+        };
+      });
+    },
+    conditionWithFreq() {
+      return this.condition_filtered.map(item => {
+        return {
+          ...item,
+          freq: this.get_freq('condition', item.name)
+        };
+      });
+    },
+    genderWithFreq() {
+      return this.gender_filtered.map(item => {
+        return {
+          ...item,
+          freq: this.get_freq('gender', item.name)
+        };
+      });
+    },
+    yearWithFreq() {
+      return this.year_filtered.map(item => {
+        return {
+          ...item,
+          freq: this.get_freq('year', item.name)
+        };
+      });
+    },
+    
+  },
   methods: {
+    updateDefaultSelection(field, selected) {
+      return this[field].filter(item => 
+        selected.some(sel => sel.name === item.name)
+      );
+    },
     async user_logged_in() {
       try {
         // console.log('Trying')
@@ -1095,6 +1184,7 @@ export default {
 
       this.dataset_categories.forEach((cat) => {
         // cat = species, experiment, tissue
+        console.log(cat)
         catResult = cat + '_result'
         dataset = this[catResult]
         catFiltered = cat + '_filtered'
@@ -1111,6 +1201,7 @@ export default {
         uniqVal.forEach((val) => {
           this.lookup_table[cat][val].freq = this.lookup_table[cat][val].count / sum
         })
+        // this.computeFrequencies(this[catFiltered], cat)
       })
 
       this.sample_categories.forEach((cat) => {
@@ -1135,6 +1226,7 @@ export default {
         uniqVal.forEach((val) => {
           this.lookup_table[cat][val].freq = this.lookup_table[cat][val].count / sum
         })
+        // this.computeFrequencies(this[catFiltered], cat)
       })
 
       // Performs API calls to Database on change to filters
@@ -1143,6 +1235,14 @@ export default {
 
       const elapsed = Date.now() - start
       console.log('update_lookup_table time elapsed: ', elapsed)
+    },
+    computeFrequencies(arr, field) {
+      console.log('computeFrequencies')
+      console.log(arr)
+      console.log(field)
+      arr.forEach(item => {
+        item.freq = this.get_freq(field, item.name);
+      });
     },
     filter_metadata_except(except_category) {
       // Applies all selection filters for other categories excluding the provided category
