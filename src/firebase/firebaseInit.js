@@ -20,23 +20,28 @@ const firebaseConfig = {
 // console.log(import.meta.env.VITE_FIREBASE_API_KEY)
 
 const firebaseApp = initializeApp(firebaseConfig);
-
-
+let appCheck;
 
 // // Localhost debug
-// self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-// const appCheck = initializeAppCheck(firebaseApp, {
-  
-//   provider: new ReCaptchaV3Provider('debug'),
-//   // Optional argument. If true, the SDK automatically refreshes App Check
-//   // tokens as needed.
-//   isTokenAutoRefreshEnabled: true
-// });
+if (process.env.NODE_ENV === 'development') {
+  console.log('development mode')
 
-const appCheck = initializeAppCheck(firebaseApp, {
-  provider: new ReCaptchaEnterpriseProvider('6LdnxEUlAAAAAImoXr09nDxAoE1eRQn-IDSuGBZW'),
-  isTokenAutoRefreshEnabled: true // Set to true to allow auto-refresh.
-});
+  self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  appCheck = initializeAppCheck(firebaseApp, {
+    provider: new ReCaptchaV3Provider('debug'),
+    // Optional argument. If true, the SDK automatically refreshes App Check
+    // tokens as needed.
+    isTokenAutoRefreshEnabled: true
+  });
+} else {
+  appCheck = initializeAppCheck(firebaseApp, {
+    provider: new ReCaptchaEnterpriseProvider('6LdnxEUlAAAAAImoXr09nDxAoE1eRQn-IDSuGBZW'),
+    isTokenAutoRefreshEnabled: true // Set to true to allow auto-refresh.
+  });
+
+}
+
+
 
 
 
