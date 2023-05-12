@@ -371,7 +371,7 @@ export default {
       otherInvalid: null,
       otherErrorMsg: null,
 
-      doi: null,
+      doi: '',
       doiInvalid: null,
       doiErrorMsg: null,
 
@@ -486,8 +486,8 @@ export default {
   mounted() {
     // Testing
     console.log('Mounted - Testing')
-    this.experiment = 'WFF Experiment'
-    this.year = 2020
+    this.experiment = 'RW Experiment'
+    this.year = 2022
     this.institution = 'Salk Institute'
     this.species = 'Mus musculus'
     this.tissue = ''
@@ -806,7 +806,7 @@ export default {
       }
 
       // Validate doi 
-      if (this.doi) {
+      if (this.doi.length > 0) {
         RegExp.escape = function (string) {
           return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
         };
@@ -880,7 +880,8 @@ export default {
         species: this.species,
         tissue: this.tissue,
         year: this.year,
-        doi: this.doi,
+        doi: this.doi || '',
+        id: this.databaseTablePrefix,
         otherInformation: this.other || '',
         gene_metadata_table_name: `${gene_metadata_table_name}_${this.$store.state.profileId}`,
         sample_metadata_table_name: `${sample_metadata_table_name}_${this.$store.state.profileId}`,
@@ -890,6 +891,8 @@ export default {
         admin_groups: [],
         editor_groups: [],
         reader_groups: [],
+        permittedUsers: [],
+        adminUsers: [],
         valid: true,
       }
 
