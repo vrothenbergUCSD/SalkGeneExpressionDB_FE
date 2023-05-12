@@ -483,6 +483,7 @@ export default {
       let token = null
       if (this.$store.state.token)
         token = this.$store.state.token.token
+
       // console.log('token')
       // console.log(token)
       formData.append('authorization', token)
@@ -551,11 +552,28 @@ export default {
       const elapsed = Date.now() - start
       console.log('update_selection time elapsed: ', elapsed)
     },
+    validate_dataset_selection() {
+      console.log('validate_dataset_selection')
+      const start = Date.now()
+
+      if (this.species_result.length == 0) {
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No species selected', life: 5000 });
+        return
+      }
+      if (this.experiment_result.length == 0) {
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No experiment selected', life: 5000 });
+        return
+      }
+
+      const elapsed = Date.now() - start
+      console.log('validate_dataset_selection time elapsed: ', elapsed)
+    },
     async get_datasets() {
       // TODO: get_datasets Optimize filtering..
       // Called on initial mount, and by remove_filter functions on update
       console.log('get_datasets')
       const start = Date.now()
+
       this.getting_datasets = true
       this.gene_metadata_table_names = []
       this.sample_metadata_table_names = []
@@ -564,6 +582,7 @@ export default {
       if (!this.selected_metadata.length) {
         this.getting_datasets = false
         this.got_datasets = false
+        if (this.)
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No datasets selected', life: 5000 });
         return
       } else if (this.selected_metadata.length > 8) {
@@ -1123,7 +1142,7 @@ export default {
         // console.log(species_selected_names)
         // NOTE: Do not allow select all if empty
         // If no species selected, then skip filtering
-        if (species_selected_names.length)
+        // if (species_selected_names.length)
           filtered = filtered.filter(
             ({ species }) => species_selected_names.some(
               (s) => species.toLowerCase().includes(s.toLowerCase())))
@@ -1135,7 +1154,7 @@ export default {
         const experiment_selected_names = this.experiment_selected.map(el => el.name)
         // console.log('experiment_selected_names')
         // console.log(experiment_selected_names)
-        if (experiment_selected_names.length)
+        // if (experiment_selected_names.length)
           filtered = filtered.filter(
             ({ experiment }) => experiment_selected_names.some(
               (s) => experiment.toLowerCase().includes(s.toLowerCase())))
@@ -1147,7 +1166,7 @@ export default {
         const year_selected_names = this.year_selected.map(el => el.name)
         // console.log('year_selected_names')
         // console.log(year_selected_names)
-        if (year_selected_names.length)
+        // if (year_selected_names.length)
           filtered = filtered.filter(
             ({ year }) => year_selected_names.some(
               (s) => year.toLowerCase().includes(s.toLowerCase())))
@@ -1159,7 +1178,7 @@ export default {
         const tissue_selected_names = this.tissue_selected.map(el => el.name)
         // console.log('tissue_selected_names')
         // console.log(tissue_selected_names)
-        if (tissue_selected_names.length)
+        // if (tissue_selected_names.length)
           filtered = filtered.filter(
             ({ tissue }) => tissue_selected_names.some(
               (s) => tissue.toLowerCase().includes(s.toLowerCase())))
@@ -1172,7 +1191,7 @@ export default {
         const gender_selected_names = this.gender_selected.map(el => el.name)
         // console.log('gender_selected_names')
         // console.log(gender_selected_names)
-        if (gender_selected_names.length)
+        // if (gender_selected_names.length)
           filtered = filtered.filter(
             ({ gender }) => gender_selected_names.some(
               (s) => gender.some((gend) =>
@@ -1186,7 +1205,7 @@ export default {
         const condition_selected_names = this.condition_selected.map(el => el.name)
         // console.log('condition_selected_names')
         // console.log(condition_selected_names)
-        if (condition_selected_names.length)
+        // if (condition_selected_names.length)
           filtered = filtered.filter(
             ({ condition }) => condition_selected_names.some(
               (s) => condition.some((cond) =>
@@ -1220,50 +1239,44 @@ export default {
       this.species_selected = this.species_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
-      // this.get_datasets()
     },
     remove_experiment_filter(text) {
       this.experiment_selected = this.experiment_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
-      // this.get_datasets()
     },
     remove_year_filter(text) {
       this.year_selected = this.year_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
-      // this.get_datasets()
     },
     remove_tissue_filter(text) {
       this.tissue_selected = this.tissue_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
-      // this.get_datasets()
     },
     remove_gender_filter(text) {
       this.gender_selected = this.gender_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
-      // this.get_datasets()
     },
     remove_condition_filter(text) {
       this.condition_selected = this.condition_selected.filter((obj) =>
         obj.name != text)
       this.update_lookup_table()
-      // this.get_datasets()
     },
     remove_gene() {
       this.update_lookup_table()
-      // this.get_datasets()
     },
     clear_all_filters() {
       this.species_selected = []
       this.experiment_selected = []
+      this.year_selected = []
       this.tissue_selected = []
+      
       this.gender_selected = []
       this.condition_selected = []
       this.update_lookup_table()
-      // this.get_datasets()
     },
     number_datasets_selected() {
       // Show number of current datasets selected
