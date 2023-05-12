@@ -77,7 +77,7 @@
                     :loading="this.getting_datasets || this.getting_gene_data || this.loading_genes" />
                   </div>             
                 </div>
-                <div class="p-1 border my-3 rounded">
+                <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.species_error }">
                   <DataTable :value="this.species_filtered" v-model:selection="this.species_selected"
                     class="p-datatable-sm p-datatable-species" stripedRows :scrollable="true" scrollHeight="200px"
                     :loading="loading" selectionMode="multiple" :metaKeySelection="false"
@@ -96,14 +96,15 @@
                       </template>
                     </Column>
                   </DataTable>
+                  <div v-show="this.species_error" class="text-sm text-red-600">No species selected </div>
                 </div>
-                <div class="p-1 border my-3 rounded">
+                <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.experiment_error }">
                   <DataTable :value="experiment_filtered" v-model:selection="experiment_selected" class="p-datatable-sm"
                     stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" selectionMode="multiple"
                     :metaKeySelection="false" @row-select="update_lookup_table" @row-unselect="update_lookup_table"
                     @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table">
                     <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
-                    <Column field="name" header="Experiment"></Column>
+                    <Column field="name" header="Dataset"></Column>
                     <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
                       <template #body="slotProps">
                         {{ get_count('experiment', slotProps.data.name) }}
@@ -115,9 +116,10 @@
                       </template>
                     </Column>
                   </DataTable>
+                  <div v-show="this.experiment_error" class="text-sm text-red-600">No datasets selected </div>
 
                 </div>
-                <div class="p-1 border my-3 rounded">
+                <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.year_error }">
                   <DataTable :value="year_filtered" v-model:selection="year_selected" class="p-datatable-sm"
                     stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" selectionMode="multiple"
                     :metaKeySelection="false" @row-select="update_lookup_table" @row-unselect="update_lookup_table"
@@ -135,9 +137,10 @@
                       </template>
                     </Column>
                   </DataTable>
+                  <div v-show="this.year_error" class="text-sm text-red-600">No years selected </div>
 
                 </div>
-                <div class="p-1 border my-3 rounded">
+                <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.tissue_error }">
                   <DataTable :value="tissue_filtered" v-model:selection="tissue_selected" class="p-datatable-sm"
                     stripedRows selectionMode="multiple" :metaKeySelection="false" :scrollable="true"
                     scrollHeight="200px" :loading="loading" @row-select="update_lookup_table"
@@ -156,11 +159,12 @@
                       </template>
                     </Column>
                   </DataTable>
+                  <div v-show="this.tissue_error" class="text-sm text-red-600">No tissues selected </div>
                 </div>
                 <div class="font-semibold my-1 text-sm">
                   Samples
                 </div>
-                <div class="p-1 border my-3 rounded">
+                <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.gender_error }">
                   <DataTable :value="gender_filtered" v-model:selection="this.gender_selected" class="p-datatable-sm"
                     stripedRows selectionMode="multiple" :metaKeySelection="false" :scrollable="true"
                     scrollHeight="200px" :loading="loading" @row-select="update_lookup_table"
@@ -179,8 +183,9 @@
                       </template>
                     </Column>
                   </DataTable>
+                  <div v-show="this.gender_error" class="text-sm text-red-600">No genders selected </div>
                 </div>
-                <div class="p-1 border my-3 rounded">
+                <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.condition_error }">
                   <DataTable :value="condition_filtered" v-model:selection="this.condition_selected"
                     class="p-datatable-sm" stripedRows :scrollable="true" scrollHeight="200px" :loading="loading"
                     selectionMode="multiple" :metaKeySelection="false" @row-select="update_lookup_table"
@@ -199,6 +204,7 @@
                       </template>
                     </Column>
                   </DataTable>
+                  <div v-show="this.condition_error" class="text-sm text-red-600">No conditions selected </div>
                 </div>
 
                 <div id="get-datasets" class="mt-1 text-center">
@@ -253,11 +259,9 @@
             </div>
           </div>
           <div v-else class="flex h-[50vh]">
-            <ProgressSpinner v-show="!(this.got_datasets && this.got_gene_data)" class="m-auto" />
+            <ProgressSpinner v-show="this.getting_datasets" class="m-auto" />
           </div>
         </div>
-
-
       </div>
     </div>
   </div>
@@ -350,36 +354,43 @@ export default {
       species_filtered: [], // [{name: Mouse}, {name:Human}]
       species_selected: [],
       species_result: null,
+      species_error: null,
 
       experiment_list: [], //["Mouse_TRF_2018", "Mouse_TRF_2019", "Baboon_TRF_2020", "Human_ABC_2020"],
       experiment_filtered: [],
       experiment_selected: [],
       experiment_result: null,
+      experiment_error: null,
 
       year_list: [], //["2019", "2018"],
       year_filtered: [],
       year_selected: [],
       year_result: null,
+      year_error: null,
 
       tissue_list: [], //["Liver", "Muscle", "Adipose", "Heart", "Neuron"],
       tissue_filtered: [],
       tissue_selected: [],
       tissue_result: null,
+      tissue_error: null,
 
       genes: [], // [{name:'Alb'},...]
       genes_filtered: [],
       genes_selected: [],
       genes_results: null,
+      genes_error: null,
 
       gender: [],
       gender_filtered: [],
       gender_selected: [],
       gender_result: null,
+      gender_error: null,
 
       condition: [],
       condition_filtered: [],
       condition_selected: [],
       condition_result: null,
+      condition_error: null,
 
       gene_metadata_table_names: [],
       sample_metadata_table_names: [],
@@ -423,7 +434,7 @@ export default {
     this.year_selected = [{ name: '2018'}, { name: '2020'}]
     this.tissue_selected = [{ name: 'BAT'}]
     this.gender_selected = [{ name: 'Male' }]
-    this.condition_selected = []
+    this.condition_selected = [ { name: 'TRF' }, { name: 'ALF'}]
     this.genes_selected = [{ name: 'Clock' }]
 
     this.update_lookup_table()
@@ -556,14 +567,22 @@ export default {
       console.log('validate_dataset_selection')
       const start = Date.now()
 
-      if (this.species_result.length == 0) {
-        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No species selected', life: 5000 });
-        return
-      }
-      if (this.experiment_result.length == 0) {
-        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No experiment selected', life: 5000 });
-        return
-      }
+      this.species_error = (this.species_selected.length == 0)
+      console.log('this.species_error', this.species_error)
+      console.log(this.species_selected)
+      this.experiment_error = (this.experiment_selected.length == 0)
+      console.log('this.experiment_error', this.experiment_error)
+      console.log(this.experiment_selected)
+      this.year_error = (this.year_selected.length == 0)
+      console.log('this.year_error', this.year_error)
+      console.log(this.year_selected)
+      this.tissue_error = (this.tissue_selected.length == 0)
+      console.log('this.tissue_error', this.tissue_error)
+      this.gender_error = (this.gender_selected.length == 0)
+      console.log('this.gender_error', this.gender_error)
+      this.condition_error = (this.condition_selected.length == 0)
+      console.log('this.condition_error', this.condition_error)
+      
 
       const elapsed = Date.now() - start
       console.log('validate_dataset_selection time elapsed: ', elapsed)
@@ -579,10 +598,10 @@ export default {
       this.sample_metadata_table_names = []
       this.gene_expression_data_table_names = []
       console.log(this.selected_metadata)
+      this.validate_dataset_selection()
       if (!this.selected_metadata.length) {
         this.getting_datasets = false
         this.got_datasets = false
-        if (this.)
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No datasets selected', life: 5000 });
         return
       } else if (this.selected_metadata.length > 8) {
