@@ -83,14 +83,14 @@
                     :loading="loading" selectionMode="multiple" :metaKeySelection="false"
                     @row-select="update_lookup_table" @row-unselect="update_lookup_table()"
                     @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table()">
-                    <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
-                    <Column field="name" header="Species"></Column>
-                    <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                    <Column selectionMode="multiple" headerStyle="width: 1rem" style="width: 1rem"></Column>
+                    <Column field="name" header="Species" headerStyle="width: 10rem" style="width: 10rem"></Column>
+                    <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
                       <template #body="slotProps">
                         {{ get_count('species', slotProps.data.name) }}
                       </template>
                     </Column>
-                    <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                    <Column field="freq" header="Freq" headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
                         {{ get_freq('species', slotProps.data.name) }}
                       </template>
@@ -103,14 +103,14 @@
                     stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" selectionMode="multiple"
                     :metaKeySelection="false" @row-select="update_lookup_table" @row-unselect="update_lookup_table"
                     @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table">
-                    <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
-                    <Column field="name" header="Dataset"></Column>
-                    <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                    <Column selectionMode="multiple" headerStyle="width: 1rem" style="width: 1rem"></Column>
+                    <Column field="name" header="Dataset" headerStyle="width: 10rem" style="width: 10rem"></Column>
+                    <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
                       <template #body="slotProps">
                         {{ get_count('experiment', slotProps.data.name) }}
                       </template>
                     </Column>
-                    <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                    <Column field="freq" header="Freq" headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
                         {{ get_freq('experiment', slotProps.data.name) }}
                       </template>
@@ -124,14 +124,14 @@
                     stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" selectionMode="multiple"
                     :metaKeySelection="false" @row-select="update_lookup_table" @row-unselect="update_lookup_table"
                     @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table">
-                    <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
-                    <Column field="name" header="Year"></Column>
-                    <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                    <Column selectionMode="multiple" headerStyle="width: 1rem" style="width: 1rem"></Column>
+                    <Column field="name" header="Year" headerStyle="width: 10rem" style="width: 10rem"></Column>
+                    <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
                       <template #body="slotProps">
                         {{ get_count('year', slotProps.data.name) }}
                       </template>
                     </Column>
-                    <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                    <Column field="freq" header="Freq" headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
                         {{ get_freq('year', slotProps.data.name) }}
                       </template>
@@ -146,14 +146,14 @@
                     scrollHeight="200px" :loading="loading" @row-select="update_lookup_table"
                     @row-unselect="update_lookup_table" @row-select-all="update_lookup_table"
                     @row-unselect-all="update_lookup_table">
-                    <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
-                    <Column field="name" header="Tissue" style="text-align:left"></Column>
-                    <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                    <Column selectionMode="multiple" headerStyle="width: 2rem" style="width: 2rem"></Column>
+                    <Column field="name" header="Tissue" headerStyle="width: 10rem" style="width: 10rem"></Column>
+                    <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
                       <template #body="slotProps">
                         {{ get_count('tissue', slotProps.data.name) }}
                       </template>
                     </Column>
-                    <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                    <Column field="freq" header="Freq" headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
                         {{ get_freq('tissue', slotProps.data.name) }}
                       </template>
@@ -170,14 +170,14 @@
                     scrollHeight="200px" :loading="loading" @row-select="update_lookup_table"
                     @row-unselect="update_lookup_table" @row-select-all="update_lookup_table"
                     @row-unselect-all="update_lookup_table">
-                    <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                    <Column selectionMode="multiple" headerStyle="width: 2rem" style="width: 2rem"></Column>
                     <Column field="name" header="Gender" style="text-align:left"></Column>
-                    <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                    <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
                       <template #body="slotProps">
                         {{ get_count('gender', slotProps.data.name) }}
                       </template>
                     </Column>
-                    <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                    <Column field="freq" header="Freq" headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
                         {{ get_freq('gender', slotProps.data.name) }}
                       </template>
@@ -191,14 +191,14 @@
                     selectionMode="multiple" :metaKeySelection="false" @row-select="update_lookup_table"
                     @row-unselect="update_lookup_table" @row-select-all="update_lookup_table"
                     @row-unselect-all="update_lookup_table">
-                    <Column selectionMode="multiple" headerStyle="max-width: 2rem" style="max-width: 2rem"></Column>
+                    <Column selectionMode="multiple" headerStyle="width: 2rem" style="width: 2rem"></Column>
                     <Column field="name" header="Condition" style="text-align:left"></Column>
-                    <Column field="count" header="#" headerStyle="max-width: 3rem" style="max-width: 3rem">
+                    <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
                       <template #body="slotProps">
                         {{ get_count('condition', slotProps.data.name) }}
                       </template>
                     </Column>
-                    <Column field="freq" header="Freq" headerStyle="max-width: 4.5rem" style="max-width: 4.5rem">
+                    <Column field="freq" header="Freq" headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
                         {{ get_freq('condition', slotProps.data.name) }}
                       </template>
