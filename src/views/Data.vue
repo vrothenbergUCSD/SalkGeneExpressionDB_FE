@@ -67,7 +67,7 @@
         <div class="field col-8 pr-2">
           <div>
             <label class="block text-900 font-medium mb-2">Dataset Visibility</label>
-            <Checkbox inputId="publicize" v-model="publicize" :binary="true" class="align-middle"/>
+            <Checkbox inputId="publicize" v-model="publicize" :binary="false" class="align-middle"/>
             <label for="publicize" class="ml-2 align-middle"> Public </label>
           </div>
 
@@ -485,12 +485,12 @@ export default {
   },
   mounted() {
     // Testing
-    console.log('Mounted - Testing')
-    this.experiment = 'RW Experiment'
-    this.year = 2022
-    this.institution = 'Salk Institute'
-    this.species = 'Mus musculus'
-    this.tissue = ''
+    // console.log('Mounted - Testing')
+    // this.experiment = 'RW Experiment'
+    // this.year = 2022
+    // this.institution = 'Salk Institute'
+    // this.species = 'Mus musculus'
+    // this.tissue = ''
   },
   methods: {
     async recaptcha() {
