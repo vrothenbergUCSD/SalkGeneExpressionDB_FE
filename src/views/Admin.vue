@@ -475,6 +475,7 @@ export default {
       console.log('editDataset')
       
       this.dataset = {...d}
+      console.log('this.dataset') 
       console.log(this.dataset)
       console.log('this.groups')
       console.log(this.groups)
@@ -574,7 +575,21 @@ export default {
       console.log(this.selected_reader_groups)
       console.log(this.selected_reader_groups.map(group => group.group_id))
 
+      console.log('editor_groups')
+      console.log(this.selected_editor_groups)
+      console.log(this.selected_editor_groups.map(group => group.group_id))
+
+      console.log('admin_groups')
+      console.log(this.selected_admin_groups)
+      console.log(this.selected_admin_groups.map(group => group.group_id))
+
+      console.log('this.dataset')
+      console.log(this.dataset)
+
       const docRef = doc(firestore, "datasets", this.dataset.id)
+
+      console.log('docRef')
+      console.log(docRef)
 
       await updateDoc(docRef, {
         doi: this.dataset.doi,
@@ -738,12 +753,17 @@ export default {
     async getDatasetGroups(group_arr) {
       console.log('getDatasetGroups')
       console.log(group_arr)
+      if (!group_arr) {
+        return []
+      }
+      // Get all groups from permission_groups collection
       const q = query(collection(firestore, "permission_groups"))
       const querySnapshot = await getDocs(q);
       let selected_groups = []
       querySnapshot.forEach((doc) => {
         // doc.data() is never undefined for query doc snapshots
         // console.log(doc.id, " => ", doc.data());
+        // If 
         if (group_arr.includes(doc.id)) {
           selected_groups.push({ 
             group_id : doc.id,
