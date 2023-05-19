@@ -85,8 +85,10 @@
                   <DataTable :value="species_list" v-model:selection="this.species_selected"
                     class="p-datatable-sm p-datatable-species" stripedRows :scrollable="true" scrollHeight="200px"
                     :loading="loading" selectionMode="multiple" :metaKeySelection="false"
-                    @row-select="update_lookup_table" @row-unselect="update_lookup_table()"
-                    @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table()"
+                    @row-select="update_lookup_table" 
+                    @row-unselect="update_lookup_table"
+                    @row-select-all="update_lookup_table" 
+                    @row-unselect-all="update_lookup_table"
                     sortField="freq" :sortOrder="-1">
                     <Column selectionMode="multiple" headerStyle="width: 1rem" style="width: 1rem"></Column>
                     <Column field="name" header="Species" headerStyle="width: 10rem" style="width: 10rem"></Column>
@@ -98,8 +100,8 @@
                     <Column field="freq" header="Freq" sortable 
                       headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
-                        <!-- {{ slotProps.data.freq }} -->
-                        {{ get_freq('species', slotProps.data.name) }}
+                        {{ (slotProps.data.freq * 100).toFixed(1) + '%' }}
+                        <!-- {{ get_freq('species', slotProps.data.name) }} -->
                         <!-- {{ computeFrequencies('species', slotProps.data.name) }} -->
                       </template>
                     </Column>
@@ -109,8 +111,11 @@
                 <div class="p-1 border my-3 rounded" :class="{ 'border-red-600 border-3': this.experiment_error }">
                   <DataTable :value="experiment_list" v-model:selection="experiment_selected" class="p-datatable-sm"
                     stripedRows :scrollable="true" scrollHeight="200px" :loading="loading" selectionMode="multiple"
-                    :metaKeySelection="false" @row-select="update_lookup_table" @row-unselect="update_lookup_table"
-                    @row-select-all="update_lookup_table" @row-unselect-all="update_lookup_table"
+                    :metaKeySelection="false" 
+                    @row-select="update_lookup_table" 
+                    @row-unselect="update_lookup_table"
+                    @row-select-all="update_lookup_table" 
+                    @row-unselect-all="update_lookup_table"
                     sortField="freq" :sortOrder="-1">
                     <Column selectionMode="multiple" headerStyle="width: 1rem" style="width: 1rem"></Column>
                     <Column field="name" header="Dataset" headerStyle="width: 10rem" style="width: 10rem"></Column>
@@ -122,8 +127,8 @@
                     <Column field="freq" header="Freq" sortable
                       headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
-                        <!-- {{ slotProps.data.freq }} -->
-                        {{ get_freq('experiment', slotProps.data.name) }}
+                        {{ (slotProps.data.freq * 100).toFixed(1) + '%' }}
+                        <!-- {{ get_freq('experiment', slotProps.data.name) }} -->
                       </template>
                     </Column>
                   </DataTable>
@@ -149,8 +154,8 @@
                     <Column field="freq" header="Freq" sortable 
                       headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
-                        <!-- {{ slotProps.data.freq }} -->
-                        {{ get_freq('tissue', slotProps.data.name) }}
+                        {{ (slotProps.data.freq * 100).toFixed(1) + '%' }}
+                        <!-- {{ get_freq('tissue', slotProps.data.name) }} -->
                       </template>
                     </Column>
                   </DataTable>
@@ -178,8 +183,8 @@
                     <Column field="freq" header="Freq" sortable 
                      headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
-                         <!-- {{ slotProps.data.freq }} -->
-                        {{ get_freq('gender', slotProps.data.name) }}
+                        {{ (slotProps.data.freq * 100).toFixed(1) + '%' }}
+                        <!-- {{ get_freq('gender', slotProps.data.name) }} -->
                       </template>
                     </Column>
                   </DataTable>
@@ -204,7 +209,8 @@
                     <Column field="freq" header="Freq" sortable 
                     :sortFunction="() => customSort(this.condition_filtered, 'condition')" headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
-                        {{ get_freq('condition', slotProps.data.name) }}
+                        {{ (slotProps.data.freq * 100).toFixed(1) + '%' }}
+                        <!-- {{ get_freq('condition', slotProps.data.name) }} -->
                       </template>
                     </Column>
                   </DataTable>
@@ -366,12 +372,6 @@ export default {
       experiment_result: null,
       experiment_error: null,
 
-      // year_list: [], //["2019", "2018"],
-      // year_filtered: [],
-      // year_selected: [],
-      // year_result: null,
-      // year_error: null,
-
       tissue_list: [], //["Liver", "Muscle", "Adipose", "Heart", "Neuron"],
       tissue_filtered: [],
       tissue_selected: [],
@@ -412,14 +412,6 @@ export default {
       gene_expression_data_tables_all: [],
 
       datasets: null,
-
-      // totalSpeciesSelected: 0,
-      // totalExperimentSelected: 0,
-      // totalTissueSelected: 0,
-      // totalGenderSelected: 0,
-      // totalConditionSelected: 0,
-      // totalGenesSelected: 0,
-      totalCount: 0,
     }
   },
   async mounted() {
@@ -442,22 +434,19 @@ export default {
     ])
 
     // Default selection
-    this.species_selected = [{ name: 'Mus musculus' }]
-    this.experiment_selected = [{ name: 'TRF Experiment 2018' }, { name: 'WFF Experiment 2020' }]
-    this.tissue_selected = [{ name: 'BAT'}]
-    this.gender_selected = [{ name: 'Male' }]
-    this.condition_selected = [ { name: 'TRF' }, { name: 'ALF'}]
+    const default_species = ['Mus musculus']
+    this.species_selected = this.species_list.filter(e => default_species.includes(e.name))
+    
+    const default_experiments = ['TRF Experiment 2018', 'WFF Experiment 2020']
+    this.experiment_selected = this.experiment_list.filter(e => default_experiments.includes(e.name))
+    const default_tissues = ['BAT']
+    this.tissue_selected = this.tissue_list.filter(e => default_tissues.includes(e.name))
+    const default_genders = ['Male']
+    this.gender_selected = this.gender_list.filter(e => default_genders.includes(e.name))
+    const default_conditions = ['TRF', 'ALF']
+    this.condition_selected = this.condition_list.filter(e => default_conditions.includes(e.name))
+    // const default_genes = ['Clock']
     this.genes_selected = [{ name: 'Clock' }]
-
-    // this.$nextTick(() => {
-    //   this.species_selected = this.updateDefaultSelection('speciesWithFreq', this.species_selected);
-    //   this.experiment_selected = this.updateDefaultSelection('experimentWithFreq', this.experiment_selected);
-    //   this.year_selected = this.updateDefaultSelection('yearWithFreq', this.year_selected);
-    //   this.tissue_selected = this.updateDefaultSelection('tissueWithFreq', this.tissue_selected);
-    //   this.gender_selected = this.updateDefaultSelection('genderWithFreq', this.gender_selected);
-    //   this.condition_selected = this.updateDefaultSelection('conditionWithFreq', this.condition_selected);
-      
-    // });
 
     this.update_lookup_table()
 
@@ -599,21 +588,25 @@ export default {
       console.log(this.db_metadata)
 
       this.species_list = this.build_list([...new Set(this.db_metadata.map(item => item.species))])
+      this.species_list.forEach(item => {
+        item.freq = 0.0
+      })
       this.species_filtered = this.species_list
       console.log('this.species_filtered')
       console.log(this.species_filtered)
 
       this.experiment_list = this.build_list([...new Set(this.db_metadata.map(item => item.experiment))])
+      this.experiment_list.forEach(item => {
+        item.freq = 0.0
+      })
       this.experiment_filtered = this.experiment_list
       console.log('this.experiment_filtered')
       console.log(this.experiment_filtered)
 
-      // this.year_list = this.build_list([...new Set(this.db_metadata.map(item => item.year))])
-      // this.year_filtered = this.year_list
-      // console.log('this.year_filtered')
-      // console.log(this.year_filtered)
-
       this.tissue_list = this.build_list([...new Set(this.db_metadata.map(item => item.tissue))])
+      this.tissue_list.forEach(item => {
+        item.freq = 0.0
+      })  
       this.tissue_filtered = this.tissue_list
       console.log('this.tissue_filtered')
       console.log(this.tissue_filtered)
@@ -621,34 +614,23 @@ export default {
       this.gender_list = this.build_list([...new Set(this.db_metadata.map(item =>
         [...new Set(item.gender.map(g => g.gender))]
       ).flat())])
+      this.gender_list.forEach(item => {
+        item.freq = 0.0
+      })
       this.gender_filtered = this.gender_list
 
       this.condition_list = this.build_list([...new Set(this.db_metadata.map(item =>
         [...new Set(item.condition.map(c => c.condition))]
       ).flat())])
+      this.condition_list.forEach(item => {
+        item.freq = 0.0
+      })
       this.condition_filtered = this.condition_list
 
       this.loading = false
       const elapsed = Date.now() - start
       console.log('load_metadata time elapsed: ', elapsed)
     },
-    // async update_selection() {
-    //   console.log('update_selection')
-    //   const start = Date.now()
-    //   this.getting_datasets = true
-    //   this.gene_metadata_table_names = []
-    //   this.sample_metadata_table_names = []
-    //   this.gene_expression_data_table_names = []
-    //   console.log(this.selected_metadata)
-    //   if (!this.selected_metadata.length) {
-    //     this.getting_datasets = false
-    //     this.got_datasets = false
-    //     this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No datasets selected', life: 5000 });
-    //     return
-    //   }
-    //   const elapsed = Date.now() - start
-    //   console.log('update_selection time elapsed: ', elapsed)
-    // },
     validate_dataset_selection() {
       console.log('validate_dataset_selection')
       const start = Date.now()
@@ -1134,28 +1116,6 @@ export default {
         e.gender.includes()
       })
 
-
-      // this.gender_result = this.filter_metadata('gender', this.tissue_result)
-      // console.log('this.gender_result')
-      // console.log(this.gender_result)
-      // this.gender_filtered = this.build_list([...new Set(
-      //   this.gender_result.map(item =>
-      //     [...new Set(item.gender.map(m => m.gender))]).flat()
-      // )].sort())
-
-      // console.log('this.gender_filtered')
-      // console.log(this.gender_filtered)
-
-      // this.condition_result = this.filter_metadata('condition', this.gender_result)
-      // console.log('this.condition_result')
-      // console.log(this.condition_result)
-      // this.condition_filtered = this.build_list([...new Set(
-      //   this.condition_result.map(item =>
-      //     [...new Set(item.condition.map(m => m.condition))]).flat()
-      // )].sort())
-      // console.log('this.condition_filtered')
-      // console.log(this.condition_filtered)
-
       const elapsed = Date.now() - start
       console.log('update_lookup_table time elapsed: ', elapsed)
     },
@@ -1169,7 +1129,8 @@ export default {
       console.log(selected_names)
       let filtered = prevFilterResult || this.db_metadata  // if no prevFilterResult, filter the original metadata
 
-      filtered = filtered.filter(
+      // Filter the metadata by the selected values in the given category
+      let new_filtered = filtered.filter(
         ({ [category]: value }) => selected_names.some(
           (s) => {
             if(Array.isArray(value)) {
@@ -1179,10 +1140,21 @@ export default {
           }
         )
       )
-      console.log('filtered')
-      console.log(filtered)
+      selected_names.forEach(name => {
+        new_filtered
+      })
+      console.log('cat_list')
+      let cat_list = this[`${category}_list`]
+      console.log(cat_list)
+      cat_list.forEach(item => {
+        console.log('item')
+        console.log(item)
+        item.freq = this.get_freq(category, item.name)
+      })
+      console.log('new_filtered')
+      console.log(new_filtered)
 
-      return filtered
+      return new_filtered
     },
     get_count(cat, value) {
       console.log('get_count', cat, value)
@@ -1197,7 +1169,6 @@ export default {
         if (filtered) {
           count = `${filtered.filter(item => item[cat] == value).length}/${filtered.length}`
         }
-
       } else if (sample_cats.includes(cat)) {
         console.log('sample_cats.includes(cat)')
         if (this.selected_metadata) {
@@ -1217,272 +1188,38 @@ export default {
               }
             }
           }
-
           count = `${cat_count}/${total_count}`
         }
       } else {
         console.error('get_count: invalid category: ' + cat)
         return null
       }
-
       // console.log(filtered)
-      
-        
       return count
     },
-
-    // update_lookup_table() {
-    //   // TODO: update_lookup_table optimize 
-    //   // BUG: update_lookup_table not working, empty sets with NaN% in table
-    //   // Called by dataset filter row select / unselect
-    //   console.log('update_lookup_table')
-    //   const start = Date.now()
-    //   // Get each subset of all datasets for each filter grouping, excluding its
-    //   //  own additional filter conditions to prevent prematurely locking in a selection
-    //   this.species_result = this.filter_metadata_except('species')
-    //   console.log('this.species_result')
-    //   console.log(this.species_result)
-    //   this.experiment_result = this.filter_metadata_except('experiment')
-    //   console.log('this.experiment_result')
-    //   console.log(this.experiment_result)
-    //   // this.year_result = this.filter_metadata_except('year')
-    //   // console.log('this.year_result')
-    //   // console.log(this.year_result)
-    //   this.tissue_result = this.filter_metadata_except('tissue')
-    //   console.log('this.tissue_result')
-    //   console.log(this.tissue_result)
-    //   this.gender_result = this.filter_metadata_except('gender')
-    //   console.log('this.gender_result')
-    //   console.log(this.gender_result)
-    //   this.condition_result = this.filter_metadata_except('condition')
-    //   console.log('this.condition_result')
-    //   console.log(this.condition_result)
-
-    //   // this.species_filtered = this.build_list([...new Set(this.species_result.map(item => item.species))].sort())
-    //   this.species_filtered = this.build_list([...new Set(this.db_metadata.map(item => item.species))].sort())
-    //   console.log('species_filtered')
-    //   console.log(this.species_filtered)
-    //   // this.experiment_filtered = this.build_list([...new Set(this.experiment_result.map(item => item.experiment))].sort())
-    //   this.experiment_filtered = this.build_list([...new Set(this.db_metadata.map(item => item.experiment))].sort())
-    //   console.log('experiment_filtered')
-    //   console.log(this.experiment_filtered)
-    //   // this.year_filtered = this.build_list([...new Set(this.year_result.map(item => item.year))].sort())
-    //   // this.year_filtered = this.build_list([...new Set(this.db_metadata.map(item => item.year))].sort())
-      
-    //   // console.log('this.year_filtered')
-    //   // console.log(this.year_filtered)
-    //   // this.tissue_filtered = this.build_list([...new Set(this.tissue_result.map(item => item.tissue))].sort())
-    //   this.tissue_filtered = this.build_list([...new Set(this.db_metadata.map(item => item.tissue))].sort())
-      
-    //   console.log('this.tissue_filtered')
-    //   console.log(this.tissue_filtered)
-    //   // Get all genders in filtered list then flatten and get unique values
-    //   // this.gender_filtered = this.build_list([...new Set(
-    //   //   this.gender_result.map(item =>
-    //   //     [...new Set(item.gender.map(m => m.gender))]).flat()
-    //   // )].sort())
-    //   this.gender_filtered = this.build_list([...new Set(
-    //     this.db_metadata.map(item =>
-    //       [...new Set(item.gender.map(m => m.gender))]).flat()
-    //   )].sort())
-    //   console.log('this.gender_filtered')
-    //   console.log(this.gender_filtered)
-
-    //   // this.condition_filtered = this.build_list([...new Set(
-    //   //   this.condition_result.map(item =>
-    //   //     [...new Set(item.condition.map(m => m.condition))]).flat()
-    //   // )].sort())
-    //   this.condition_filtered = this.build_list([...new Set(
-    //     this.db_metadata.map(item =>
-    //       [...new Set(item.condition.map(m => m.condition))]).flat()
-    //   )].sort())
-    //   console.log('this.condition_filtered')
-    //   console.log(this.condition_filtered)
-
-    //   // BUG: Check if result is empty, 
-
-    //   this.selected_metadata = _.intersection(
-    //     this.species_result,
-    //     this.experiment_result,
-    //     this.tissue_result,
-    //     this.gender_result,
-    //     this.condition_result)
-
-    //   let uniqVal, catResult, dataset, catFiltered, sum
-
-    //   this.dataset_categories.forEach((cat) => {
-    //     // cat = species, experiment, tissue
-    //     console.log(cat)
-    //     catResult = cat + '_result'
-    //     dataset = this[catResult]
-    //     catFiltered = cat + '_filtered'
-    //     uniqVal = this[catFiltered].map(el => el.name)
-    //     sum = 0
-    //     this.lookup_table[cat] = {}
-    //     uniqVal.forEach((val) => {
-    //       // val = Mouse, TRF_2020, Liver, etc. 
-    //       this.lookup_table[cat][val] = {}
-    //       this.lookup_table[cat][val].count = dataset
-    //         .reduce((acc, cur) => cur[cat] === val ? ++acc : acc, 0)
-    //       sum += this.lookup_table[cat][val].count
-    //     })
-    //     uniqVal.forEach((val) => {
-    //       this.lookup_table[cat][val].freq = this.lookup_table[cat][val].count / sum
-    //     })
-    //     // this.computeFrequencies(this[catFiltered], cat)
-    //   })
-
-    //   this.sample_categories.forEach((cat) => {
-    //     // cat = gender, condition
-    //     catResult = cat + '_result'
-    //     dataset = this[catResult]
-    //     catFiltered = cat + '_filtered'
-    //     uniqVal = this[catFiltered].map(el => el.name)
-    //     sum = 0
-    //     this.lookup_table[cat] = {}
-    //     uniqVal.forEach(val => {
-    //       // val = Male, Female, etc..
-    //       this.lookup_table[cat][val] = {}
-    //       this.lookup_table[cat][val].count = dataset
-    //         .reduce((acc, cur) => {
-    //           const reduce_result = cur[cat].reduce((a, c) =>
-    //             c[cat] === val ? a + c.count : a, 0)
-    //           return cat in cur ? acc + reduce_result : acc
-    //         }, 0)
-    //       sum += this.lookup_table[cat][val].count
-    //     })
-    //     uniqVal.forEach((val) => {
-    //       this.lookup_table[cat][val].freq = this.lookup_table[cat][val].count / sum
-    //     })
-    //     // this.computeFrequencies(this[catFiltered], cat)
-    //   })
-
-    //   // Performs API calls to Database on change to filters
-    //   // TODO: Make sure Update button calls this.get_datasets()
-    //   // await this.get_datasets()
-
-    //   const elapsed = Date.now() - start
-    //   console.log('update_lookup_table time elapsed: ', elapsed)
-    // },
     computeFrequencies(category, name) {
-
       console.log('computeFrequencies')
       console.log(category)
       console.log(name)
       const arr = this[`${category}_list`]
       console.log(arr)
-
     },
-    // filter_metadata_except(except_category) {
-    //   // Applies all selection filters for other categories excluding the provided category
-    //   // Allows for selecting more instances of a filter category without prematurely
-    //   //  locking in current filters, preventing adding new selections that are not 
-    //   //  in the intersection, e.g. selecting Heart tissue would filter down all 
-    //   //  datasets to only include those from Heart tissue, preventing selecting Liver, etc.
-    //   console.log('filter_metadata_except: ' + except_category)
-    //   let filtered = this.db_metadata
-    //   // console.log('this.db_metadata')
-    //   // console.log(typeof(this.db_metadata))
-    //   console.log(filtered)
-    //   if (except_category != 'species') {
-    //     const species_selected_names = this.species_selected.map(el => el.name)
-    //     // console.log('species_selected_names')
-    //     // console.log(species_selected_names)
-    //     // NOTE: Do not allow select all if empty
-    //     // If no species selected, then skip filtering
-    //     // if (species_selected_names.length)
-    //       filtered = filtered.filter(
-    //         ({ species }) => species_selected_names.some(
-    //           (s) => species.toLowerCase().includes(s.toLowerCase())))
-    //   }
-    //   console.log('After species filter '  + filtered.length)
-    //   // console.log(filtered)
-
-    //   if (except_category != 'experiment') {
-    //     const experiment_selected_names = this.experiment_selected.map(el => el.name)
-    //     // console.log('experiment_selected_names')
-    //     // console.log(experiment_selected_names)
-    //     // if (experiment_selected_names.length)
-    //       filtered = filtered.filter(
-    //         ({ experiment }) => experiment_selected_names.some(
-    //           (s) => experiment.toLowerCase().includes(s.toLowerCase())))
-    //   }
-    //   console.log('After experiment filter '  + filtered.length)
-    //   // console.log(filtered)
-
-    //   // if (except_category != 'year') {
-    //   //   const year_selected_names = this.year_selected.map(el => el.name)
-    //   //   // console.log('year_selected_names')
-    //   //   // console.log(year_selected_names)
-    //   //   // if (year_selected_names.length)
-    //   //     filtered = filtered.filter(
-    //   //       ({ year }) => year_selected_names.some(
-    //   //         (s) => year.toLowerCase().includes(s.toLowerCase())))
-    //   // }
-    //   // console.log('After year, filter length ' + filtered.length)
-    //   // console.log(filtered)
-
-    //   if (except_category != 'tissue') {
-    //     const tissue_selected_names = this.tissue_selected.map(el => el.name)
-    //     // console.log('tissue_selected_names')
-    //     // console.log(tissue_selected_names)
-    //     // if (tissue_selected_names.length)
-    //       filtered = filtered.filter(
-    //         ({ tissue }) => tissue_selected_names.some(
-    //           (s) => tissue.toLowerCase().includes(s.toLowerCase())))
-    //   }
-
-    //   console.log('After tissue filter ' + filtered.length)
-    //   // console.log(filtered)
-
-    //   if (except_category != 'gender') {
-    //     const gender_selected_names = this.gender_selected.map(el => el.name)
-    //     // console.log('gender_selected_names')
-    //     // console.log(gender_selected_names)
-    //     // if (gender_selected_names.length)
-    //       filtered = filtered.filter(
-    //         ({ gender }) => gender_selected_names.some(
-    //           (s) => gender.some((gend) =>
-    //             gend.gender.toLowerCase() == s.toLowerCase())))
-    //   }
-
-    //   console.log('After gender filter '  + filtered.length)
-    //   // console.log(filtered)
-
-    //   if (except_category != 'condition') {
-    //     const condition_selected_names = this.condition_selected.map(el => el.name)
-    //     // console.log('condition_selected_names')
-    //     // console.log(condition_selected_names)
-    //     // if (condition_selected_names.length)
-    //       filtered = filtered.filter(
-    //         ({ condition }) => condition_selected_names.some(
-    //           (s) => condition.some((cond) =>
-    //             cond.condition.toLowerCase() == s.toLowerCase())))
-    //   }
-
-    //   console.log('After condition filter '  + filtered.length)
-    //   console.log(filtered)
-
-    //   return filtered
-    // },
-    
     get_freq(cat, value) {
       console.log('get_freq', cat, value)
       // Returns the number of items in the filtered array that match the provided value
 
       // If the species_result is not yet loaded, return placeholder value of 0.0%
-      if (!this.species_result)
-        return '0.0%'
+        
 
       const dataset_cats = ['species', 'experiment', 'tissue']
       const sample_cats = ['gender', 'condition']
       let filtered
       let count = 0
-      
-      let total_count = this.species_result.length
-      let freq = 0
+      let total_count = 0
+      let freq = 0.0
       if (dataset_cats.includes(cat)) {
-        filtered = this.species_result
+        console.log('dataset_cats.includes(cat)')
+        filtered = this.db_metadata
 
         // Filter the array to contain only elements where species property matches the provided value
         if (filtered) {
@@ -1522,8 +1259,7 @@ export default {
       } else {
         freq = count/total_count
       }
-      const percentageString = (freq * 100).toFixed(1) + '%';
-      return percentageString
+      return freq
     },
     build_list(list) {
       // Converts array of strings to array of objects with name properties of strings
