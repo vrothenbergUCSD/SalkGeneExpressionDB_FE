@@ -178,13 +178,13 @@
                     <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
                       <template #body="slotProps">
                         {{ get_count('gender', slotProps.data.name) }}
+
                       </template>
                     </Column>
                     <Column field="freq" header="Freq" sortable 
                      headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
                         {{ (slotProps.data.freq * 100).toFixed(1) + '%' }}
-                        <!-- {{ get_freq('gender', slotProps.data.name) }} -->
                       </template>
                     </Column>
                   </DataTable>
@@ -207,10 +207,9 @@
                       </template>
                     </Column>
                     <Column field="freq" header="Freq" sortable 
-                    :sortFunction="() => customSort(this.condition_filtered, 'condition')" headerStyle="width: 4rem" style="width: 4rem">
+                      headerStyle="width: 4rem" style="width: 4rem">
                       <template #body="slotProps">
                         {{ (slotProps.data.freq * 100).toFixed(1) + '%' }}
-                        <!-- {{ get_freq('condition', slotProps.data.name) }} -->
                       </template>
                     </Column>
                   </DataTable>
@@ -412,6 +411,9 @@ export default {
       gene_expression_data_tables_all: [],
 
       datasets: null,
+
+      dataset_categories: ['species', 'experiment', 'tissue'],
+      sample_categories: ['gender', 'condition'],
     }
   },
   async mounted() {
@@ -443,7 +445,7 @@ export default {
     this.tissue_selected = this.tissue_list.filter(e => default_tissues.includes(e.name))
     const default_genders = ['Male']
     this.gender_selected = this.gender_list.filter(e => default_genders.includes(e.name))
-    const default_conditions = ['TRF', 'ALF']
+    const default_conditions = ['ALF', 'TRF']
     this.condition_selected = this.condition_list.filter(e => default_conditions.includes(e.name))
     // const default_genes = ['Clock']
     this.genes_selected = [{ name: 'Clock' }]
@@ -470,50 +472,18 @@ export default {
       let total = this.db_metadata.length
       return `(${selected} / ${total})`;
     },
-    totalSpeciesSelected: function() {
-      let count = 0;
-      for (let dataset of this.db_metadata) {
-          if (
-              this.species_selected.some(item => item.name === dataset.species) &&
-              this.experiment_selected.some(item => item.name === dataset.experiment) &&
-              this.tissue_selected.some(item => item.name === dataset.tissue) &&
-              this.gender_selected.some(item => item.name === dataset.gender) &&
-              this.condition_selected.some(item => item.name === dataset.condition)
-          ) {
-              count++;
-          }
-      }
-      console.log(count);
-      return count;
-    },
-    totalExperimentSelected: function() {
-      return this.experiment_selected.length;
-    },
-    totalTissueSelected: function() {
-      return this.tissue_selected.length;
-    },
-    totalGenderSelected: function() {
-      return this.gender_selected.length;
-    },
-    totalConditionSelected: function() {
-      return this.condition_selected.length;
-    },
-    // Assuming the total count in the data set is available in a data property 'totalCount'
-    freqSpeciesSelected: function() {
-      return this.totalSpeciesSelected / this.totalCount;
-    },
-    freqExperimentSelected: function() {
-      return this.totalExperimentSelected / this.totalCount;
-    },
-    freqTissueSelected: function() {
-      return this.totalTissueSelected / this.totalCount;
-    },
-    freqGenderSelected: function() {
-      return this.totalGenderSelected / this.totalCount;
-    },
-    freqConditionSelected: function() {
-      return this.totalConditionSelected / this.totalCount;
-    },
+    freqComputed() {
+      console.log('freqComputed')
+      const result =  this[`${category}_list`].map(item => {
+        return { 
+          ...item,
+          freq: this.get_freq(category, item.name)
+        };
+      });
+      console.log('result')
+      console.log(result)
+    }
+
   },
 
   methods: {
@@ -1083,13 +1053,15 @@ export default {
       console.log('get_gene_data time elapsed: ', elapsed)
     },
     update_lookup_table() {
+      console.log('update_lookup_table')
       const start = Date.now()
 
       // First filter the metadata by species
       this.species_result = this.filter_metadata('species')
       console.log('this.species_result')
       console.log(this.species_result)
-      this.species_filtered = this.build_list([...new Set(this.species_result.map(item => item.species))].sort())
+      this.species_filtered = this.build_list([...new Set(
+        this.species_result.map(item => item.species))].sort())
       console.log('this.species_filtered')
       console.log(this.species_filtered)
 
@@ -1097,7 +1069,8 @@ export default {
       this.experiment_result = this.filter_metadata('experiment', this.species_result)
       console.log('this.experiment_result')
       console.log(this.experiment_result)
-      this.experiment_filtered = this.build_list([...new Set(this.experiment_result.map(item => item.experiment))].sort())
+      this.experiment_filtered = this.build_list([...new Set(
+        this.experiment_result.map(item => item.experiment))].sort())
       console.log('this.experiment_filtered')
       console.log(this.experiment_filtered)
 
@@ -1105,16 +1078,31 @@ export default {
       this.tissue_result = this.filter_metadata('tissue', this.experiment_result)
       console.log('this.tissue_result')
       console.log(this.tissue_result)
-      this.tissue_filtered = this.build_list([...new Set(this.tissue_result.map(item => item.tissue))].sort())
+      this.tissue_filtered = this.build_list([...new Set(
+        this.tissue_result.map(item => item.tissue))].sort())
       console.log('this.tissue_filtered')
       console.log(this.tissue_filtered)
 
       this.selected_metadata = this.tissue_result
 
-      let gender_count = 0
-      this.gender_result = this.selected_metadata.filter(e => {
-        e.gender.includes()
-      })
+      // Reactivity issue occurring because I'm filtering down the datasets,
+      // but selected_metadata doesn't change when I filter gender and condition
+      // Need new data structure to hold the sample metadata 
+      this.gender_result = this.filter_metadata('gender', this.selected_metadata)
+      console.log('this.gender_result')
+      console.log(this.gender_result)
+      this.gender_filtered = this.build_list([...new Set(
+        this.gender_result.map(item => item.gender))].sort())
+      console.log('this.gender_filtered')
+      console.log(this.gender_filtered)
+
+      this.condition_result = this.filter_metadata('condition', this.gender_result)
+      console.log('this.condition_result')
+      console.log(this.condition_result)
+      this.condition_filtered = this.build_list([...new Set(
+        this.condition_result.map(item => item.condition))].sort())
+      console.log('this.condition_filtered')
+      console.log(this.condition_filtered)
 
       const elapsed = Date.now() - start
       console.log('update_lookup_table time elapsed: ', elapsed)
@@ -1122,13 +1110,20 @@ export default {
     filter_metadata(category, prevFilterResult) {
       // Filter the metadata by the selected values in the given category
       console.log('filter_metadata', category)
-      console.log('prevFilterResult')
-      console.log(prevFilterResult)
+      // console.log('prevFilterResult')
+      // console.log(prevFilterResult)
       let selected_names = this[`${category}_selected`].map(el => el.name)
       console.log('selected_names')
       console.log(selected_names)
-      let filtered = prevFilterResult || this.db_metadata  // if no prevFilterResult, filter the original metadata
+      let filtered
 
+      if (this.dataset_categories.includes(category))
+        // if no prevFilterResult, filter the original metadata
+        filtered = prevFilterResult || this.db_metadata  
+      else if (this.sample_categories.includes(category)) 
+        // if no prevFilterResult, filter the selected metadata
+        filtered = prevFilterResult || this.selected_metadata  
+      
       // Filter the metadata by the selected values in the given category
       let new_filtered = filtered.filter(
         ({ [category]: value }) => selected_names.some(
@@ -1140,50 +1135,71 @@ export default {
           }
         )
       )
-      selected_names.forEach(name => {
-        new_filtered
-      })
+      // Hold onto the selections
+      let savedList = this[`${category}_list`].map(x => x)
+      let savedSelections = this[`${category}_selected`].map(x => x)
+
+
       console.log('cat_list')
       let cat_list = this[`${category}_list`]
       console.log(cat_list)
-      cat_list.forEach(item => {
+      this[`${category}_list`].forEach(item => {
         console.log('item')
         console.log(item)
+        item.count = this.get_count(category, item.name)
         item.freq = this.get_freq(category, item.name)
       })
-      console.log('new_filtered')
-      console.log(new_filtered)
+      
+      // Deep copy to ensure reactivity
+      this[`${category}_list`] = JSON.parse(JSON.stringify(cat_list))
+
+      // Now, go through your saved selections, and for each one, find the
+      // corresponding item in the updated list, and select it.
+      this[`${category}_selected`] = savedSelections.map(selection => {
+        return this[`${category}_list`].find(item => item.name === selection.name);
+      });
+
+
+      // console.log(this[`${category}_list`])
+      // this[`${category}_selected`] = JSON.parse(JSON.stringify(this[`${category}_selected`]))
+      // console.log(this[`${category}_selected`])
 
       return new_filtered
     },
-    get_count(cat, value) {
-      console.log('get_count', cat, value)
+    get_count(category, value) {
+      console.log('get_count', category, value)
       // Returns the number of items in the filtered array that match the provided value
-      const dataset_cats = ['species', 'experiment', 'tissue']
-      const sample_cats = ['gender', 'condition']
+      // const dataset_cats = ['species', 'experiment', 'tissue']
+      // const sample_cats = ['gender', 'condition']
       let filtered
       let count = '0/0'
-      if (dataset_cats.includes(cat)) {
-        filtered = this.species_result
+      if (this.dataset_categories.includes(category)) {
+        if (category == 'species')
+          filtered = this.db_metadata
+        else if (category == 'experiment')
+          filtered = this.species_result
+        else if (category == 'tissue')
+          filtered = this.experiment_result
+        else 
+          console.error('Invalid category: ' + category)
         // Filter the array to contain only elements where species property matches the provided value
+        if (filtered)
+          count = `${filtered.filter(item => item[category] == value).length}/${filtered.length}`
+      } else if (this.sample_categories.includes(category)) {
+        console.log(`sample_categories.includes(${category})`)
+        filtered = this.selected_metadata
         if (filtered) {
-          count = `${filtered.filter(item => item[cat] == value).length}/${filtered.length}`
-        }
-      } else if (sample_cats.includes(cat)) {
-        console.log('sample_cats.includes(cat)')
-        if (this.selected_metadata) {
           let cat_count = 0
           let total_count = 0
           // Iterate over selected dataset
-          for (let dataset of this.selected_metadata) {
+          for (let dataset of filtered) {
             // Check if dataset has property matching cat
-            if (dataset[`${cat}`]) {
+            if (dataset[`${category}`]) {
               // Iterate over each item in the dataset property
-              for (let cat_obj of dataset[`${cat}`]) {
+              for (let cat_obj of dataset[`${category}`]) {
                 // If the item matches the provided value, add its count to the total
-                if (cat_obj[`${cat}`] == value) {
+                if (cat_obj[`${category}`] == value)
                   cat_count += cat_obj.count
-                }
                 total_count += cat_obj.count
               }
             }
@@ -1191,74 +1207,75 @@ export default {
           count = `${cat_count}/${total_count}`
         }
       } else {
-        console.error('get_count: invalid category: ' + cat)
+        console.error('get_count: invalid category: ' + category)
         return null
       }
       // console.log(filtered)
       return count
     },
-    computeFrequencies(category, name) {
-      console.log('computeFrequencies')
-      console.log(category)
-      console.log(name)
-      const arr = this[`${category}_list`]
-      console.log(arr)
-    },
-    get_freq(cat, value) {
-      console.log('get_freq', cat, value)
+
+    get_freq(category, value) {
+      console.log('get_freq', category, value)
       // Returns the number of items in the filtered array that match the provided value
 
       // If the species_result is not yet loaded, return placeholder value of 0.0%
-        
-
-      const dataset_cats = ['species', 'experiment', 'tissue']
-      const sample_cats = ['gender', 'condition']
       let filtered
       let count = 0
       let total_count = 0
       let freq = 0.0
-      if (dataset_cats.includes(cat)) {
-        console.log('dataset_cats.includes(cat)')
-        filtered = this.db_metadata
-
+      if (this.dataset_categories.includes(category)) {
+        console.log('dataset_categories.includes(category)')
+        if (category == 'species')
+          filtered = this.db_metadata
+        else if (category == 'experiment')
+          filtered = this.species_result
+        else if (category == 'tissue')
+          filtered = this.experiment_result
+        else 
+          console.error('Invalid category: ' + category)
         // Filter the array to contain only elements where species property matches the provided value
         if (filtered) {
-          count = filtered.filter(item => item[cat] == value).length
+          count = filtered.filter(item => item[category] == value).length
           total_count = filtered.length
           console.log('count', count)
           console.log('total_count', total_count)
         }
-      } else if (sample_cats.includes(cat)) {
-        console.log('sample_cats.includes(cat)')
-        if (this.selected_metadata) {
+      } else if (this.sample_categories.includes(category)) {
+        console.log(`this.sample_categories.includes(${category})`)
+        filtered = this.selected_metadata
+        if (filtered) {
           count = 0
           total_count = 0
           // Iterate over selected dataset
-          for (let dataset of this.selected_metadata) {
-            // Check if dataset has property matching cat
-            if (dataset[`${cat}`]) {
+          for (let dataset of filtered) {
+            // Check if dataset has property matching category
+            if (dataset[`${category}`]) {
               // Iterate over each item in the dataset property
-              for (let cat_obj of dataset[`${cat}`]) {
+              for (let cat_obj of dataset[`${category}`]) {
                 // If the item matches the provided value, add its count to the total
-                if (cat_obj[`${cat}`] == value) {
+                if (cat_obj[`${category}`] == value)
                   count += cat_obj.count
-                }
                 total_count += cat_obj.count
               }
             }
           }
+          console.log('count', count)
+          console.log('total_count', total_count)
           
+        } else {
+          console.log('selected_metadata is null')
         }
       } else {
-        console.error('get_freq: invalid category: ' + cat)
+        console.error('get_freq: invalid category: ' + category)
         return null
       }
-      console.log(filtered)
+      
       if (total_count == 0) {
-        freq = 0
+        freq = 0.0
       } else {
         freq = count/total_count
       }
+      console.log('freq', freq)
       return freq
     },
     build_list(list) {
@@ -1277,11 +1294,6 @@ export default {
         obj.name != text)
       this.update_lookup_table()
     },
-    // remove_year_filter(text) {
-    //   this.year_selected = this.year_selected.filter((obj) =>
-    //     obj.name != text)
-    //   this.update_lookup_table()
-    // },
     remove_tissue_filter(text) {
       this.tissue_selected = this.tissue_selected.filter((obj) =>
         obj.name != text)
@@ -1303,7 +1315,6 @@ export default {
     clear_all_filters() {
       this.species_selected = []
       this.experiment_selected = []
-      // this.year_selected = []
       this.tissue_selected = []
       
       this.gender_selected = []
