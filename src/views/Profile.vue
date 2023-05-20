@@ -1,5 +1,5 @@
 <template>
-  <div class="w-11/12 mx-auto py-6">
+  <div class="w-3/4 mx-auto py-6">
   <div class="bg-white shadow overflow-hidden sm:rounded-lg">
     <div class="px-4 py-5 sm:px-6">
       <div class="flex">
