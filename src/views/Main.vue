@@ -10,7 +10,7 @@
         v-if="this.species_selected.length || this.experiment_selected.length || this.tissue_selected.length">
         <div id="filters-species" v-if="this.species_selected.length"
           class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3">
-          <div class="font-semibold text-sm pl-1">Species:</div>
+          <div class="font-semibold text-sm pl-1">Organism:</div>
           <div v-for="(item, index) in this.species_selected" :key="item">
             <Chip :label="item.name" class="mx-1 custom-chip text-sm" removable
               @remove="remove_species_filter(item.name)" />
@@ -91,7 +91,7 @@
                     @row-unselect-all="update_lookup_table"
                     sortField="freq" :sortOrder="-1">
                     <Column selectionMode="multiple" headerStyle="width: 1rem" style="width: 1rem"></Column>
-                    <Column field="name" header="Species" headerStyle="width: 10rem" style="width: 10rem"></Column>
+                    <Column field="name" header="Organism" headerStyle="width: 10rem" style="width: 10rem"></Column>
                     <Column field="count" header="#" headerStyle="width: 2rem" style="width: 2rem">
                       <template #body="slotProps">
                         {{ get_count('species', slotProps.data.name) }}
