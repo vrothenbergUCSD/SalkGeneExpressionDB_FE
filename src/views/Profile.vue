@@ -151,7 +151,7 @@ export default {
 
     let formData = new FormData() 
 
-    const token = this.$store.state.token.token
+    const token = this.$store.getters.getToken
     console.log('token')
     console.log(token)
     formData.append('authorization', token)

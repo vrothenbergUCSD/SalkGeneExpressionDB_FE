@@ -19,12 +19,7 @@
                   <span>About</span>
                 </div> 
               </NavLink>
-              <NavLink v-if="!user" :to="{ name: 'Login'}">
-                <div class="">
-                  <i class="pi pi-user mr-3"></i> 
-                  <span>Login</span>
-                </div>  
-              </NavLink>
+              
               <NavLink :to="{ name: 'Datasets'}">
                 <div class="">
                   <i class="pi pi-database mr-3"></i> 
@@ -42,6 +37,12 @@
                   <i class="pi pi-list mr-3"></i> 
                   <span>Admin</span>
                 </div> 
+              </NavLink>
+              <NavLink v-if="!user" :to="{ name: 'Login'}">
+                <div class="">
+                  <i class="pi pi-user mr-3"></i> 
+                  <span>Login</span>
+                </div>  
               </NavLink>
             </div>
           </div>

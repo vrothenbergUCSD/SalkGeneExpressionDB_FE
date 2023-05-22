@@ -204,9 +204,7 @@ export default {
 
     let formData = new FormData() 
 
-    const token = this.$store.state.token.token
-    console.log('token')
-    console.log(token)
+    let token = this.$store.getters.getToken
     formData.append('authorization', token)
     let api_result = await DataService.testAuth(formData)
     console.log('api_result')
@@ -231,7 +229,7 @@ export default {
     async load_metadata() {
       console.log('load_metadata')
       let formData = new FormData() 
-      const token = this.$store.state.token.token
+      let token = this.$store.getters.getToken
       formData.append('authorization', token)
       console.log('formData')
       console.log(formData)

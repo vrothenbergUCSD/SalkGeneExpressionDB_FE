@@ -10,7 +10,6 @@ import { firestore } from "@/firebase/firebaseInit";
 
 function defaultState() {
   return {
-    count: 0,
     user: null,
     profileAdmin: null,
     profileEmail: null,
@@ -29,14 +28,15 @@ export default createStore({
     return defaultState()
   },
   getters: {
-    getCount(state) {
-      return state.count
+    getToken(state) {
+      if (state.token) {
+        return state.token
+      } else {
+        return null
+      }
     }
   },
   mutations: {
-    increment(state) {
-      state.count++
-    },
     async updateUser(state, payload) {
       state.user = payload
     },
@@ -82,7 +82,7 @@ export default createStore({
         commit("setProfileInfo", result);
         commit("setProfileInitials");
         const token = await user.getIdTokenResult();
-        commit("setToken", token)
+        commit("setToken", token.token)
         // Check if user is admin or uploader
         await Promise.all([
           dispatch("getAdmin"),
