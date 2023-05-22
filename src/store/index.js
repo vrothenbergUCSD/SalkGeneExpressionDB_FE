@@ -41,13 +41,11 @@ export default createStore({
       state.user = payload
     },
     setProfileInfo(state, doc) {
-      // console.log('setProfileInfo')
       state.profileId = doc.id;
       state.profileEmail = doc.data().email;
       state.profileFirstName = doc.data().firstName;
       state.profileLastName = doc.data().lastName;
       state.profileInstitution = doc.data().institution
-      // console.log(state.profileId);
     },
     setProfileAdmin(state, payload) {
       state.profileAdmin = payload;
@@ -77,35 +75,27 @@ export default createStore({
 
   },
   actions: {
+    // Get user info from Firestore database
     async getCurrentUser({ commit, dispatch }, user) {
-      // const dataBase = await firestore.collection("users").doc(firebase.auth().currentUser.uid);
-      // const dbResults = await dataBase.get();
-      // console.log('Store: getCurrentUser')
-      console.log(user)
       const result = await getDoc(doc(firestore, 'users', user.uid))
       if (result.exists()) {
-        // console.log('Store: Result exists')
         commit("setProfileInfo", result);
         commit("setProfileInitials");
-
         const token = await user.getIdTokenResult();
-        // console.log('Store: ' + token)
         commit("setToken", token)
-        
+        // Check if user is admin or uploader
         await Promise.all([
           dispatch("getAdmin"),
           dispatch("getUploader"),
         ])
+      } else {
+        console.error('getCurrentUser: User does not exist in Firestore')
       }
     },
+    // Update user settings in Firestore database
+    // Used in Profile.vue
     async updateUserSettings({ commit, state }) {
-      // const user = state.user
-      // console.log('updateUserSettings')
-      // console.log(state.profileId)
-      // console.log(state.user)
       const docRef = doc(firestore, "users", state.profileId);
-      // console.log(docRef)
-
       const docSnap = await getDoc(docRef)
       if (docSnap.exists()) {
         await updateDoc(docRef, {
@@ -113,14 +103,15 @@ export default createStore({
           lastName: state.profileLastName,
           institution: state.profileInstitution,
         }).catch((err) => {
-          console.log('Failed after updateDoc')
+          console.error('updateUserSettings: Failed on updateDoc')
+          console.error(err)
         })
-        // console.log('Successfully updated user settings')
         commit("setProfileInitials");
       } else {
-        console.log(`User id does not exist: ${state.profileId}`)
+        console.error(`User id does not exist: ${state.profileId}`)
       }
     },
+    // Check if user in admins collections from Firestore database
     async getAdmin({ commit, state }) {
       const docRef = doc(firestore, "admins", state.profileId);
       const docSnap = await getDoc(docRef)
@@ -130,6 +121,7 @@ export default createStore({
         commit("setProfileAdmin", false);
       }
     },
+    // Check if user in uploaders collections from Firestore database
     async getUploader({ commit, state }) {
       const docRef = doc(firestore, "uploaders", state.profileId);
       const docSnap = await getDoc(docRef)
