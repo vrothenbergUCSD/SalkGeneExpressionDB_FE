@@ -18,6 +18,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import { firebaseApp, auth, firestore } from "@/firebase/firebaseInit";
 import store from "@/store"
 
+const webapp_title = "RBIO-P Data Sharing"
+
 const routes = [
   // will match everything and put it under `$route.params.pathMatch`
   {
@@ -158,48 +160,64 @@ const router = createRouter({
   // linkActiveClass: 'text-white bg-gray-900'
 })
 
-router.beforeEach((to, from, next) => {
-  document.title = `${to.meta.title} | RBIO-P Data Sharing`;
-  next();
-});
 
-router.beforeEach(async (to, from, next) => {
-  // console.log('From:')
-  // console.log(from)
 
-  let user = store.state.user
-  // console.log('User')
-  // console.log(user)
+function checkAuth(to, from, next) {
+  const requiresAuth = to.matched.some((route) => route.meta.requiresAuth);
 
-  // console.log('firebaseApp')
-  // console.log(firebaseApp)
-
-  // let user = this.$store.state.user
-  let admin = store.state.profileAdmin
-
-  if (to.matched.some((res) => { return res.meta.requiresAuth })) {
-    // console.log('requiresAuth')
-    // console.log(res)
-    if (user) {
-      // console.log('user exists')
-      // console.log(user)
-      if (to.matched.some((res) => res.meta.requiresAdmin)) {
-        // console.log('requiresAdmin')
-        if (admin) {
-          // console.log('Admin permissions satisifed')
-          return next();
-        }
-        // console.log('No admin')
-        return next({ name: "Home" });
+  if (requiresAuth) {
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is authenticated, proceed to the route
+        store.commit("setUser", user); // Assuming you have a Vuex store module for user management
+        next();
+      } else {
+        // User is not authenticated, redirect to the login page
+        next("/login");
       }
-      return next();
-    }
-    // console.log('No user')
-    return next({ name: "Home" });
+    });
+  } else {
+    // Page does not require authentication
+    next();
   }
-  // console.log('Auth not needed')
-  return next();
+}
+
+router.beforeEach((to, from, next) => {
+  document.title = `${to.meta.title} |${webapp_title}`;
+  checkAuth(to, from, next);
 });
+
+
+// // Navigation guard
+// router.beforeEach(async (to, from, next) => {
+
+//   let user = store.state.user
+//   let admin = store.state.profileAdmin
+
+//   if (to.matched.some((res) => { return res.meta.requiresAuth })) {
+//     if (user) {
+//       // console.log('user exists')
+//       // console.log(user)
+//       if (to.matched.some((res) => res.meta.requiresAdmin)) {
+//         // console.log('requiresAdmin')
+//         if (admin) {
+//           // console.log('Admin permissions satisifed')
+//           return next();
+//         }
+//         // console.log('No admin')
+//         return next({ name: "Home" });
+//       }
+//       return next();
+//     }
+//     // console.log('No user')
+//     return next({ name: "Home" });
+//   } else {
+//     // Page does not require authentication
+//     // console.log('Auth not needed')
+//     return next();
+//   }
+  
+// });
 
 export {
   router,
