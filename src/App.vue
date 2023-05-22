@@ -9,11 +9,9 @@
 </template>
 
 <script>
-// This starter template is using Vue 3 <script setup> SFCs
-// Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
+
 import NavBar from '@/components/NavBar.vue';
 import Footer from '@/components/Footer.vue'
-
 import { getAuth } from "firebase/auth";
 
 export default {
@@ -49,10 +47,14 @@ export default {
 
     const auth = getAuth()
     auth.onAuthStateChanged((user) => {
+      // Update the user information in the Vuex store
       this.$store.commit("updateUser", user)
       if (user) {
-        console.log("App: Before getCurrentUser")
+        // Dispatch the getCurrentUser action to retrieve user's information
+        // from firestore and update the user information in the Vuex store
         this.$store.dispatch("getCurrentUser", user)
+      } else {
+        console.log("App: No user")
       }
       console.log('App: After auth state changed')
     })
