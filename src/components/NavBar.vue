@@ -25,7 +25,7 @@
                   <span>Login</span>
                 </div>  
               </NavLink>
-              <NavLink v-if="user" :to="{ name: 'Datasets'}">
+              <NavLink :to="{ name: 'Datasets'}">
                 <div class="">
                   <i class="pi pi-database mr-3"></i> 
                   <span>Datasets</span>
