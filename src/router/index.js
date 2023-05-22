@@ -11,6 +11,7 @@ import Admin from "@/views/Admin.vue"
 import Profile from "@/views/Profile.vue"
 import Settings from "@/views/Settings.vue"
 import Data from "@/views/Data.vue"
+import Datasets from "@/views/Datasets.vue"
 import ForgotPassword from "@/views/ForgotPassword.vue"
 // import NotFound from "@/views/NotFound.vue"
 
@@ -142,6 +143,16 @@ const routes = [
     }
   },
   {
+    path: "/datasets",
+    name: "Datasets",
+    component: Datasets,
+    meta: {
+      title: "Datasets",
+      requiresAuth: false,
+      onNavbar: true,
+    }
+  },
+  {
     path: "/forgot-password",
     name: "Forgot Password",
     component: ForgotPassword,
@@ -161,7 +172,7 @@ const router = createRouter({
 })
 
 
-
+// Navigation guard for protected routes
 function checkAuth(to, from, next) {
   const requiresAuth = to.matched.some((route) => route.meta.requiresAuth);
 
@@ -169,7 +180,7 @@ function checkAuth(to, from, next) {
     onAuthStateChanged(auth, (user) => {
       if (user) {
         // User is authenticated, proceed to the route
-        store.commit("setUser", user); // Assuming you have a Vuex store module for user management
+        store.commit("setUser", user);
         next();
       } else {
         // User is not authenticated, redirect to the login page
