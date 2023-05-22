@@ -65,27 +65,31 @@ export default {
   methods: {
     signIn() {
       const auth = getAuth()
+
+      // Sign in with email and password using Firebase Authentication
       signInWithEmailAndPassword(auth, this.email, this.password)
       .then(() => {
+        // Clear error state
         this.error = false;
         this.errorMsg = "";
+
+        // Get the current user after successful sign-in
         const user = auth.currentUser
-        console.log(auth.currentUser.uid);
-        console.log('Dispatching getCurrentUser')
+
+        // Dispatch the getCurrentUser action to get and update user's information
         this.$store.dispatch('getCurrentUser', user)
+
+        // Redirect to the Main route
         this.$router.push({ name: "Main" });
       })
       .catch((err) => {
         console.log('Sign in error')
         this.error = true;
-        // Change to more user friendly message
+        // TODO: Change to more user friendly message
         this.errorMsg = err.message;
         console.log(err.message)
       });
     },
-    myFunc() {
-      console.log('hello')
-    }
   }
 }
 </script>
