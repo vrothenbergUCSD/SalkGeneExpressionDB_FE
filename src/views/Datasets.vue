@@ -65,14 +65,18 @@
                 {{ data.tissues.length }} tissues
                 <OverlayPanel :ref="getOverlayRef(data.experimentName)" :showCloseIcon="false" :dismissable="true">
                   <div v-if="currentHoveredData === data" class="flex">
-                    <div class="w-full lg:w-1/2" :style="{ minWidth: longestTissueLength * 8 + 'px' }">
+                    <div class="w-full lg:w-1/2 mr-2" 
+                      
+                      >
                       <ul>
                         <li v-for="(tissue, index) in getTissuesForColumn(data.tissues, 1)" :key="index">
                           {{ tissue }}
                         </li>
                       </ul>
                     </div>
-                    <div v-if="data.tissues.length > 20" class="w-full lg:w-1/2" :style="{ minWidth: longestTissueLength * 8 + 'px' }">
+                    <div v-if="data.tissues.length > 20" class="w-full lg:w-1/2 ml-2" 
+                      
+                      >
                       <ul>
                         <li v-for="(tissue, index) in getTissuesForColumn(data.tissues, 2)" :key="index">
                           {{ tissue }}
@@ -309,23 +313,34 @@ export default {
         }
       } else {
         return tissues;
-    }
-  },
+      }
+    },
+    longestTissueLength(tissues) {
+      let longestLength = 0;
+      tissues.forEach(tissue => {
+        const length = tissue.length;
+        if (length > longestLength) {
+          longestLength = length;
+        }
+      });
+      return longestLength;
+    },
+
 
   },
   computed: {
-    longestTissueLength() {
-      let longestLength = 0;
-      this.datasets.forEach(dataset => {
-        dataset.tissues.forEach(tissue => {
-          const length = tissue.length;
-          if (length > longestLength) {
-            longestLength = length;
-          }
-        });
-      });
-      return longestLength;
-  }
+    // longestTissueLength() {
+    //   let longestLength = 0;
+    //   this.datasets.forEach(dataset => {
+    //     dataset.tissues.forEach(tissue => {
+    //       const length = tissue.length;
+    //       if (length > longestLength) {
+    //         longestLength = length;
+    //       }
+    //     });
+    //   });
+    //   return longestLength;
+    // }
 }
 
 
