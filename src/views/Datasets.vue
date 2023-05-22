@@ -3,7 +3,7 @@
     <div id="datasets">
       <DataTable :value="datasets" :paginator="true" :rows="10"
           dataKey="sample_metadata_table_name" :rowHover="true" v-model:selection="selected_datasets"
-          v-model:filters="filters" filterDisplay="menu"
+          v-model:filters="filters" :loading="this.loading" filterDisplay="menu"
           paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown" 
           :rowsPerPageOptions="[10,25,50]"
           currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
@@ -65,20 +65,18 @@
                 {{ data.tissues.length }} tissues
                 <OverlayPanel :ref="getOverlayRef(data.experimentName)" :showCloseIcon="false" :dismissable="true">
                   <div v-if="currentHoveredData === data" class="flex">
-                    
-                    <div class="w-1/2" :style="{ minWidth: longestTissueLength * 10 + 'px' }">
+                    <div class="w-full lg:w-1/2" :style="{ minWidth: longestTissueLength * 8 + 'px' }">
                       <ul>
-                          <li v-for="(tissue, index) in data.tissues.slice(0, Math.ceil(data.tissues.length/2))" :key="index">
-                              {{ tissue }}
-                          </li>
+                        <li v-for="(tissue, index) in getTissuesForColumn(data.tissues, 1)" :key="index">
+                          {{ tissue }}
+                        </li>
                       </ul>
                     </div>
-                    <div class="w-1/2" v-if="data.tissues.length > 10" :style="{ minWidth: longestTissueLength * 8 + 'px' }">
-                     
+                    <div v-if="data.tissues.length > 20" class="w-full lg:w-1/2" :style="{ minWidth: longestTissueLength * 8 + 'px' }">
                       <ul>
-                          <li v-for="(tissue, index) in data.tissues.slice(Math.ceil(data.tissues.length/2))" :key="index">
-                              {{ tissue }}
-                          </li>
+                        <li v-for="(tissue, index) in getTissuesForColumn(data.tissues, 2)" :key="index">
+                          {{ tissue }}
+                        </li>
                       </ul>
                     </div>
                   </div>
@@ -181,6 +179,8 @@ export default {
   },
   data() {
     return {
+      loading: true,
+
       db_metadata: [],
       datasets: [],
       selected_datasets: [],
@@ -221,6 +221,8 @@ export default {
 
     console.log('datasets')
     console.log(this.datasets)
+
+    this.loading = false
 
 
 
@@ -300,6 +302,17 @@ export default {
     getOverlayRef(name) {
         return `overlayPanel-${name}`;
     },
+    getTissuesForColumn(tissues, column) {
+      if (tissues.length > 20) {
+        if (column === 1) {
+          return tissues.slice(0, Math.ceil(tissues.length / 2));
+        } else {
+          return tissues.slice(Math.ceil(tissues.length / 2));
+        }
+      } else {
+        return tissues;
+    }
+  },
 
   },
   computed: {
