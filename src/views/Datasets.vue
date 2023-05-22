@@ -7,7 +7,8 @@
           paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown" 
           :rowsPerPageOptions="[10,25,50]"
           currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
-          :globalFilterFields="['species','experiment','tissue','year','institution']" 
+          :globalFilterFields="['experimentName','description','doi', 'tissues',
+            'timePoints','organism', 'conditions', 'genders','institution']" 
           responsiveLayout="scroll"
         >
           <template #header>
@@ -35,17 +36,17 @@
             </template>
           </Column>
 
-          <Column field="description" header="Description" sortable style="min-width: 10rem">
+          <Column field="description" header="Description" style="min-width: 10rem">
             <template #body="{data}">
               {{data.description}}
             </template>
-            <template #filter="{filterModel}">
+            <!-- <template #filter="{filterModel}">
               <InputText type="text" v-model="filterModel.value" class="p-column-filter" 
                 placeholder="Search by description"/>
-            </template>
+            </template> -->
           </Column>
 
-          <Column field="doi" header="DOI" sortable style="min-width: 10rem">
+          <Column field="doi" header="DOI" style="min-width: 10rem">
             <template #body="{data}">
               {{data.doi}}
             </template>
@@ -55,7 +56,7 @@
             </template>
           </Column>
 
-          <Column field="tissues" header="Tissues" sortable filterMatchMode="contains" style="min-width: 12rem">
+          <Column field="tissues" header="Tissues" filterMatchMode="contains" style="min-width: 12rem">
             <template #body="{data}">
               <div v-if="data.tissues.length === 1">
                 {{ data.tissues[0] }}
@@ -88,11 +89,16 @@
 
               </div>
             </template>
+            <template #filter="{filterModel}">
+              <InputText type="text" v-model="filterModel.value" class="p-column-filter" 
+                placeholder="Search by tissue"/>
+            </template>
           </Column>
 
-          <Column field="timePoints" header="Time Points" sortable filterMatchMode="contains" style="min-width: 12rem">
+          <Column field="timePoints" header="Time Points (ZT)"
+            style="max-width: 10rem">
             <template #body="{data}">
-              ZT{{data.timePoints.join(', ')}}
+              {{data.timePoints.join(', ')}}
             </template>
             <template #filter="{filterModel}">
               <InputText type="text" v-model="filterModel.value" class="p-column-filter" 
@@ -100,7 +106,8 @@
             </template>
           </Column>
 
-          <Column field="organism" header="Organism" sortable style="min-width: 10rem">
+          <Column field="organism" header="Organism" sortable filterMatchMode="contains"  
+            style="min-width: 10rem">
             <template #body="{data}">
               {{data.organism}}
             </template>
@@ -110,7 +117,8 @@
             </template>
           </Column>
         
-          <Column field="conditions" header="Conditions" sortable style="min-width: 6rem">
+          <Column field="conditions" header="Conditions" sortable filterMatchMode="contains"  
+            style="min-width: 6rem">
             <template #body="{data}">
               {{ data.conditions.join(', ') }}
             </template>
@@ -119,7 +127,8 @@
                 placeholder="Search by conditions"/>
             </template>
           </Column>
-          <Column field="genders" header="Sex" sortable style="min-width: 6rem">
+          <Column field="genders" header="Sex" filterMatchMode="contains" 
+            style="min-width: 6rem">
             <template #body="{data}">
               {{data.genders.join(', ')}}
             </template>
@@ -128,7 +137,8 @@
                 placeholder="Search by conditions"/>
             </template>
           </Column>
-          <Column field="institution" header="Institution" sortable style="min-width: 14rem">
+          <Column field="institution" header="Institution" sortable filterMatchMode="contains"  
+            style="min-width: 14rem">
             <template #body="{data}">
               {{data.institution}}
             </template>
@@ -255,7 +265,9 @@ export default {
             doi: obj.doi,
             institution: obj.institution,
             tissues: [obj.tissue],
-            timePoints: [], // Initialize as empty array. Add logic to fill this if available in your data
+            timePoints: obj.time_points.map(function(string) {
+              return string.replace('ZT', '');
+            }),
             organism: obj.species,
             conditions: JSON.parse(obj.condition.replace(/'/g, '"')).map(conditionObj => conditionObj.condition),
             genders: JSON.parse(obj.gender.replace(/'/g, '"')).map(genderObj => genderObj.gender)
