@@ -443,7 +443,7 @@ export default {
   methods: {
     async load_metadata() {
       let formData = new FormData() 
-      const token = this.$store.state.token.token
+      const token = this.$store.getters.getToken
       formData.append('authorization', token)
       console.log('formData')
       console.log(formData)

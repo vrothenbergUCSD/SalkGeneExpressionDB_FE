@@ -533,9 +533,7 @@ export default {
       const start = Date.now()
 
       let formData = new FormData()
-      let token = null
-      if (this.$store.state.token)
-        token = this.$store.state.token.token
+      let token = this.$store.getters.getToken
 
       // console.log('token')
       // console.log(token)

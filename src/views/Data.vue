@@ -905,7 +905,7 @@ export default {
       formData.append('sample_metadata_filename', this.upload_sample_metadata_filename)
       formData.append('gene_expression_data_filename', this.upload_gene_expression_data_filename)
 
-      const token = this.$store.state.token.token
+      const token = this.$store.getters.getToken
       formData.append('authorization', token)
 
       // Boolean flag, whether to replace existing dataset 
