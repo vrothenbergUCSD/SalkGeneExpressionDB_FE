@@ -20,6 +20,7 @@
     "firebase-functions": "^4.3.0",
     "firebaseui": "^6.0.2",
     "flowbite": "^1.4.7",
+    "html2canvas": "^1.4.1",
     "node-fetch": "^3.2.10",
     "primeflex": "^3.2.1",
     "primeicons": "^5.0.0",

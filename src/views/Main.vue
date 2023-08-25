@@ -1,12 +1,12 @@
 <template>
-  <div id="main" class="w-full p-3 mx-auto mb-20">
-    <div id="page-title" class="pb-2 font-semibold text-3xl text-center">
+  <div id="main" class="w-full p-1 mx-auto mb-20">
+    <div id="page-title" class="py-2 font-semibold text-3xl text-center">
       Temporal Gene Expression
     </div>
 
     <div id="selection-ui" class="mt-2 mx-auto">
       <Toast />
-      <div id="current-filters-ui" class="my-1 mx-3 bg-slate-100 rounded-2xl min-w-[24rem] flex flex-wrap"
+      <div id="current-filters-ui" class="my-1 mx-0 bg-slate-100 rounded-2xl min-w-[24rem] flex flex-wrap"
         v-if="this.species_selected.length || this.experiment_selected.length || this.tissue_selected.length">
         <div id="filters-species" v-if="this.species_selected.length"
           class="bg-slate-200 p-1 rounded-lg border border-slate-300 my-2 flex flex-wrap align-items-center mx-3">
@@ -58,7 +58,7 @@
           <Chip label="Clear All Filters" class="mx-1 text-sm font-semibold" removable @remove="clear_all_filters" />
         </div>
       </div>
-      <div id="filters-graph-view" class="flex pl-3">
+      <div id="filters-graph-view" class="flex pl-0">
         <div id="filters-boxes" class="w-1/4 mt-2 min-w-[20rem]">
 
           <Accordion :multiple="true" :activeIndex="[0, 1, 2]">
@@ -439,9 +439,9 @@ export default {
     const default_species = ['Mus musculus']
     this.species_selected = this.species_list.filter(e => default_species.includes(e.name))
     
-    const default_experiments = ['TRF Experiment 2018', 'WFF Experiment 2020']
+    const default_experiments = ['TRF Experiment 2018']
     this.experiment_selected = this.experiment_list.filter(e => default_experiments.includes(e.name))
-    const default_tissues = ['BAT']
+    const default_tissues = ['Adrenal gland']
     this.tissue_selected = this.tissue_list.filter(e => default_tissues.includes(e.name))
     const default_genders = ['Male']
     this.gender_selected = this.gender_list.filter(e => default_genders.includes(e.name))
@@ -542,6 +542,8 @@ export default {
       // console.log(formData)
 
       this.db_metadata = await DataService.getDatasetsMetadata(formData).then(e => e.data)
+      console.log('this.db_metadata')
+      console.log(this.db_metadata)
       
       // Parse gender and condition fields
       this.db_metadata.forEach(e => {
@@ -549,8 +551,10 @@ export default {
         e.gender = JSON.parse(genderStr)
         const conditionStr = e.condition.replaceAll(/[']+/g, '"')
         e.condition = JSON.parse(conditionStr)
-        e.year = e.year.toString()
-        e.experiment = e.experiment + " " + e.year
+        // e.year = e.year.toString()
+        e.gene_metadata_table_name = e.experiment + "_" + e.id + "_gene"
+        e.sample_metadata_table_name = e.experiment + "_" + e.id + "_sample"
+        e.gene_expression_data_table_name = e.experiment + "_" + e.id + "_expression"
       })
       console.log('this.db_metadata')
       console.log(this.db_metadata)
@@ -667,7 +671,6 @@ export default {
         await this.get_gene_data()
       console.log('this.datasets')
       console.log(this.datasets)
-
       const elapsed = Date.now() - start
       console.log('get_datasets time elapsed: ', elapsed)
     },
@@ -683,10 +686,10 @@ export default {
         // Check table in gene_metadata_tables_all
         let table_obj = this.gene_metadata_tables_all.find(e => e.table_name == t)
         if (!table_obj) {
-          const result = await DataService.getGenes(t)
+          const result = await DataService.getGenesFS(t)
           table_obj = {
             table_name: t,
-            data: result.data.map(d => d.gene_name)
+            data: JSON.parse(result.data)
           }
           this.gene_metadata_tables_all.push(table_obj)
         }
@@ -694,6 +697,8 @@ export default {
       }))
       this.genes = this.build_list([...new Set(...this.gene_metadata_tables.map(
         e => e.data))])
+      console.log('genes')
+      console.log(this.genes)
       this.genes_filtered = this.genes
       this.loading_genes = false
       const elapsed = Date.now() - start
@@ -709,8 +714,9 @@ export default {
         if (!table_obj) {
           // Table not found, query
           console.log('sample metadata table not found')
-          const result = await DataService.getSampleMetadata(t)
-          // console.log(result)
+          const result = await DataService.getSampleMetadataFS(t)
+          console.log('sample result')
+          console.log(result)
           table_obj = {
             table_name: t,
             data: result.data
@@ -779,7 +785,7 @@ export default {
           table_obj = JSON.parse(JSON.stringify(table_obj))
           const table_obj_index = this.gene_expression_data_tables_all
             .findIndex(e => e.table_name == t)
-          const sample_table_name = t.replace('gene_expression_data', 'sample_metadata')
+          const sample_table_name = t.replace('expression', 'sample')
           // console.log(this.sample_metadata_tables_all)
           const sample_metadata = this.sample_metadata_tables_all.find(e =>
             e.table_name == sample_table_name)
@@ -840,9 +846,11 @@ export default {
             // const genders_str = genders_arr.toString()
             // const conditions_str = conditions_arr.toString()
 
-            // console.log('Querying DataService.getExpressionData...')
+            console.log('Querying DataService.getExpressionData...')
             const result = await DataService
-              .getExpressionDataByGenes(genes_str, t)
+              .getExpressionDataByGenesFS(genes_str, t)
+            console.log('expression result')
+            console.log(result)
               // .getExpressionDataByGenesGendersConditions(
               //   genes_str, genders_str, conditions_str, t)
 
@@ -857,14 +865,15 @@ export default {
           
         } else {
           // Table does not exist, query 
-          console.log('Table does not exist')
+          console.log('Table does not exist: ' + t)
           // Get all samples for table
           //  Filter based on gender or condition afterwards
           const result = await DataService
-            .getExpressionDataByGenes(genes_str, t)
+            .getExpressionDataByGenesFS(genes_str, t)
             // .getExpressionDataByGenesGendersConditions(genes_str, genders_str, conditions_str, t)
+          console.log('gene expression result')
+          console.log(result)
           
-
           table_obj = {
             table_name: t,
             data: result.data
@@ -880,7 +889,7 @@ export default {
         console.log('sample_names')
         console.log(sample_names)
 
-        const sample_table_name = t.replace('gene_expression_data', 'sample_metadata')
+        const sample_table_name = t.replace('expression', 'sample')
         // console.log(this.sample_metadata_tables_all)
         const sample_metadata = this.sample_metadata_tables_all.find(e =>
           e.table_name == sample_table_name)
@@ -932,10 +941,13 @@ export default {
         
         filtered_data = filtered_data.filter(obj => filtered_samples_names.includes(obj.sample_name));
 
-        console.log('filtered_data')
+        console.log('filtered_data after sample filter')
         console.log(filtered_data)
 
-        table_obj.data = filtered_data
+        table_obj.data = JSON.parse(JSON.stringify(filtered_data))
+
+        console.log('table_obj')
+        console.log(table_obj)
 
         return table_obj
       }))
@@ -944,7 +956,7 @@ export default {
       console.log('this.gene_expression_data_tables_all')
       console.log(this.gene_expression_data_tables_all)
       // this.gene_expression_data_tables.forEach(table => {
-      //   table.data
+      //   console.log([...table.data])
       // })
       const elapsed = Date.now() - start
       console.log('get_gene_expression_data_tables elapsed:', elapsed)
@@ -957,8 +969,8 @@ export default {
         // Deep copy table_obj
         let table_obj = this.selected_gene_metadata_all.find(e => e.table_name == t)
         if (!table_obj) {
-          // console.log('Not found: ', t)
-          const result = await DataService.getGeneMetadata(genes_str, t)
+          console.log('Not found: ', t)
+          const result = await DataService.getGeneMetadataFS(genes_str, t)
           table_obj = {
             table_name: t,
             data: result.data
@@ -966,8 +978,8 @@ export default {
           this.selected_gene_metadata_all.push(table_obj)
         } else {
           // Table object exists, check if all genes in table
-          // console.log('Found: ', t)
-          // console.log(table_obj)
+          console.log('Found: ', t)
+          console.log(table_obj)
           table_obj = JSON.parse(JSON.stringify(table_obj))
           const table_obj_genes = [...new Set(table_obj.data.map(item => item.gene_id))]
           const genes_arr = genes.map(d => d.name)
@@ -988,11 +1000,11 @@ export default {
 
             // Only query new genes to save on egress cost
             const genes_to_add_str = genes_to_add.toString()
-            const result = await DataService.getGeneMetadata(genes_to_add_str, t)
+            const result = await DataService.getGeneMetadataFS(genes_to_add_str, t)
 
             const data_all = _.union(data, result.data)
-            // console.log('data_all')
-            // console.log(data_all)
+            console.log('data_all')
+            console.log(data_all)
             this.selected_gene_metadata_all[table_obj_index].data = data_all
           }
           // Update current table_obj to only contain selected genes
@@ -1003,6 +1015,8 @@ export default {
         }
         return table_obj
       }))
+      console.log('this.selected_gene_metadata')
+      console.log(this.selected_gene_metadata)
       const elapsed = Date.now() - start
       console.log('get_selected_gene_metadata elapsed:', elapsed)
     },
@@ -1026,13 +1040,14 @@ export default {
       const genders = this.gender_selected.map(d => d.name)
       this.sample_metadata_tables.forEach(table => {
         if (conditions.length) {
-          table.data = table.data.filter(d => conditions.includes(d.condition))
+          let filterKey = table.data[0].hasOwnProperty('group_name') ? 'group_name' : 'condition';
+          table.data = table.data.filter(d => conditions.includes(d[filterKey]))
         }
         if (genders.length) {
           table.data = table.data.filter(d => genders.includes(d.gender))
         }
         const sample_names = table.data.map(d => d.sample_name)
-        const gene_expr_table_name = table.table_name.replace('sample_metadata', 'gene_expression_data')
+        const gene_expr_table_name = table.table_name.replace('sample', 'expression')
         const gene_expr_table = this.gene_expression_data_tables.find(d => d.table_name == gene_expr_table_name)
         gene_expr_table.data = gene_expr_table.data.filter(d => sample_names.includes(d.sample_name))
       })
@@ -1107,12 +1122,15 @@ export default {
     },
     filter_metadata(category, prevFilterResult) {
       // Filter the metadata by the selected values in the given category
-      console.log('filter_metadata', category)
+      const debug = false
+      if (debug) console.log('filter_metadata', category)
       // console.log('prevFilterResult')
       // console.log(prevFilterResult)
       let selected_names = this[`${category}_selected`].map(el => el.name)
-      console.log('selected_names')
-      console.log(selected_names)
+      if (debug) {
+        console.log('selected_names')
+        console.log(selected_names)
+      }
       let filtered
 
       if (this.dataset_categories.includes(category))
@@ -1138,12 +1156,17 @@ export default {
       let savedSelections = this[`${category}_selected`].map(x => x)
 
 
-      console.log('cat_list')
+      
       let cat_list = this[`${category}_list`]
-      console.log(cat_list)
+      if (debug) {
+        console.log('cat_list')
+        console.log(cat_list)
+      }
       this[`${category}_list`].forEach(item => {
-        console.log('item')
-        console.log(item)
+        if (debug) {
+          console.log('item')
+          console.log(item)
+        }
         item.count = this.get_count(category, item.name)
         item.freq = this.get_freq(category, item.name)
       })
@@ -1165,7 +1188,8 @@ export default {
       return new_filtered
     },
     get_count(category, value) {
-      console.log('get_count', category, value)
+      const debug = false
+      if (debug) console.log('get_count', category, value)
       // Returns the number of items in the filtered array that match the provided value
       // const dataset_cats = ['species', 'experiment', 'tissue']
       // const sample_cats = ['gender', 'condition']
@@ -1184,7 +1208,7 @@ export default {
         if (filtered)
           count = `${filtered.filter(item => item[category] == value).length}/${filtered.length}`
       } else if (this.sample_categories.includes(category)) {
-        console.log(`sample_categories.includes(${category})`)
+        if (debug) console.log(`sample_categories.includes(${category})`)
         filtered = this.selected_metadata
         if (filtered) {
           let cat_count = 0
@@ -1213,7 +1237,8 @@ export default {
     },
 
     get_freq(category, value) {
-      console.log('get_freq', category, value)
+      const debug = false
+      if (debug) console.log('get_freq', category, value)
       // Returns the number of items in the filtered array that match the provided value
 
       // If the species_result is not yet loaded, return placeholder value of 0.0%
@@ -1222,7 +1247,7 @@ export default {
       let total_count = 0
       let freq = 0.0
       if (this.dataset_categories.includes(category)) {
-        console.log('dataset_categories.includes(category)')
+        if (debug) console.log('dataset_categories.includes(category)')
         if (category == 'species')
           filtered = this.db_metadata
         else if (category == 'experiment')
@@ -1235,11 +1260,13 @@ export default {
         if (filtered) {
           count = filtered.filter(item => item[category] == value).length
           total_count = filtered.length
-          console.log('count', count)
-          console.log('total_count', total_count)
+          if (debug) {
+            console.log('count', count)
+            console.log('total_count', total_count)
+          }
         }
       } else if (this.sample_categories.includes(category)) {
-        console.log(`this.sample_categories.includes(${category})`)
+        if (debug) console.log(`this.sample_categories.includes(${category})`)
         filtered = this.selected_metadata
         if (filtered) {
           count = 0
@@ -1257,11 +1284,11 @@ export default {
               }
             }
           }
-          console.log('count', count)
-          console.log('total_count', total_count)
+          // console.log('count', count)
+          // console.log('total_count', total_count)
           
         } else {
-          console.log('selected_metadata is null')
+          if (debug) console.log('selected_metadata is null')
         }
       } else {
         console.error('get_freq: invalid category: ' + category)
@@ -1273,7 +1300,7 @@ export default {
       } else {
         freq = count/total_count
       }
-      console.log('freq', freq)
+      if (debug) console.log('freq', freq)
       return freq
     },
     build_list(list) {
@@ -1437,4 +1464,19 @@ export default {
     padding: 10px !important;
   }
 }
+
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 300,
+  'GRAD' -25,
+  'opsz' 20
+}
+
+// @font-face {
+//   font-family: 'Material Symbols Outlined';
+//   font-style: normal;
+//   font-weight: 100 700;
+//   src: url('~@/assets/fonts/kJEhBvYX7BgnkSrUwT8OhrdQw4oELdPIeeII9v6oFsLjBuVY.woff2') format('woff2');
+// }
 </style>

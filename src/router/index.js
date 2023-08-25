@@ -180,7 +180,7 @@ function checkAuth(to, from, next) {
     onAuthStateChanged(auth, (user) => {
       if (user) {
         // User is authenticated, proceed to the route
-        store.commit("setUser", user);
+        // store.commit("setUser", user);
         next();
       } else {
         // User is not authenticated, redirect to the login page

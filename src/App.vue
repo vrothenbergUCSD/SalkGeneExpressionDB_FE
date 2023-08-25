@@ -3,9 +3,7 @@
     <NavBar/>
     <router-view/>
     <Footer/>
-
   </div>
-  
 </template>
 
 <script>

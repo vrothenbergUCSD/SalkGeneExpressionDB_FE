@@ -26,12 +26,12 @@
                   <span>Datasets</span>
                 </div> 
               </NavLink>
-              <NavLink v-if="user" :to="{ name: 'Data'}">
+              <!-- <NavLink v-if="user" :to="{ name: 'Data'}">
                 <div class="">
                   <i class="pi pi-cloud-upload mr-3"></i> 
                   <span>Upload</span>
                 </div> 
-              </NavLink>
+              </NavLink> -->
               <NavLink v-if="user" :to="{ name: 'Admin'}">
                 <div class="">
                   <i class="pi pi-list mr-3"></i> 
