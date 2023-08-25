@@ -4,50 +4,50 @@
       <ProgressSpinner class="w-full mt-10" />
     </div>
     
-    <div id="plot-area-legend" class="flex space-x-4 mt-5">
-      <div id="plot-area-options" class="flex-grow">
-        <div id="plot-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
-          <div id="group-by" class="flex flex-col align-items-center mx-2">
-            <div class="font-semibold pb-2">Group by:</div>
-            <SelectButton v-model="grouped_by" :options="grouped_by_options" @change="updateGroupedBy"/>
-          </div>
-          <div id="time-selection" v-show="grouped_by === 'Time'" class="flex flex-col align-items-center mx-2">
-            <div class="font-semibold pb-2">Time Points (ZT)</div>
-            <SelectButton v-model="time_points_selected" 
-              :options="time_points_options" optionLabel="name" 
-              multiple @change="updateTimePointsSelected"/>
-          </div>
-          <div id="menu-options" class="flex grow justify-end">
-            <div class="flex flex-col items-center">
-              <div class="font-semibold pb-2">Download</div>
-              <Button type="button" label="" icon="pi pi-download" @click="toggle('download_menu', $event)" 
-                aria-haspopup="true" aria-controls="download_menu"/>
-              <Menu id="download_menu" ref="download_menu" :model="download_items" :popup="true" />
-            </div>
-            
-            <div class="flex flex-col items-center ml-2">
-              <div class="font-semibold pb-2">Colors</div>
-              <Button type="button" label="" icon="pi pi-palette" @click="toggle('color_menu', $event)" 
-                aria-haspopup="true" aria-controls="color_menu"/>
-              <Menu id="color_menu" ref="color_menu" :model="color_items" :popup="true" />
-            </div>   
-          </div>
+    <div id="plot-container">
+      <div id="plot-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
+        <div id="group-by" class="flex flex-col align-items-center mx-2">
+          <div class="font-semibold pb-2">Group by:</div>
+          <SelectButton v-model="grouped_by" :options="grouped_by_options" @change="updateGroupedBy"/>
         </div>
-        <div id="plot-area" class="mt-10">
+        <div id="time-selection" v-show="grouped_by === 'Time'" class="flex flex-col align-items-center mx-2">
+          <div class="font-semibold pb-2">Time Points (ZT)</div>
+          <SelectButton v-model="time_points_selected" 
+            :options="time_points_options" optionLabel="name" 
+            multiple @change="updateTimePointsSelected"/>
+        </div>
+        <div id="menu-options" class="flex grow justify-end">
+          <div class="flex flex-col items-center">
+            <div class="font-semibold pb-2">Download</div>
+            <Button type="button" label="" icon="pi pi-download" @click="toggle('download_menu', $event)" 
+              aria-haspopup="true" aria-controls="download_menu"/>
+            <Menu id="download_menu" ref="download_menu" :model="download_items" :popup="true" />
+          </div>
+          
+          <div class="flex flex-col items-center ml-2">
+            <div class="font-semibold pb-2">Colors</div>
+            <Button type="button" label="" icon="pi pi-palette" @click="toggle('color_menu', $event)" 
+              aria-haspopup="true" aria-controls="color_menu"/>
+            <Menu id="color_menu" ref="color_menu" :model="color_items" :popup="true" />
+          </div>   
         </div>
       </div>
-      <div id="legend-area" class="flex-none">
-        <span class="text-center">Legend</span>
+      <div id="plot-area-legend" class="flex space-x-4 mt-3 p-2">
+        <div id="plot-area" class="flex-grow">
+        </div>
+        <div id="legend-area" class="flex-none">
           <Tree :value="this.nodes" class="custom-tree" v-model:expandedKeys="expandedKeys"
                 selectionMode="single" @nodeSelect="toggleDatasetVisibility">
             <template #default="slotProps">
                 <div class="icon-label" :class="{ 'disabled-node': !slotProps.node.visible }" :style="{color: getNodeColor(slotProps.node)}">
-                    <span v-if="slotProps.node.icon" class="material-symbols-outlined custom-icon">{{ getIconText(slotProps.node.icon) }}</span>
-                    <span>{{ slotProps.node.label }}</span>
+                  <span v-if="slotProps.node.icon" class="material-symbols-outlined custom-icon">{{ getIconText(slotProps.node.icon) }}</span>
+                  <span>{{ slotProps.node.label }}</span>
                 </div>
             </template>
           </Tree>
+        </div>
       </div>
+      
     </div>
 
     <div id="table-area" class="mt-1">
@@ -59,9 +59,7 @@
 <script>
 import * as d3 from "d3"
 
-// TODO: Fix this 
-// import html2canvas from "html2canvas";
-import * as svg from 'save-svg-as-png'
+import html2canvas from "html2canvas"
 
 import ProgressSpinner from 'primevue/progressspinner'
 import SelectButton from 'primevue/selectbutton'
@@ -75,14 +73,6 @@ import Tree from 'primevue/tree'
 import _ from 'underscore'
 
 import Table from '@/components/svg/Table.vue'
-
-import eyeUrl from '@/assets/eye.svg'
-import eyeOffUrl from '@/assets/eye-off.svg'
-import infoUrl from '@/assets/info.svg'
-
-// import TimeSelection from "@/components/svg/TimeSelection.vue";
-
-const animationInterval = 250
 
 export default {
   name: "BarPlot",
@@ -272,21 +262,15 @@ export default {
         return iconMapping[icon] || ''; // Return an empty string if the icon isn't in the mapping
     },  
     async downloadChart(filetype) {
-      // TODO: Use Html2Canvas to download SVG as PNG
       console.log('downloadChart')
-      const svgElement = document.getElementById("plot-svg")
-      const options = {
-        'modifyCss' : function(selector, properties) { 
-          selector = selector.replace('#selectors-prefixed ', ''); 
-          properties = properties.replace('green', 'blue'); 
-          return selector + '{' + properties + '}'; 
-        },
-        'backgroundColor' : "#FFFFFF",
-        'encoderOptions' : 1,
-      }
-      
-      svg.saveSvgAsPng(svgElement, "diagram.png", options)
-    },
+      const element = document.getElementById("plot-area-legend");
+      html2canvas(element).then(canvas => {
+        // Or convert the canvas to a PNG and download it
+        const link = document.createElement("a");
+        link.download = "expression_hist_plot.png";
+        link.href = canvas.toDataURL();
+        link.click();
+    })},
     downloadCSV() {
       console.log('downloadCSV')
       console.log(this.expression_merged)
@@ -800,9 +784,6 @@ export default {
         console.log(data)
       }
 
-      
-
-      
       function formatLabel(label) {
           var parts = label.split("_");
           var species_group = parts.slice(0, 1) + " " + parts.slice(4).join(" ");
@@ -849,29 +830,6 @@ export default {
           }
         
         })
-        
-
-      // if (this.grouped_by == 'Gene') {
-      //   console.log('Gene grouping')
-
-      //   console.log(groups)
-
-      //   console.log('data')
-      //   console.log(data)
-
-      //   // Select the tick labels
-      //   let tickLabels = this.svg.selectAll('.myXaxis .tick text');
-      //   console.log('tickLabels')
-      //   console.log(tickLabels)
-
-      //   // Bind the groups data to the tick labels
-      //   tickLabels.data(groups);
-      //   // Update the text of each label
-      //   tickLabels.text(function(d) {
-      //     console.log('tickLabels.text d')
-      //     console.log(d)
-      //   });
-      // }
 
 
       this.xSubgroup = d3.scaleBand()
@@ -1270,291 +1228,9 @@ export default {
       bars.transition_attributes('fill-opacity', newOpacity)
     },
 
-    infoExperimentText(data) {
-      // TODO: Add more metadata when new fields created for dataset upload page
-      // console.log('infoExperimentText')
-      // console.log(data)
-      const experiment = data[0]
-      // console.log(experiment)
-      // Get sample 
-      const groups = data[1][0][1][0][1][0][1]
-      const group_key = Object.keys(groups)[0]
-      const sample = groups[group_key][0]
-      const table_name = sample.table
-      // TODO: Filter gene expression data tables by experiment
-      //  composite of species_experiment_year
-      const table_metadata_list = this.gene_expression_data_tables.filter(e => 
-        e.table_name == table_name)
-      // TODO: Possible future bug when there's more than 1 dataset for tissue
-      if (table_metadata_list.length > 1) {
-        console.error('WARNING: More than 1 matching table for tissue', tissue)
-      }
-      const table_metadata = table_metadata_list[0]
-      console.log(table_metadata)
-
-      // console.log(table_metadata)
-      let text = `Experiment: ${table_metadata.experiment}\n`
-      text += `Year: ${table_metadata.year}\n`
-      text += `Species: ${table_metadata.species}\n`
-      // text += `Number of Samples: ${table_metadata.data.length}\n`
-      text += `Data Type: ${table_metadata.data_type}\n`
-      text += `Age (months): ${table_metadata.age_months}\n`
-      return text
-    }, 
-    infoTissueText(data) {
-      // TODO: Add more metadata when new fields created for dataset upload page
-      // console.log('infoTissueText')
-      // console.log(data)
-      const tissue = data[0].replaceAll('-', ' ')
-      // console.log(tissue)
-      // Get sample 
-      const groups = data[1][0][1][0][1]
-      const group_key = Object.keys(groups)[0]
-      const sample = groups[group_key][0]
-      const table_name = sample.table
-      const table_metadata_list = this.gene_expression_data_tables.filter(e => 
-        e.table_name == table_name)
-      // TODO: Possible future bug when there's more than 1 dataset for tissue
-      if (table_metadata_list.length > 1) {
-        console.error('WARNING: More than 1 matching table for tissue', tissue)
-      }
-      const table_metadata = table_metadata_list[0]
-
-      // console.log(table_metadata)
-      let text = `Tissue: ${tissue}\n`
-      text += `Experiment: ${table_metadata.experiment}\n`
-      text += `Year: ${table_metadata.year}\n`
-      text += `Species: ${table_metadata.species}\n`
-      text += `Gender: ${table_metadata.gender}\n`
-      // text += `Number of Samples: ${table_metadata.data.length}\n`
-      text += `Data Type: ${table_metadata.data_type}\n`
-      text += `Age (months): ${table_metadata.age_months}\n`
-      
-      return text
-    },
-    infoGeneText(data) {
-      // console.log('infoGeneText')
-      // console.log(data)
-      let gene_name = data[0]
-      // console.log('gene_name', gene_name)
-      const groups = data[1][0][1]
-      const group_key = Object.keys(groups)[0]
-      const sample = groups[group_key][0]
-      const table_name = sample.table
-      // console.log('table', table)
-
-      const gene_metadata_table = table_name.replace('gene_expression_data', 'gene_metadata')
-      // console.log(gene_metadata_table)
-      const gene_metadata_entries = this.gene_metadata.filter(e => 
-        e.table_name == gene_metadata_table)
-      // console.log('gene_metadata_entries')
-      // console.log(gene_metadata_entries)
-      let gene
-      if (gene_metadata_entries.length > 1 ) {
-        console.error('WARNING: Multiple entries in this.gene_metadata')
-        // gene = gene_metadata_entries.filter(e => e.gene_name == gene_name)[0]
-      }
-      gene = gene_metadata_entries[0].data.filter(e => e.gene_name == gene_name)[0]
-      // console.log('gene_metadata..')
-      // console.log(gene)
-
-      // Break info text into substrings of at most 50 characters
-      const maxWidth = 25
-
-      function splitStringByWidth(str, maxWidth) {
-        if (typeof str !== 'string') {
-          // console.error('Invalid input: str must be a string');
-          // return [str];
-          str = str.toString()
-        }
-        const words = str.split(' ');
-        let currentLine = '';
-        let result = [];
-
-        for (const word of words) {
-          if (currentLine.length + word.length <= maxWidth) {
-            currentLine += (currentLine ? ' ' : '') + word;
-          } else {
-            result.push(currentLine);
-            currentLine = word;
-          }
-        }
-        result.push(currentLine); // Push the last line
-        return result;
-      }
-
-      function splitStringsNewlines(str, maxWidth) {
-        let split_text = splitStringByWidth(str, maxWidth)
-        let result = ''
-        split_text.forEach((substring, index) => {
-          result += `  ${substring}\n`
-        });
-        return result
-      }
-
-      let text = `Gene:` + splitStringsNewlines(gene.gene_name, maxWidth)
-      text += `Gene ID:` + splitStringsNewlines(gene.gene_id, maxWidth)
-      text += `External Gene Name:` + splitStringsNewlines(gene.external_gene_name, maxWidth)
-      text += `Description: ` + splitStringsNewlines(gene.description, maxWidth)
-      // text += `Gene Biotype: ` + ${gene.gene_biotype}\n`
-      text += `Ensembl Gene ID:` + splitStringsNewlines(gene.ensembl_gene_id, maxWidth)
-      text += `Ensembl Peptide ID:` +  splitStringsNewlines(gene.ensembl_gene_id, maxWidth)
-      text += `Chr:` + splitStringsNewlines(gene.chr, maxWidth)
-      text += `Start:` + splitStringsNewlines(gene.start, maxWidth)
-      text += `End:` + splitStringsNewlines(gene.end, maxWidth)
-      text += `Length:` + splitStringsNewlines(gene.length, maxWidth)
-      text += `Strand:` + splitStringsNewlines(gene.strand, maxWidth)
-      text += `Annotation Divergence:` + splitStringsNewlines(gene.annotation_divergence, maxWidth)
-      text += `Copies:` + splitStringsNewlines(gene.copies, maxWidth)
-      text += `Refseq:` + splitStringsNewlines(gene.refseq, maxWidth)
-
-      // console.log(text)
-      
-      
-      return text
-    },
-    infoGenderText(data) {
-      // console.log('infoGenderText')
-      // console.log(data)
-      const gender = data[0]
-      const groups = data[1]
-      const group_key = Object.keys(groups)[0]
-      const sample = groups[group_key][0]
-
-      let num_samples = 0;
-      for (let key in groups) {
-        if (groups.hasOwnProperty(key)) {
-          num_samples += groups[key].length;
-        }
-      }
-
-      let text = `Gender: ${gender}\n`
-      text += `Age (months): ${sample.age_months}\n`
-      text += `Species: ${sample.species}\n`
-      text += `Tissue: ${sample.tissue}\n`
-      text += `Number of Samples: ${num_samples}\n`
-      
-      return text
-    },
-    infoGroupnameText(data) {
-      // console.log('infoGroupnameText')
-      // console.log(data)
-      const groupname = data[0]
-      const sample = data[1][0]
-      const stats = data[2]
-
-      let text = `Condition: ${groupname}\n`
-      text += `Age (months): ${sample.age_months}\n`
-      text += `Gender: ${sample.gender}\n`
-      text += `Species: ${sample.species}\n`
-      text += `Tissue: ${sample.tissue}\n`
-      text += `Number of Samples: ${data[1].length}\n`
-      text += `\nExpression Stats\n`
-      text += `Amplitude: ${Math.round(sample.amplitude*1000)/1000}\n`
-      text += `Min: ${Math.round(sample.min*1000)/1000}\n`
-      text += `Max: ${Math.round(sample.max*1000)/1000}\n`
-      text += `Mean: ${Math.round(sample.mean*1000)/1000}\n`
-      
-      return text
-    },
-
-    infoHover(evt, d) {
-      // console.log('infoHover')
-      // console.log(evt)
-      // console.log('d')
-      // console.log(d)
-      const self = evt.currentTarget
-      const self_dims = self.getBoundingClientRect()
-      
-      const root = evt.currentTarget.parentNode
-      const g = this.svg.append('g')
-        .attr('class', 'info-tooltip')
-        .attr('fill', d3.rgb('#222'))
-        
-      // Get relative position of self element within SVG
-      const svg = document.querySelector('#plot-svg')
-      const inverse = svg.getScreenCTM().inverse()
-      // TODO: WARNING, createSVGPoint may be deprecated
-      const pt = svg.createSVGPoint()
-      pt.x  = self_dims.x 
-      pt.y = self_dims.y
-      const p = pt.matrixTransform(inverse)
-      // console.log(p)
-      const pad = 3
-      const pos_x = p.x - this.margin.left - pad
-      const pos_y = p.y - this.margin.top + 22 + pad
-      
-      g.attr("transform", `translate(${pos_x},${pos_y})`);
-
-      const currType = root.querySelector('text').getAttribute('class').split('_')[1]
-      // console.log('currType', currType)
-      let info_text
-      if (currType == 'experiment') {
-        info_text = this.infoExperimentText(d)
-      } else if (currType == 'tissue') {
-        info_text = this.infoTissueText(d)
-      } else if (currType == 'gene') {
-        info_text = this.infoGeneText(d)
-      } else if (currType == 'gender') {
-        info_text = this.infoGenderText(d)
-      } else if (currType == 'groupname') {
-        info_text = this.infoGroupnameText(d)
-      }
-      if (!info_text) return g.style('display', 'none')
-
-      // console.log('info_text', info_text)
-      
-      // tooltip group
-      g.style("display", "flex")
-        .style("pointer-events", "none")
-        .style("font", "8px sans-serif");
-
-      // Rect must be appended first to act as background
-      const rect = g.append('rect')
-        .attr('fill', 'white')
-        .attr('stroke', d3.rgb('#222'))
-        .attr('stroke-width', 1) 
-
-      // tooltip content
-      const text_selection = g.selectAll("text")
-        .data([null])
-        .join("text")
-        .call(text => text
-          .selectAll("tspan")
-          .data((info_text + "").split(/\n/))
-          .join("tspan")
-            .attr("x", 0)
-            .attr("y", (d, i) => `${i * 1.1}em`)
-            .style("text-align", "left")
-            .style("font-weight", (_, i) => i ? null : "bold")
-            .text(d => d));
-      
-      // tooltip positioning
-      const {x, y, width: w, height: h} = text_selection.node().getBBox();
-      let wOffset = w
-      if (-wOffset + pos_x < 0) {
-        wOffset = 0
-      }
-      let hOffset = 0
-      if (hOffset + pos_y > this.height) {
-        hOffset = -h
-      }
-      text_selection.attr("transform", `translate(${-wOffset},${hOffset})`);
-      // console.log('position: ' + x + ', ' + y + ', ' + w + ', ' + h)
-
-      // Background dimensions relative to text size
-      rect
-        .attr('x', -wOffset-pad)
-        .attr('y', hOffset+y-pad)
-        .attr('width', w+2*pad)
-        .attr('height', h+2*pad)
-
-      // console.log('this.gene_expression_data_tables')
-      // console.log(this.gene_expression_data_tables)
-    }
   }
-
 }
+
 </script>
 
 
@@ -1593,6 +1269,10 @@ export default {
     font-size: 0.75rem; /* Adjusts the font size */
     // border: 0 !important;
 
+    .p-tree-wrapper {
+      padding-bottom: 2px !important;
+    }
+
     .p-treenode {
       padding: 0.0rem !important; /* Removes padding */
       font-size: 0.75rem; /* Adjusts the font size */
@@ -1600,7 +1280,7 @@ export default {
     }
 
     .p-treenode-content {
-      padding: 0 !important; /* Removes padding */
+      padding: 0 0 1px 0 !important; /* Removes padding */
       font-size: 0.75rem; /* Adjusts the font size */
       border: 0 !important;
       display:flex;

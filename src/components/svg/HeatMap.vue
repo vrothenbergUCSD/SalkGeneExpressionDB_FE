@@ -43,9 +43,7 @@
 
 <script>
 import * as d3 from "d3"
-import * as svg from 'save-svg-as-png'
-
-import DataService from "@/services/DataService.js"
+import html2canvas from "html2canvas"
 
 import ProgressSpinner from 'primevue/progressspinner'
 import InputSwitch from 'primevue/inputswitch'
@@ -258,17 +256,14 @@ export default {
     },    
     async downloadChart(filetype) {
       console.log('downloadChart')
-      const svgElement = document.getElementById("plot-svg")
-      const options = {
-        'modifyCss' : function(selector, properties) { 
-          selector = selector.replace('#selectors-prefixed ', ''); 
-          properties = properties.replace('green', 'blue'); 
-          return selector + '{' + properties + '}'; 
-        },
-        'backgroundColor' : "#FFFFFF",
-        'encoderOptions' : 1,  
-      }
-      svg.saveSvgAsPng(svgElement, "diagram.png", options)
+      const element = document.getElementById("plot-area");
+      html2canvas(element).then(canvas => {
+        // Or convert the canvas to a PNG and download it
+        const link = document.createElement("a");
+        link.download = "expression_heat_plot.png";
+        link.href = canvas.toDataURL();
+        link.click();
+      });
     },
     downloadCSV() {
       console.log('downloadCSV')
@@ -562,12 +557,12 @@ export default {
     initialize_heat_map() {
       console.log('initialize_heat_map')
       // set the dimensions and margins of the graph
-      this.margin = {top: 10, right: 10, bottom: 140, left: 80}
+      this.margin = {top: 5, right: 50, bottom: 5, left: 70}
 
       this.width = this.windowWidth * 0.7 - this.margin.left - this.margin.right,
-      this.height = this.windowHeight * 0.9 - this.margin.top - this.margin.bottom;
-      this.drawable_width_scale = 0.75
-      this.drawable_height_scale = 0.5
+      this.height = this.windowHeight * 0.7 - this.margin.top - this.margin.bottom;
+      this.drawable_width_scale = 0.85
+      this.drawable_height_scale = 0.90
       this.svg = d3.select("#plot-area")
         .append("svg")
           .attr("id", "plot-svg")
