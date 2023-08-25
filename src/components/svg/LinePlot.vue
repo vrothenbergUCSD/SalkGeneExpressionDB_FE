@@ -6,34 +6,58 @@
       <ProgressSpinner class="w-full mt-10" />
     </div>
 
-    <div id="plot-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
-      <div id="toggle_data_points" class="flex flex-col align-items-center mx-2">
-        <div class="font-semibold pb-2">Data Points</div>
-        <InputSwitch v-model="showReplicatePoints" @change="this.update_line_plot" />
-      </div>
-      <div id="toggle_error_bars" class="flex flex-col align-items-center mx-2">
-        <div class="font-semibold pb-2">Error Bars</div>
-        <InputSwitch v-model="showErrorBars" @change="this.update_line_plot" />
-      </div>
-      <div id="menu-options" class="flex grow justify-end">
-        <div class="flex flex-col items-center">
-          <div class="font-semibold pb-2">Download</div>
-          <Button type="button" label="" icon="pi pi-download" @click="toggle('download_menu', $event)" 
-            aria-haspopup="true" aria-controls="download_menu"/>
-          <Menu id="download_menu" ref="download_menu" :model="download_items" :popup="true" />
+    
+    <div id="plot-area-legend" class="flex space-x-4 mt-5">
+      <div id="plot-area-options" class="flex-grow">
+        <div id="plot-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
+          <div id="toggle_data_points" class="flex flex-col align-items-center mx-2">
+            <div class="font-semibold pb-2">Data Points</div>
+            <InputSwitch v-model="showReplicatePoints" @change="this.update_line_plot" />
+          </div>
+          <div id="toggle_error_bars" class="flex flex-col align-items-center mx-2">
+            <div class="font-semibold pb-2">Error Bars</div>
+            <InputSwitch v-model="showErrorBars" @change="this.update_line_plot" />
+          </div>
+          <div id="menu-options" class="flex grow justify-end">
+            <div class="flex flex-col items-center">
+              <div class="font-semibold pb-2">Download</div>
+              <Button type="button" label="" icon="pi pi-download" @click="toggle('download_menu', $event)" 
+                aria-haspopup="true" aria-controls="download_menu"/>
+              <Menu id="download_menu" ref="download_menu" :model="download_items" :popup="true" />
+            </div>
+            
+            <div class="flex flex-col items-center ml-2">
+              <div class="font-semibold pb-2">Colors</div>
+              <Button type="button" label="" icon="pi pi-palette" @click="toggle('color_menu', $event)" 
+                aria-haspopup="true" aria-controls="color_menu"/>
+              <Menu id="color_menu" ref="color_menu" :model="color_items" :popup="true" />
+            </div>   
+          </div>
         </div>
-        
-        <div class="flex flex-col items-center ml-2">
-          <div class="font-semibold pb-2">Colors</div>
-          <Button type="button" label="" icon="pi pi-palette" @click="toggle('color_menu', $event)" 
-            aria-haspopup="true" aria-controls="color_menu"/>
-          <Menu id="color_menu" ref="color_menu" :model="color_items" :popup="true" />
-        </div>   
+      
+        <div id="plot-area" class="mt-10">
+        </div>
       </div>
+      <div id="legend-area" class="flex-none">
+        <span class="text-center">Legend</span>
+          <!-- <div class="card flex"> -->
+              <Tree :value="this.nodes" class="custom-tree" v-model:expandedKeys="expandedKeys"
+                    selectionMode="single" @nodeSelect="toggleDatasetVisibility">
+                  <template #default="slotProps">
+                      <!-- Render Material Icon for specific nodes -->
+                      <div class="icon-label" :class="{ 'disabled-node': !slotProps.node.visible }" :style="{color: getNodeColor(slotProps.node)}">
+                          <span v-if="slotProps.node.icon" class="material-symbols-outlined custom-icon">{{ getIconText(slotProps.node.icon) }}</span>
+                          <!-- Render node label -->
+                          <span>{{ slotProps.node.label }}</span>
+                      </div>
+                  </template>
+              </Tree>
+          <!-- </div> -->
+      </div>
+      
     </div>
-
-    <div id="plot-area" class="mt-10">
-    </div>
+    
+    
     <div id="table-area" class="mt-1">
       <Table :dataset="this.expression_merged"/>
     </div>
@@ -53,6 +77,7 @@ import Button from 'primevue/button'
 import ToggleButton from 'primevue/togglebutton'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import Tree from 'primevue/tree'
 
 import _ from 'underscore';
 
@@ -77,28 +102,6 @@ d3.selection.prototype.transition_attributes = function(
       .attr(attr_name, opacity)
 }
 
-// // Add toggle visibility SVG icons
-// d3.selection.prototype.append_eyes = function() {
-//   this.append('svg:image')
-//     .attr('class', 'eye')
-//     .attr("xlink:href", eyeUrl)
-//     .attr('type', "image/svg+xml")
-//     .attr('x', 0)
-//     .attr('y', 0)
-//     .attr('width', eye_w)
-//     .attr('height', eye_h)
-//     .attr('opacity', 1)
-//   this.append('svg:image')
-//     .attr('class', 'eye-off')
-//     .attr("xlink:href", eyeOffUrl)
-//     .attr('type', "image/svg+xml")
-//     .attr('x', 0)
-//     .attr('y', 0)
-//     .attr('width', eye_w)
-//     .attr('height', eye_h)
-//     .attr('opacity', 0)
-//   return this
-// }
 
 
 export default {
@@ -112,6 +115,7 @@ export default {
     DataTable,
     Column,
     Table,
+    Tree
   },
   props: { 
     genes: Array,
@@ -133,6 +137,10 @@ export default {
       expression_normalized_averaged: [],
       expression_normalized_flattened: [],
       legend_group_data: [],
+
+      // legend
+      nodes: null,
+      expandedKeys: {},
 
       // update_line_plot
       sumstat: null,
@@ -221,7 +229,7 @@ export default {
     // Wait for SVG to load before calling legend
     // Fixes bug where info icons don't yet have BBox dimensions to position after text
     const svgElem = document.getElementById('plot-svg')
-    svgElem.addEventListener('load', this.legend())
+    // svgElem.addEventListener('load', this.legend())
 
     this.$nextTick(() => {
       window.addEventListener('resize', this.onResize);
@@ -233,11 +241,31 @@ export default {
   beforeDestroy() { 
     window.removeEventListener('resize', this.onResize); 
   },
+  computed: {
+    getNodeColor() {
+        return (node) => {
+            return this.getHSLprefix(node);
+        };
+    }
+
+  },
 
   methods: {
     toggle(menu, evt) {
       this.$refs[menu].toggle(evt);
     },    
+    getIconText(icon) {
+        const iconMapping = {
+            'material-icon-genetics': 'genetics',
+            'material-icon-science': 'lab_profile',
+            'material-icon-tissue': 'science',
+            'material-icon-male': 'male',
+            'material-icon-female': 'female',
+            'material-icon-group': ''
+        };
+
+        return iconMapping[icon] || ''; // Return an empty string if the icon isn't in the mapping
+    },
     async downloadChart(filetype) {
       console.log('downloadChart')
       const svgElement = document.getElementById("plot-svg")
@@ -328,7 +356,7 @@ export default {
              
           
           // "TRF_2018_Mouse_Adrenal_gene_expression_data_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"
-          let sample_table = table.replace('gene_expression_data', 'sample_metadata')
+          let sample_table = table.replace('expression', 'sample')
           let expression_data = e.data
           let sample_data = this.sample_metadata_tables.find(obj => 
             obj.table_name == sample_table).data
@@ -356,7 +384,7 @@ export default {
           }
           e.species = species[0]
 
-          e.experiment_year_species = e.experiment + ' ' + e.year + ' ' + e.species
+          e.experiment_year_species = e.experiment + ' ' + e.species
 
           const age_months = [...new Set(e.data.map(item => item.age_months))];
           if (age_months.length > 1) {
@@ -396,7 +424,7 @@ export default {
             e.replicate = e.sample_name.split('-').at(-1)
           else
             e.replicate = e.sample_name.split('_').at(-1)
-          e.identifier = `${e.species}_${e.experiment}_${e.year}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}`
+          e.identifier = `${e.species}_${e.experiment}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}`
           e.identifier = e.identifier.replaceAll(' ', '-');
         })
 
@@ -409,7 +437,7 @@ export default {
 
         const grouped_species = _.groupBy(this.expression_merged, e => `${e.species}`);
 
-        const grouped_species_experiment_year = _.groupBy(this.expression_merged, e => `${e.species}_${e.experiment}_${e.year.toString()}`);
+        const grouped_species_experiment_year = _.groupBy(this.expression_merged, e => `${e.species}_${e.experiment}`);
 
         const grouped_species_experiment_year_tissue = Object.keys(grouped_species_experiment_year).map((year) => {
           return [year, _.groupBy(grouped_species_experiment_year[year], e => `${e.tissue}`)];
@@ -434,7 +462,7 @@ export default {
             return [tissue[0].replaceAll(' ', '-'), tissue[1].map((gene) => {
               return [gene[0].replaceAll(' ', '-'), Object.keys(gene[1]).map((gender) => {
                 const grouping = _.groupBy(gene[1][gender], e => `${e.group_name}`)
-                const keys = Object.keys(grouping)
+                const keys = Object.keys(grouping).sort()
                 for(let i = 0; i < keys.length; i++) {
                   const key = keys[i]
                   const max = Math.max.apply(Math, grouping[key].map(
@@ -473,7 +501,7 @@ export default {
         }));
 
         const grouped_norm = _.groupBy(this.expression_merged, e => 
-          `${e.species}_${e.experiment}_${e.year}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}_ZT${e.time_point}`)
+          `${e.species}_${e.experiment}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}_ZT${e.time_point}`)
 
         // console.log('grouped_norm')
         // console.log(grouped_norm)
@@ -520,7 +548,7 @@ export default {
 
         this.sumstat = d3
           .group(this.expression_normalized_averaged, 
-          e => `${e.species}_${e.experiment}_${e.year}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}`.replaceAll(' ', '-'))
+          e => `${e.species}_${e.experiment}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}`.replaceAll(' ', '-'))
 
         console.log('this.sumstat')
         console.log(this.sumstat)
@@ -545,7 +573,7 @@ export default {
         console.log(this.cat_map)
 
         this.update_line_plot()
-        this.legend()
+        // this.legend()
       }
       
       const elapsed = Date.now() - start
@@ -554,12 +582,12 @@ export default {
     initialize_line_plot() {
       console.log('initialize_line_plot')
       // set the dimensions and margins of the graph
-      this.margin = {top: 10, right: 10, bottom: 140, left: 80}
+      this.margin = {top: 5, right: 0, bottom: 5, left: 70}
 
       this.width = this.windowWidth * 0.7 - this.margin.left - this.margin.right,
-      this.height = this.windowHeight * 0.9 - this.margin.top - this.margin.bottom;
-      this.drawable_width_scale = 0.9
-      this.drawable_height_scale = 0.5
+      this.height = this.windowHeight * 0.7 - this.margin.top - this.margin.bottom;
+      this.drawable_width_scale = 0.95
+      this.drawable_height_scale = 0.90
       this.svg = d3.select("#plot-area")
           .append("svg")
             .attr("id", "plot-svg")
@@ -626,9 +654,9 @@ export default {
       this.legendY = this.height*this.drawable_height_scale + 60
       this.legendY_spacing = 10
       // Legend 
-      this.svg.append('g')
-        .attr('id', 'legend')
-        .attr('transform', `translate(0, ${this.legendY})`)
+      // this.svg.append('g')
+      //   .attr('id', 'legend')
+      //   .attr('transform', `translate(0, ${this.legendY})`)
       
       // Color 
       this.color = d3.scaleSequential(d3.interpolateSinebow)
@@ -637,7 +665,7 @@ export default {
     change_color(d3color) {
       this.color = d3.scaleSequential(d3color)
       this.update_line_plot()
-      this.legend()
+      // this.legend()
     },
     update_line_plot() {
       console.log('===================')
@@ -704,6 +732,13 @@ export default {
                   (d[1]))
                 .attr('stroke', d => {
                   return this.getHSL(d[1][0])
+                })
+                .attr("stroke-dasharray", d => {
+                  console.log('stroke-dasharray')
+                  console.log('d')
+                  console.log(d)
+                  // const group = d[0].split('_').at(-1)
+                  return d[1][0].group_index == 1 ? null : ('3,3');
                 })
                 .transition_attributes('stroke-opacity', d => 
                   this.sumstat_visibility[d[0]])
@@ -863,9 +898,102 @@ export default {
       
       
       this.voronoi_grid()
-      this.legend()
+      // this.legend()
+      this.getTreeNodes(this.expression_normalized)
 
       console.log('===================')
+    },
+    getTreeNodes(data) {
+      const transformLevel = (items, parentKey = '', parentOriginalLabel = '', level = 0) => {
+          return items.flatMap((item, index) => {
+              const key = `${parentKey}${index}`;
+              let label, children;
+              
+              if (Array.isArray(item) && typeof item[0] === 'string') {
+                  [label, children] = item;
+              } else {
+                  return []; // handle the data points under ALF and TRF, which we ignore for tree structure.
+              }
+
+              const nodeOriginalLabel = `${parentOriginalLabel ? parentOriginalLabel + '_' : ''}${label}`;
+              const node = {
+                  key: key,
+                  visible: 1,
+                  originalLabel: nodeOriginalLabel,
+                  label: label.replaceAll('-', ' ').replaceAll('_', ' - '),
+              };
+
+              // Set icons based on levels or labels
+              const icons = ['material-icon-science', 'material-icon-tissue', 'material-icon-genetics'];
+              node.icon = icons[level] || (label === 'Male' ? 'material-icon-male' : (label === 'Female' ? 'material-icon-female' : undefined));
+
+              // Set children for different levels
+              if (level === 3) {
+                  node.children = Object.keys(children).map((condition, cIndex) => ({
+                      key: `${key}-${cIndex}`,
+                      label: condition,
+                      visible: 1,
+                      originalLabel: nodeOriginalLabel + "_" + condition,
+                  }));
+              } else {
+                  node.children = Array.isArray(children) ? transformLevel(children, `${key}-`, nodeOriginalLabel, level + 1) : undefined;
+              }
+
+              return node;
+          });
+      };
+
+      this.nodes = transformLevel(data);
+      this.expandTreeNodes();
+      this.complete = true
+    },
+    expandTreeNodes() {
+      for (let node of this.nodes) {
+        this.expandNode(node);
+      }
+      this.expandedKeys = { ...this.expandedKeys };
+    },
+    expandNode(node) {
+      if (node.children && node.children.length) {
+          this.expandedKeys[node.key] = true;
+          for (let child of node.children) {
+              this.expandNode(child);
+          }
+      }
+    },
+    collapseTreeNodes() {
+      this.expandedKeys = {};
+    },
+    nodeToggled(node) {
+      console.log('nodeToggled')
+      console.log(node)
+    },
+    toggleDatasetVisibility(node) {
+      console.log('toggleDatasetVisibility')
+      console.log(node)
+      // Compute the prefix for the selected node
+      const prefix = this.computePrefixForNode(node);
+      console.log('prefix')
+      console.log(prefix)
+      const newOpacity = node.visible === 1 ? 0 : 1;
+      console.log('newOpacity', newOpacity)
+      node.visible = newOpacity;
+
+      this.toggleVisibility(newOpacity, prefix)
+      this.setNodeVisibilityRecursive(node, newOpacity);
+    },
+    setNodeVisibilityRecursive(node, newOpacity) {
+      node.visible = newOpacity
+      // Process child nodes if they exist
+      if (node.children && node.children.length) {
+        node.children.forEach(childNode => {
+          // Compute prefix for child node
+          this.setNodeVisibilityRecursive(childNode, newOpacity);
+        });
+      }
+    },
+    computePrefixForNode(node) {
+      return node.originalLabel;
     },
     legend() {
       console.log('legend')
@@ -1640,9 +1768,9 @@ export default {
       
       const name_split = name.split('_')
       let id
-      if (name_split.length > 6) {
-        // ['Mus musculus', 'TRF Experiment', '2018', 'Adrenal gland', 'Clock', 'Male', 'ALF', 'ZT12']
-        id = name_split.slice(0, 6).join('_')
+      if (name_split.length > 5) {
+        // ['Mus musculus', 'TRF Experiment 2018', 'Adrenal gland', 'Clock', 'Male', 'ALF', 'ZT12']
+        id = name_split.slice(0, 5).join('_')
       } else {
         console.error('getHSL: unexpected name length')
         // id = name_split.slice(0, 5).join('_')
@@ -1660,6 +1788,51 @@ export default {
       }
 
       return hsl
+    },
+    getHSLprefix(node) {
+      console.log('getHSLprefix')
+      console.log(node)
+      let prefix = node.originalLabel
+      let group_index = parseInt(node.key.split('-').slice(-1)[0], 10)
+      console.log('group_index ' + group_index)
+      const DEFAULT_COLOR = "#000000"; // default font color, set this to your preferred default
+      const shade_factor = 3;
+      // Split the prefix by underscores.
+      const elements = prefix.split('_');
+      const elementCount = elements.length;
+      
+      console.log(prefix)
+      console.log(elementCount)
+
+      // If fewer than 5 elements, return the default color.
+      if (elementCount < 5) {
+          return DEFAULT_COLOR;
+      }
+
+      let gender = false;
+
+      // Based on the number of elements, determine the current level.
+      if (elementCount === 5) { // Assume that at this level, we're dealing with gender.
+          gender = true;
+      } else if (elementCount === 6) { // Assume that at this level, we're dealing with condition.
+          gender = false;
+          prefix = elements.slice(0, 5).join('_')
+          console.log('new prefix: ' + prefix)
+      } else {
+          console.error('Unexpected number of prefix elements. Defaulting gender to false.');
+      }
+
+      // Get color based on the prefix. Assuming that the cat_map uses the prefix for mapping.
+      let hsl = d3.hsl(this.color(this.cat_map.get(prefix)));
+
+      // If gender flag is false, shade the base color.
+      if (!gender) {
+          const factor = 1 + (((group_index === 0) - 0.5) / shade_factor);
+          hsl.l *= factor;
+      }
+      console.log(hsl.toString())
+
+      return hsl.toString();
     },
     popover_text(d) {
       let text = `Data Point Details
@@ -2182,6 +2355,67 @@ export default {
         margin-top: -0.45rem;
     }
   }
+
+ 
+
 }
+
+#legend-area {
+  :deep(.p-tree) {
+    padding: 0.25rem !important; /* Removes padding */
+    font-size: 0.75rem; /* Adjusts the font size */
+    // border: 0 !important;
+
+    .p-treenode {
+      padding: 0.0rem !important; /* Removes padding */
+      font-size: 0.75rem; /* Adjusts the font size */
+      // border: 0 !important;
+    }
+
+    .p-treenode-content {
+      padding: 0 !important; /* Removes padding */
+      font-size: 0.75rem; /* Adjusts the font size */
+      border: 0 !important;
+      display:flex;
+      align-items: center;
+    }
+    .p-tree-toggler {
+      // font-size: 0.5em !important;
+      width: 1rem !important;
+      height: 1rem !important;
+      margin-right: 0.25rem !important;
+      .p-tree-toggler-icon {
+        font-size: 0.5em !important;
+        margin-right: 0.0rem !important;
+        margin-left: 0.0rem !important;
+      }
+    }
+    .p-treenode-icon {
+      margin-right:0.0rem !important;
+    }
+
+    .custom-icon {
+      font-size:0.75rem !important;
+    }
+
+    .icon-label {
+      display:flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+  }
+
+  .disabled-node {
+    color: #888;     /* Gray out the text */
+    opacity: 0.3;    /* Make it slightly transparent */
+    // text-decoration: line-through; /* Add strike-through */
+  }
+}
+
+
+
+
+
+
 
 </style>

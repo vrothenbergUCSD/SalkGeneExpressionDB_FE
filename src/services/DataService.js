@@ -25,6 +25,10 @@ class DataService {
     //http://127.0.0.1:8000/expression_data/gene_name/0610009B22Rik,Agrn
     return http.get(`gene_expression/gene_names?gene_names=${genes}&table=${table}`)
   }
+  async getExpressionDataByGenesFS(genes, table) {
+    //http://127.0.0.1:8000/expression_data/gene_name/0610009B22Rik,Agrn
+    return http.get(`gene_expression/gene_names_fs?gene_names=${genes}&table=${table}`)
+  }
   async getExpressionDataByGenesGendersConditions(genes, genders, conditions, table) {
     let url = `gene_expression/gene_names_genders_conditions?gene_names=${genes}`
     if (genders.length)
@@ -40,12 +44,22 @@ class DataService {
   async getGenes(table = "Mouse_TRF_2018_Liver_gene_metadata") {
     return http.get(`gene_metadata/all_names?table=${table}`)
   }
+  async getGenesFS(table = "Mouse_TRF_2018_Liver_gene_metadata") {
+    return http.get(`gene_metadata/all_names_fs?table=${table}`)
+  }
   async getGeneMetadata(genes, table) {
     ///gene_metadata/gene_name
     return http.get(`gene_metadata/gene_name?gene_name=${genes}&table=${table}`)
   }
+  async getGeneMetadataFS(genes, table) {
+    ///gene_metadata/gene_name
+    return http.get(`gene_metadata/gene_name_fs?gene_name=${genes}&table=${table}`)
+  }
   async getSampleMetadata(table) {
     return http.get(`sample_metadata/data?table=${table}`)
+  }
+  async getSampleMetadataFS(table) {
+    return http.get(`sample_metadata/data_fs?table=${table}`)
   }
   async getSampleMetadataGendersConditions(genders, conditions, table) {
     let url = `sample_metadata/data?table=${table}`

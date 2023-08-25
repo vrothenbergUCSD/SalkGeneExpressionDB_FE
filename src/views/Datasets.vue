@@ -213,32 +213,33 @@ export default {
 
     }
   },
-  async mounted() {
-    console.log('Datasets mounted')
+  // async mounted() {
+  //   console.log('Datasets mounted')
 
-    let formData = new FormData() 
+  //   let formData = new FormData() 
 
-    let token = this.$store.getters.getToken
-    formData.append('authorization', token)
-    let api_result = await DataService.testAuth(formData)
-    console.log('api_result')
-    console.log(api_result)
+  //   // Bug - Returns null if session is new
+  //   let token = this.$store.getters.getToken
+  //   formData.append('authorization', token)
+  //   let api_result = await DataService.testAuth(formData)
+  //   console.log('api_result')
+  //   console.log(api_result)
 
-    await this.load_metadata()
+  //   await this.load_metadata()
 
-    console.log('db_metadata')
-    console.log(this.db_metadata)
+  //   console.log('db_metadata')
+  //   console.log(this.db_metadata)
 
-    this.process_datasets()
+  //   this.process_datasets()
 
-    console.log('datasets')
-    console.log(this.datasets)
+  //   console.log('datasets')
+  //   console.log(this.datasets)
 
-    this.loading = false
+  //   this.loading = false
 
 
 
-  },
+  // },
   methods: {
     async load_metadata() {
       console.log('load_metadata')
@@ -340,20 +341,43 @@ export default {
 
 
   },
-  computed: {
-    // longestTissueLength() {
-    //   let longestLength = 0;
-    //   this.datasets.forEach(dataset => {
-    //     dataset.tissues.forEach(tissue => {
-    //       const length = tissue.length;
-    //       if (length > longestLength) {
-    //         longestLength = length;
-    //       }
-    //     });
-    //   });
-    //   return longestLength;
-    // }
-}
+  watch: {
+    '$store.state.token': {
+      handler: async function (token) {
+        // if user is logged in and token is not available, wait
+        if (this.$store.state.user && !token) {
+          return;
+        }
+
+        token = this.$store.getters.getToken
+
+        console.log('Datasets mounted')
+
+        let formData = new FormData()
+
+        
+        formData.append('authorization', token)
+        
+
+        let api_result = await DataService.testAuth(formData)
+        console.log('api_result')
+        console.log(api_result)
+
+        await this.load_metadata()
+
+        console.log('db_metadata')
+        console.log(this.db_metadata)
+
+        this.process_datasets()
+
+        console.log('datasets')
+        console.log(this.datasets)
+
+        this.loading = false
+      },
+      immediate: true,
+    },
+  }
 
 
 }

@@ -348,7 +348,7 @@ export default {
              
           
           // "TRF_2018_Mouse_Adrenal_gene_expression_data_UCb0eBc2ewPjv9ipwLaEUYSwdhh1"
-          let sample_table = table.replace('gene_expression_data', 'sample_metadata')
+          let sample_table = table.replace('expression', 'sample')
           let expression_data = e.data
           let sample_data = this.sample_metadata_tables.find(obj => 
             obj.table_name == sample_table).data
@@ -376,7 +376,7 @@ export default {
           }
           e.species = species[0]
 
-          e.experiment_year_species = e.experiment + ' ' + e.year + ' ' + e.species
+          e.experiment_year_species = e.experiment + ' ' + e.species
 
           const age_months = [...new Set(e.data.map(item => item.age_months))];
           if (age_months.length > 1) {
@@ -416,7 +416,7 @@ export default {
             e.replicate = e.sample_name.split('-').at(-1)
           else
             e.replicate = e.sample_name.split('_').at(-1)
-          e.identifier = `${e.species}_${e.experiment}_${e.year}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}`
+          e.identifier = `${e.species}_${e.experiment}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}`
           e.identifier = e.identifier.replaceAll(' ', '-');
         })
 
@@ -430,7 +430,7 @@ export default {
 
         const grouped_species = _.groupBy(this.expression_merged, e => `${e.species}`);
 
-        const grouped_species_experiment_year = _.groupBy(this.expression_merged, e => `${e.species}_${e.experiment}_${e.year.toString()}`);
+        const grouped_species_experiment_year = _.groupBy(this.expression_merged, e => `${e.species}_${e.experiment}}`);
 
         const grouped_species_experiment_year_tissue = Object.keys(grouped_species_experiment_year).map((year) => {
           return [year, _.groupBy(grouped_species_experiment_year[year], e => `${e.tissue}`)];
@@ -494,7 +494,7 @@ export default {
         }));
 
         const grouped_norm = _.groupBy(this.expression_merged, e => 
-          `${e.species}_${e.experiment}_${e.year}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}_ZT${e.time_point}`)
+          `${e.species}_${e.experiment}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}_ZT${e.time_point}`)
 
         // console.log('grouped_norm')
         // console.log(grouped_norm)
@@ -539,7 +539,7 @@ export default {
 
         this.sumstat = d3
           .group(this.expression_normalized_averaged, 
-          e => `${e.species}_${e.experiment}_${e.year}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}`.replaceAll(' ', '-'))
+          e => `${e.species}_${e.experiment}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}`.replaceAll(' ', '-'))
 
         this.sumstat_visibility = Object.fromEntries(
           new Map([...this.sumstat.keys()].map(e => [e, 1])))
@@ -622,8 +622,6 @@ export default {
       this.svg.append("g")
         .attr("class", "y-label")
         .style("font-size", 10)
-        // .call(d3.axisLeft(y).tickSize(0))
-
       
       // Color 
       // this.color = d3.scaleSequential(d3.interpolateSinebow)
@@ -639,7 +637,6 @@ export default {
     change_color(d3color) {
       this.color = d3.scaleSequential(d3color)
       this.update_heat_map()
-
     },
     update_heat_map() {
       console.log('===================')
@@ -676,10 +673,12 @@ export default {
 
       function formatLabel(label) {
           var parts = label.split("_");
+          var species_group = parts.slice(0, 1) + " " + parts.slice(4).join(" ");
+          var tissue = parts.slice(2, 3).join(" ").replaceAll('-', ' ') + " - " + parts.slice(3, 4); 
           return [
-              parts.slice(0, 3).join(" ").replaceAll('-', ' '),
-              parts.slice(3, 4).join(" ").replaceAll('-', ' '),
-              parts.slice(4).join(" ").replaceAll('-', ' ')
+              parts.slice(1, 2).join(" ").replaceAll('-', ' '),
+              tissue,
+              species_group.replaceAll('-', ' ')
           ];
       }
 
@@ -710,12 +709,6 @@ export default {
                 }
               });
             });
-
-              // this.svg.selectAll(".myXaxis .tick line")
-              //   .attr("stroke" , "none")
-
-
-            
           
           })
           
@@ -1625,7 +1618,7 @@ export default {
       const tissue = sample.tissue
       // console.log('table', table)
 
-      const gene_metadata_table = table.replace('gene_expression_data', 'gene_metadata')
+      const gene_metadata_table = table.replace('expression', 'sample')
       // console.log(gene_metadata_table)
       const gene_metadata_entries = this.gene_metadata.filter(e => e.table_name == gene_metadata_table)
       // console.log('gene_metadata_entries')
