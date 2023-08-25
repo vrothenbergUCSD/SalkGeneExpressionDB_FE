@@ -78,16 +78,6 @@
 
         </div>
       </div>
-
-
-      
-
-      <!-- <div v-show="databaseTablePrefix" class="my-3">
-        Database Table Prefix: <span class="font-mono pl-3">{{ databaseTablePrefix }}</span>
-      </div> -->
-
-
-
       <div id="gene_metadata">
         <div class="text-xl font-medium mb-3 mt-5">
           Gene Metadata

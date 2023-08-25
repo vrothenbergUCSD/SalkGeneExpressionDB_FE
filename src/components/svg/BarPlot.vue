@@ -3,40 +3,51 @@
     <div id="spinner" class="mt-10 mx-auto" v-show="!this.complete" >
       <ProgressSpinner class="w-full mt-10" />
     </div>
-
-    <div id="plot-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
-      <div id="group-by" class="flex flex-col align-items-center mx-2">
-        <div class="font-semibold pb-2">Group by:</div>
-        <SelectButton v-model="grouped_by" :options="grouped_by_options" @change="updateGroupedBy"/>
-      </div>
-      <div id="time-selection" v-show="grouped_by === 'Time'" class="flex flex-col align-items-center mx-2">
-        <div class="font-semibold pb-2">Time Points (ZT)</div>
-        <SelectButton v-model="time_points_selected" 
-          :options="time_points_options" optionLabel="name" 
-          multiple @change="updateTimePointsSelected"/>
-      </div>
-      <div id="menu-options" class="flex grow justify-end">
-        <div class="flex flex-col items-center">
-          <div class="font-semibold pb-2">Download</div>
-          <Button type="button" label="" icon="pi pi-download" @click="toggle('download_menu', $event)" 
-            aria-haspopup="true" aria-controls="download_menu"/>
-          <Menu id="download_menu" ref="download_menu" :model="download_items" :popup="true" />
-        </div>
-        
-        <div class="flex flex-col items-center ml-2">
-          <div class="font-semibold pb-2">Colors</div>
-          <Button type="button" label="" icon="pi pi-palette" @click="toggle('color_menu', $event)" 
-            aria-haspopup="true" aria-controls="color_menu"/>
-          <Menu id="color_menu" ref="color_menu" :model="color_items" :popup="true" />
-        </div>   
-      </div>
-
-    </div>
     
-    <div id="plot-area" class="mt-10">
-    </div>
-    <div id="legend-area" class="mb-1">
-
+    <div id="plot-area-legend" class="flex space-x-4 mt-5">
+      <div id="plot-area-options" class="flex-grow">
+        <div id="plot-options" class="w-3/4 mx-auto mt-1 flex flex-row" v-show="this.complete">
+          <div id="group-by" class="flex flex-col align-items-center mx-2">
+            <div class="font-semibold pb-2">Group by:</div>
+            <SelectButton v-model="grouped_by" :options="grouped_by_options" @change="updateGroupedBy"/>
+          </div>
+          <div id="time-selection" v-show="grouped_by === 'Time'" class="flex flex-col align-items-center mx-2">
+            <div class="font-semibold pb-2">Time Points (ZT)</div>
+            <SelectButton v-model="time_points_selected" 
+              :options="time_points_options" optionLabel="name" 
+              multiple @change="updateTimePointsSelected"/>
+          </div>
+          <div id="menu-options" class="flex grow justify-end">
+            <div class="flex flex-col items-center">
+              <div class="font-semibold pb-2">Download</div>
+              <Button type="button" label="" icon="pi pi-download" @click="toggle('download_menu', $event)" 
+                aria-haspopup="true" aria-controls="download_menu"/>
+              <Menu id="download_menu" ref="download_menu" :model="download_items" :popup="true" />
+            </div>
+            
+            <div class="flex flex-col items-center ml-2">
+              <div class="font-semibold pb-2">Colors</div>
+              <Button type="button" label="" icon="pi pi-palette" @click="toggle('color_menu', $event)" 
+                aria-haspopup="true" aria-controls="color_menu"/>
+              <Menu id="color_menu" ref="color_menu" :model="color_items" :popup="true" />
+            </div>   
+          </div>
+        </div>
+        <div id="plot-area" class="mt-10">
+        </div>
+      </div>
+      <div id="legend-area" class="flex-none">
+        <span class="text-center">Legend</span>
+          <Tree :value="this.nodes" class="custom-tree" v-model:expandedKeys="expandedKeys"
+                selectionMode="single" @nodeSelect="toggleDatasetVisibility">
+            <template #default="slotProps">
+                <div class="icon-label" :class="{ 'disabled-node': !slotProps.node.visible }" :style="{color: getNodeColor(slotProps.node)}">
+                    <span v-if="slotProps.node.icon" class="material-symbols-outlined custom-icon">{{ getIconText(slotProps.node.icon) }}</span>
+                    <span>{{ slotProps.node.label }}</span>
+                </div>
+            </template>
+          </Tree>
+      </div>
     </div>
 
     <div id="table-area" class="mt-1">
@@ -47,6 +58,9 @@
 
 <script>
 import * as d3 from "d3"
+
+// TODO: Fix this 
+// import html2canvas from "html2canvas";
 import * as svg from 'save-svg-as-png'
 
 import ProgressSpinner from 'primevue/progressspinner'
@@ -69,39 +83,6 @@ import infoUrl from '@/assets/info.svg'
 // import TimeSelection from "@/components/svg/TimeSelection.vue";
 
 const animationInterval = 250
-// Custom function, reduces redundant code for transitions
-// Opacity transition, fade in / out
-// d3.selection.prototype.transition_attributes = function(
-//   attr_name, opacity, duration=animationInterval) {
-//   this.transition()
-//       .ease(Math.sqrt)
-//       .duration(duration)
-//       .attr(attr_name, opacity)
-//   return this
-// }
-
-// // Add toggle visibility SVG icons
-// d3.selection.prototype.append_eyes = function() {
-//   this.append('svg:image')
-//     .attr('class', 'eye')
-//     .attr("xlink:href", eyeUrl)
-//     .attr('type', "image/svg+xml")
-//     .attr('x', 0)
-//     .attr('y', 0)
-//     .attr('width', 10)
-//     .attr('height', 10)
-//     .attr('opacity', 1)
-//   this.append('svg:image')
-//     .attr('class', 'eye-off')
-//     .attr("xlink:href", eyeOffUrl)
-//     .attr('type', "image/svg+xml")
-//     .attr('x', 0)
-//     .attr('y', 0)
-//     .attr('width', 10)
-//     .attr('height', 10)
-//     .attr('opacity', 0)
-//   return this
-// }
 
 export default {
   name: "BarPlot",
@@ -114,6 +95,7 @@ export default {
     DataTable,
     Column,
     Table,
+    Tree,
   },
   props: {
     genes: Array,
@@ -146,6 +128,7 @@ export default {
 
       // Legend
       nodes: null,
+      expandedKeys: {},
 
       // Plot variables
       margin: null,
@@ -241,9 +224,6 @@ export default {
     const svgElem = document.getElementById('plot-svg')
     svgElem.addEventListener('load', this.legend())
 
-    // const xAxisElem = document.getElementById('myXaxis')
-    // xAxisElem.addEventListener('load', this.axisLinebreaks())
-
     this.$nextTick(() => {
       window.addEventListener('resize', this.onResize);
     })
@@ -255,13 +235,10 @@ export default {
   beforeUnmount() {
     console.log('beforeUnmount')
     document.getElementById('plot-svg').remove()
-
-
   },
   beforeDestroy() { 
     console.log('beforeDestroy')
     window.removeEventListener('resize', this.onResize); 
-    
   },
   watch: {
     datasets() {
@@ -271,11 +248,31 @@ export default {
       console.log('%%%%%%%%%%%%%%%%')
     }
   },
+  computed: {
+    getNodeColor() {
+        return (node) => {
+            return this.getHSLprefix(node);
+        };
+    }
+  },
   methods: {
     toggle(menu, evt) {
       this.$refs[menu].toggle(evt);
+    },
+    getIconText(icon) {
+        const iconMapping = {
+            'material-icon-genetics': 'genetics',
+            'material-icon-science': 'lab_profile',
+            'material-icon-tissue': 'labs',
+            'material-icon-male': 'male',
+            'material-icon-female': 'female',
+            'material-icon-group': ''
+        };
+
+        return iconMapping[icon] || ''; // Return an empty string if the icon isn't in the mapping
     },  
     async downloadChart(filetype) {
+      // TODO: Use Html2Canvas to download SVG as PNG
       console.log('downloadChart')
       const svgElement = document.getElementById("plot-svg")
       const options = {
@@ -429,8 +426,8 @@ export default {
         this.sample_metadata_tables = JSON.parse(JSON.stringify(this.datasets.sample_metadata_tables))
         this.selected_metadata = JSON.parse(JSON.stringify(this.datasets.selected_metadata))
 
-        console.log('this.gene_expression_data_tables')
-        console.log(this.gene_expression_data_tables)
+        // console.log('this.gene_expression_data_tables')
+        // console.log(this.gene_expression_data_tables)
 
         this.gene_expression_data_tables.forEach((e) => {
           // console.log('this.gene_expression_data_tables.forEach')
@@ -491,10 +488,9 @@ export default {
           e.data_type = data_type[0]
 
           const gender = [...new Set(e.data.map(item => item.gender))];
-          // if (gender.length > 1) {
-          //   // More than 1 gender, may happen
-          //   console.error('WARNING: More than 1 gender in ', table)
-          // }
+          if (gender.length > 2) {
+            console.error('WARNING: More than 2 gender in ', table)
+          }
           e.gender = gender.join(',')
 
           const tissue = [...new Set(e.data.map(item => item.tissue))];
@@ -507,8 +503,8 @@ export default {
           this.expression_merged = this.expression_merged.concat(e.data)
         })
 
-        console.log('DEBUG this.expression_merged')
-        console.log(this.expression_merged)
+        // console.log('DEBUG this.expression_merged')
+        // console.log(this.expression_merged)
 
         this.expression_merged.forEach((e) => {
           // console.log(e)
@@ -525,9 +521,9 @@ export default {
         const sortAlphaNum = (a, b) => a.sample_name.toString().localeCompare(b.sample_name, 'en', { numeric: true })
         this.expression_merged.sort(sortAlphaNum)
 
-        const grouped_species = _.groupBy(this.expression_merged, e => `${e.species}`);
+        // const grouped_species = _.groupBy(this.expression_merged, e => `${e.species}`);
 
-        const grouped_species_experiment_year = _.groupBy(this.expression_merged, e => `${e.species}_${e.experiment}}`);
+        const grouped_species_experiment_year = _.groupBy(this.expression_merged, e => `${e.species}_${e.experiment}`);
 
         const grouped_species_experiment_year_tissue = Object.keys(grouped_species_experiment_year).map((year) => {
           return [year, _.groupBy(grouped_species_experiment_year[year], e => `${e.tissue}`)];
@@ -552,7 +548,7 @@ export default {
             return [tissue[0].replaceAll(' ', '-'), tissue[1].map((gene) => {
               return [gene[0].replaceAll(' ', '-'), Object.keys(gene[1]).map((gender) => {
                 const grouping = _.groupBy(gene[1][gender], e => `${e.group_name}`)
-                const keys = Object.keys(grouping)
+                const keys = Object.keys(grouping).sort()
                 for(let i = 0; i < keys.length; i++) {
                   const key = keys[i]
                   const max = Math.max.apply(Math, grouping[key].map(
@@ -665,7 +661,7 @@ export default {
         d3.selectAll('bar-group').transition_attributes('opacity', 1)
 
         this.update_grouped_bar_plot()
-        this.legend()
+        // this.legend()
       }
       
       const elapsed = Date.now() - start
@@ -673,11 +669,11 @@ export default {
     },
     initialize_bar_plot() {
       // set the dimensions and margins of the graph
-      this.margin = {top: 10, right: 10, bottom: 140, left: 80}
+      this.margin = {top: 5, right: 0, bottom: 5, left: 70}
       this.width = this.windowWidth * 0.7 - this.margin.left - this.margin.right,
-      this.height = this.windowHeight * 0.9 - this.margin.top - this.margin.bottom;
-      this.drawable_width_scale = 0.9
-      this.drawable_height_scale = 0.5
+      this.height = this.windowHeight * 0.7 - this.margin.top - this.margin.bottom;
+      this.drawable_width_scale = 0.95
+      this.drawable_height_scale = 0.90
 
       this.svg = d3.select("#plot-area")
           .append("svg")
@@ -731,14 +727,15 @@ export default {
       this.legendY = this.height*this.drawable_height_scale + 60
       this.legendY_spacing = 10
       // Legend 
-      this.svg.append('g')
-        .attr('id', 'legend')
-        .attr('transform', `translate(0, ${this.legendY})`)
+      // this.svg.append('g')
+      //   .attr('id', 'legend')
+      //   .attr('transform', `translate(0, ${this.legendY})`)
 
       this.color = d3.scaleSequential(d3.interpolateSinebow)
 
     },
     update_grouped_bar_plot() {
+      console.log('===================')
       console.log('update_grouped_bar_plot')
       const start = Date.now()
       let data, groups, subgroups
@@ -991,712 +988,101 @@ export default {
 
       const elapsed = Date.now() - start
       console.log('update_grouped_bar_plot time elapsed: ', elapsed)
-      this.legend()
+      // this.legend()
+      this.getTreeNodes(this.expression_normalized)
+      console.log('===================')
     },
-    legend() {
-      console.log('legend')
-      // const num_experiments = this.expression_normalized.length
-      // const num_experiments = this.getMaxLengthOfArraysNLevelsDown(this.expression_normalized, 0)
-      // console.log('num_experiments: ' + num_experiments)
-      console.log(this.expression_normalized)
-
-      const font_size = 10 // '1.0em'
-      const self = this
-      
-      
-      const eye_w = font_size * 0.9
-      const eye_x_offset = eye_w * 1.2
-      // const eye_w = '1.5em'
-      const eye_h = font_size * 0.9
-      const eye_y_offset = eye_h * 0.8
-      // const eye_h = '1.5em'
-      const experiment_y_offset = 10
-      const text_info_x_offset = 5
-      const text_info_margin_bottom = 5
-      const text_info_font_size = '0.7em'
-
-      function getTextWidth(text, font) {
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
-        context.font = font;
-        const metrics = context.measureText(text);
-        return metrics.width;
-      }
-
-      const experimentNamesWidths = this.expression_normalized.map(d => {
-        const text = d[0].replaceAll('_', ' ');
-        const width = getTextWidth(text, `${font_size} sans-serif`);
-        return { name: d[0], width };
-      });
-
-      // console.log('experimentNamesWidths')
-      // console.log(experimentNamesWidths)
-      
-      // // Add current index to each element as position 2 in the array
-      // this.expression_normalized_indexed = this.expression_normalized.map((d, i) => {
-      //   d[2] = i;
-      //   return d
-      // } );
-      // console.log(this.expression_normalized_indexed)
-
-      
-      // Count the depth of each level
-      this.expression_normalized.forEach((experiment, experimentIndex) => {
-        let tissue_counter = 1;
-        experiment[1].forEach((tissue, tissueIndex) => {
-          let gene_counter = 1;
-          tissue[2] = tissue_counter++
-          tissue[1].forEach((gene, geneIndex) => {
-            let gender_counter = 1;
-            gene[2] = gene_counter++
-            gene[1].forEach((gender, genderIndex) => {
-              gender[2] = gender_counter++
-              const num_groups = Object.keys(gender[1]).length
-              gender_counter += num_groups
-            });
-            gene_counter += (gender_counter-1)
-          });
-          tissue_counter += (gene_counter-1)
-        });
-      });
-
-
-      // Helper function to append an svg image to the parent node of an element
-      function appendSvgImage(element, text_info_x_offset, eye_y_offset, eye_w, eye_h, self) {
-        d3.select(element.parentNode) // Select the parent (text_info) node
-          .append('svg:image')
-          .attr('class', 'info')
-          .attr("xlink:href", infoUrl)
-          .attr('type', "image/svg+xml")
-          .attr('x', () => element.getBBox().width + text_info_x_offset)
-          .attr('y', -eye_y_offset)
-          .attr('width', eye_w)
-          .attr('height', eye_h)
-          .attr('opacity', 1)
-          .on('mouseover', self.infoHover)
-          .on('mouseout', () => self.svg.selectAll('.info-tooltip').remove());
-      }
-
-      // Helper function to append text to the parent node of an element
-      function appendLegendTextWithTransition(parent, className, fontSize = '0.7em', onEndCallback) {
-        const textElement = parent.append('text')
-          .attr('class', className)
-          .text(d => d[0].replaceAll('_', ' ').replaceAll('-', ' '))
-          .attr('text-anchor', 'left')
-          .attr('font-size', fontSize)
-          .attr('opacity', 1);
-
-        textElement.transition().on('end', function() {
-          onEndCallback(this);
-        });
-        return textElement;
-      } 
-
-      function append_eyes(selection) {
-        selection.append('svg:image')
-          .attr('class', 'eye')
-          .attr("xlink:href", eyeUrl)
-          .attr('type', "image/svg+xml")
-          .attr('x', 0)
-          .attr('y', 0)
-          .attr('width', eye_w)
-          .attr('height', eye_h)
-          .attr('opacity', 1)
-        selection.append('svg:image')
-          .attr('class', 'eye-off')
-          .attr("xlink:href", eyeOffUrl)
-          .attr('type', "image/svg+xml")
-          .attr('x', 0)
-          .attr('y', 0)
-          .attr('width', eye_w)
-          .attr('height', eye_h)
-          .attr('opacity', 0)
-        return selection;
-      }
-
-
-      console.log('this.expression_normalized')
-      console.log(this.expression_normalized)
-
-      this.svg.select('#legend')
-      .style('font-size', `${font_size}px`)
-      .selectAll(".legend_experiment")
-      .data(this.expression_normalized)
-      .join(
-        (enter) => {
-          console.log('experiment enter')
-          console.log(enter)
-          const experiment_root = enter.append('g')
-          experiment_root.attr('class', 'legend_experiment')
-            .style('fill', d3.rgb("#222"))
-            .attr('transform', (d,i) => {
-              console.log('Enter experiment')
-              const xOffset = experimentNamesWidths.slice(0, i).reduce((acc, cur) => {
-                return acc + cur.width + eye_x_offset + eye_w;
-              }, 0);
-              console.log(`xOffset: ${xOffset}`)
-              return `translate(${xOffset}, ${experiment_y_offset})`
-            })
-          const eyesSelection = experiment_root.append('g')
-            .attr('class', 'eyes')
-            .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-            .on('click', this.experimentClick)
-          append_eyes(eyesSelection)
-            
-          const text_info = experiment_root.append('g')
-            .attr('class', 'text_info')
-          
-          appendLegendTextWithTransition(text_info, 'legend_experiment_text', text_info_font_size, function(textElement) {
-            appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-          });
-
-          experiment_root.selectAll('.legend_tissue')
-            .data(d => d[1])
-            .join(
-            (enter) => {
-              // Create root g element to position child text elements
-              // console.log('tissue enter')
-              // console.log(enter)
-              const tissue_root = enter.append('g')
-              tissue_root.attr('class', 'legend_tissue')
-                .style('fill', d3.rgb("#222"))
-                .attr('transform', (d,i) => {
-                  return `translate(${eye_x_offset}, ${this.legendY_spacing * d[2]})`})
-              const eyesSelection = tissue_root.append('g')
-                .attr('class', 'eyes')
-                .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                .on('click', this.tissueClick)
-              append_eyes(eyesSelection)
+    getTreeNodes(data) {
+      const transformLevel = (items, parentKey = '', parentOriginalLabel = '', level = 0) => {
+          return items.flatMap((item, index) => {
+              const key = `${parentKey}${index}`;
+              let label, children;
               
-              const text_info = tissue_root.append('g')
-                .attr('class', 'text_info')
-              appendLegendTextWithTransition(text_info, 'legend_tissue_text', text_info_font_size, function(textElement) {
-                appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-              });
+              if (Array.isArray(item) && typeof item[0] === 'string') {
+                  [label, children] = item;
+              } else {
+                  return []; // handle the data points under ALF and TRF, which we ignore for tree structure.
+              }
 
-              tissue_root.selectAll('.legend_gene')
-                .data(d => d[1])
-                .join(
-                  (enter) => {
-                    // console.log('gene enter')
-                    // console.log(enter)
-                    const gene_root = enter.append('g')
-                      .attr('class', 'legend_gene')
-                      .attr('transform', (d,i) => {
-                        return `translate(${eye_x_offset}, ${this.legendY_spacing * d[2]})`})
-                    const eyeSelection = gene_root.append('g')
-                      .attr('class', 'eyes')
-                      .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                      .on('click', this.geneClick)
-                    append_eyes(eyeSelection)
-                    const text_info = gene_root.append('g')
-                      .attr('class', 'text_info')
-                    appendLegendTextWithTransition(text_info, 'legend_gene_text', text_info_font_size, function(textElement) {
-                      appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-                    })
+              const nodeOriginalLabel = `${parentOriginalLabel ? parentOriginalLabel + '_' : ''}${label}`;
+              const node = {
+                  key: key,
+                  visible: 1,
+                  originalLabel: nodeOriginalLabel,
+                  label: label.replaceAll('-', ' ').replaceAll('_', ' - '),
+              };
 
-                    gene_root.selectAll('.legend_gender')
-                      .data(d => d[1])
-                      .join(
-                        (enter) => {
-                          // console.log('gender enter')
-                          // console.log(enter)
-                          const gender_root = enter.append('g')
-                            .attr('class', 'legend_gender')
-                            .style('fill', d => {
-                              const key = Object.keys(d[1])[0]
-                              const id = d[1][key][0].identifier
-                              return this.getHSL(d[1][key][0], true)
-                            })
-                            .attr('transform', (d,i) => {
-                              const yOffset = this.legendY_spacing * d[2]
-                              return `translate(${eye_x_offset}, ${yOffset})`})
-                          const eyeSelection = gender_root.append('g')
-                            .attr('class', 'eyes')
-                            .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                            .on('click', this.genderClick)
-                          append_eyes(eyeSelection)
+              // Set icons based on levels or labels
+              const icons = ['material-icon-science', 'material-icon-tissue', 'material-icon-genetics'];
+              node.icon = icons[level] || (label === 'Male' ? 'material-icon-male' : (label === 'Female' ? 'material-icon-female' : undefined));
 
-                          const text_info = gender_root.append('g')
-                            .attr('class', 'text_info')
-                          appendLegendTextWithTransition(text_info, 'legend_gender_text', text_info_font_size, function(textElement) {
-                            appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-                          });
+              // Set children for different levels
+              if (level === 3) {
+                  node.children = Object.keys(children).map((condition, cIndex) => ({
+                      key: `${key}-${cIndex}`,
+                      label: condition,
+                      visible: 1,
+                      originalLabel: nodeOriginalLabel + "_" + condition,
+                  }));
+              } else {
+                  node.children = Array.isArray(children) ? transformLevel(children, `${key}-`, nodeOriginalLabel, level + 1) : undefined;
+              }
 
-                          gender_root.selectAll('.legend_groupname')
-                            .data(d => {
-                              const d_arr = Object.keys(d[1]).map((groupname) => {
-                                return [groupname, d[1][groupname]]})
-                              return d_arr
-                            })
-                            .join(
-                              (enter) => {
-                                // console.log('groupname enter')
-                                // console.log(enter)
-                                const groupname_root = enter.append('g')
-                                  .attr('class', 'legend_groupname')
-                                  .style('fill', d => {
-                                    return this.getHSL(d[1][0])
-                                  })
-                                  .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
-                                    this.legendY_spacing * (i+1)
-                                    })`)
-                                  
-                                const eyeSelection = groupname_root.append('g')
-                                  .attr('class', 'eyes')
-                                  .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                                  .on('click', this.groupnameClick)
-                                append_eyes(eyeSelection)
+              return node;
+          });
+      };
 
-                                  const text_info = groupname_root.append('g')
-                                    .attr('class', 'text_info')
-                                  appendLegendTextWithTransition(text_info, 'legend_groupname_text', text_info_font_size, function(textElement) {
-                                    appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-                                  });
-
-                                 return groupname_root
-                              },
-                              (exit) => exit.remove()
-                            )
-                          return gender_root
-                        },
-                        (exit) => exit.remove()
-                      )
-                    return gene_root
-                  },
-                  (exit) => exit.remove()
-                )
-              return tissue_root
-            },
-            (exit) => exit.remove()
-          )
-          return experiment_root
-        },
-        (update) => {
-          
-          console.log('update experiment')
-          console.log(update)
-          const experiment_root = update
-            .attr('transform', (d,i) => {
-              const xOffset = experimentNamesWidths.slice(0, i).reduce((acc, cur) => {
-                return acc + cur.width + eye_x_offset + eye_w;
-              }, 0);
-              return `translate(${xOffset}, ${experiment_y_offset})`
-              })
-
-          experiment_root.select('.legend_experiment_text')
-            .text(d => d[0].replaceAll('-', ' '))
-
-          const text_info = experiment_root.select('.text_info')
-
-          text_info.select('.info')
-            .attr('x', (d,i) => {
-              const text_select = text_info.select('text')
-              const groups = text_select._groups[0]
-              const width = groups[i].getBBox().width
-              return text_info.select('text')._groups[0][i].getBBox().width+5})
-
-          update.selectAll('.legend_tissue')
-          .data(d => d[1])
-          .join(
-            (enter) => {
-              // Create root g element to position child text elements
-              // console.log('experiment update > tissue enter')
-              // console.log(enter)
-              const tissue_root = enter.append('g')
-              tissue_root.attr('class', 'legend_tissue')
-                .style('fill', d3.rgb("#222"))
-                .attr('transform', (d,i) => {
-                  return `translate(${eye_x_offset}, ${this.legendY_spacing * d[2]})`})
-              const eyeSelection = tissue_root.append('g')
-                .attr('class', 'eyes')
-                .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                .on('click', this.tissueClick)
-              append_eyes(eyeSelection)
-              const text_info = tissue_root.append('g')
-                .attr('class', 'text_info')
-              appendLegendTextWithTransition(text_info, 'legend_tissue_text', text_info_font_size, function(textElement) {
-                appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-              })
-
-
-              tissue_root.selectAll('.legend_gene')
-                .data(d => d[1])
-                .join(
-                  (enter) => {
-                    // console.log('experiment update > tissue enter > gene enter')
-                    // console.log(enter)
-                    const gene_root = enter.append('g')
-                      .attr('class', 'legend_gene')
-                      .attr('transform', (d,i) => { return `translate(${eye_x_offset}, 
-                        ${this.legendY_spacing * d[2]})`})
-                    const eyeSelection = gene_root.append('g')
-                      .attr('class', 'eyes')
-                      .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                      .on('click', this.geneClick)
-                    append_eyes(eyeSelection)
-                    const text_info = gene_root.append('g')
-                      .attr('class', 'text_info')
-                    appendLegendTextWithTransition(text_info, 'legend_gene_text', text_info_font_size, function(textElement) {
-                      appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-                    })
-                      
-                    gene_root.selectAll('.legend_gender')
-                      .data(d => d[1])
-                      .join(
-                        (enter) => {
-                          // console.log('experiment update > tissue enter > gene enter > gender enter')
-                          // console.log(enter)
-                          const gender_root = enter.append('g')
-                            .attr('class', 'legend_gender')
-                            .style('fill', d => {
-                              // console.log('d')
-                              // console.log(d)
-                              const key = Object.keys(d[1])[0]
-                              const id = d[1][key][0].identifier
-                              // console.log(id)
-                              // return this.getHSL(id)
-                            })
-                            .attr('transform', (d,i) => {
-                              const yOffset = this.legendY_spacing * d[2]
-                              return `translate(${eye_x_offset}, ${yOffset})`})
-                          const eyeSelection = gender_root.append('g')
-                            .attr('class', 'eyes')
-                            .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                            .on('click', this.genderClick)
-                          append_eyes(eyeSelection)
-
-                          const text_info = gender_root.append('g')
-                            .attr('class', 'text_info')
-                          appendLegendTextWithTransition(text_info, 'legend_gender_text', text_info_font_size, function(textElement) {
-                            appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-                          })
-
-
-                          gender_root.selectAll('.legend_groupname')
-                            .data(d => {
-                              return Object.keys(d[1]).map((groupname) => {
-                                return [groupname, d[1][groupname]]})
-                            })
-                            .join(
-                              (enter) => {
-                                // console.log('experiment update > tissue enter > gene enter > gender enter > groupname enter')
-                                // console.log(enter)
-                                const groupname_root = enter.append('g')
-                                  .attr('class', 'legend_groupname')
-                                  .style('fill', d => {
-                                    return this.getHSL(d[1][0])
-                                  })
-                                  .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
-                                    this.legendY_spacing * (i+1)
-                                    })`)
-                                  
-                                const eyeSelection = groupname_root.append('g')
-                                  .attr('class', 'eyes')
-                                  .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                                  .on('click', this.groupnameClick)
-                                append_eyes(eyeSelection)
-
-                                  const text_info = groupname_root.append('g')
-                                    .attr('class', 'text_info')
-                                  appendLegendTextWithTransition(text_info, 'legend_groupname_text', text_info_font_size, function(textElement) {
-                                    appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-                                  })
-
-                                  return groupname_root
-                              },
-                              (exit) => exit.remove()
-                            )
-                          return gender_root
-                        },
-                        (exit) => exit.remove()
-                      )
-                    return gene_root
-                  },
-                  (exit) => exit.remove()
-                )
-              return tissue_root
-            },
-            (update) => {
-              // console.log('experiment update > tissue update')
-              // console.log(update)
-              const tissue_root = update
-                .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
-                  this.legendY_spacing * d[2]
-                  })`)
-              tissue_root.select('.legend_tissue_text')
-                .text(d => d[0].replaceAll('-', ' '))
-
-              const text_info = tissue_root.select('.text_info')
-              text_info.select('.info')
-                .each(function(d, i) {
-                  const textElement = d3.select(this.parentNode).select('text').node();
-                  const textElementWidth = textElement.getBBox().width;
-                  d3.select(this).attr('x', textElementWidth + text_info_x_offset);
-              })
-
-              // text_info.select('.info')
-              //   .attr('x', (d,i) => {
-              //     const text_select = text_info.select('text')
-              //     const groups = text_select._groups[0]
-              //     const width = groups[i].getBBox().width
-              //     return text_info.select('text')._groups[0][i].getBBox().width+5})
-
-              update.selectAll('.legend_gene')
-                .data(d => d[1])
-                .join(
-                  (enter) => {
-                    // console.log('experiment update > tissue update > gene enter')
-                    // console.log(enter)
-                    const gene_root = enter.append('g')
-                      .attr('class', 'legend_gene')
-                      .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
-                        this.legendY_spacing * d[2]
-                        })`)
-                    const eyeSelection = gene_root.append('g')
-                      .attr('class', 'eyes')
-                      .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                      .on('click', this.geneClick)
-                    append_eyes(eyeSelection)
-                    const text_info = gene_root.append('g')
-                      .attr('class', 'text_info')
-                    appendLegendTextWithTransition(text_info, 'legend_gene_text', text_info_font_size, function(textElement) {
-                      appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-                    })
-                    
-                    gene_root.selectAll('.legend_gender')
-                    .data(d => d[1])
-                    .join(
-                      (enter) => {
-                        // console.log('experiment update > tissue update > gene enter > gender enter')
-                        // console.log(enter)
-                        const gender_root = enter.append('g')
-                          .attr('class', 'legend_gender')
-                          .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
-                            this.legendY_spacing * d[2]
-                            })`)
-                        const eyeSelection = gender_root.append('g')
-                          .attr('class', 'eyes')
-                          .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                          .on('click', this.genderClick)
-                        append_eyes(eyeSelection)
-                        const text_info = gender_root.append('g')
-                          .attr('class', 'text_info')
-                        appendLegendTextWithTransition(text_info, 'legend_gender_text', text_info_font_size, function(textElement) {
-                          appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-                        })
-
-                        
-                        gender_root.selectAll('.legend_groupname')
-                        .data(d => {
-                              return Object.keys(d[1]).map((groupname) => {
-                                return [groupname, d[1][groupname]]})
-                            })
-                        .join(
-                          (enter) => {
-                            // console.log('experiment update > tissue update > gene enter > gender enter > groupname enter')
-                            // console.log(enter)
-                            const groupname_root = enter.append('g')
-                              .attr('class', 'legend_groupname')
-                              .style('fill', d => this.getHSL(d[1][0].identifier))
-                              .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
-                                this.legendY_spacing * (i+1)
-                                })`)
-                            const eyeSelection = groupname_root.append('g')
-                              .attr('class', 'eyes')
-                              .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                              .on('click', this.groupnameClick)
-                            append_eyes(eyeSelection)
-                            const text_info = groupname_root.append('g')
-                              .attr('class', 'text_info')
-                            appendLegendTextWithTransition(text_info, 'legend_groupname_text', text_info_font_size, function(textElement) {
-                              appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-                            })
-                            return groupname_root
-                          },
-                          (exit) => exit.remove()
-                        )
-                        return gender_root
-                      },
-                      (exit) => exit.remove()
-                    )
-                    return gene_root
-                  },
-                  (update) => {
-                    // console.log('experiment update > tissue update > gene update')
-                    // console.log(update)
-                    const gene_root = update.attr('transform', (d,i) => {
-                      const yOffset = this.legendY_spacing * d[2]
-                      return `translate(${eye_x_offset}, ${yOffset
-                      })`
-                    })
-                    gene_root.select('.legend_gene_text')
-                      .text(d => d[0])
-                    const text_info = gene_root.select('.text_info')
-                    text_info.select('.info')
-                      .each(function(d, i) {
-                        const textElement = d3.select(this.parentNode).select('text').node();
-                        const textElementWidth = textElement.getBBox().width;
-                        d3.select(this).attr('x', textElementWidth + text_info_x_offset);
-                    })
-                    // text_info.select('.info')
-                    //   .attr('x', (d,i) => {
-                    //     const text_select = text_info.select('text')
-                    //     const groups = text_select._groups[0]
-                    //     const width = groups[i].getBBox().width
-                    //     // console.log('width', width)
-                    //     return text_info.select('text')._groups[0][i].getBBox().width+5})
-                    
-                    update.selectAll('.legend_gender')
-                    .data(d => d[1])
-                    .join(
-                      (enter) => {
-                        // console.log('experiment update > tissue update > gene update > gender enter')
-                        // console.log(enter)
-                        const gender_root = enter.append('g')
-                          .attr('class', 'legend_gender')
-                          .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
-                            this.legendY_spacing * d[2]
-                            })`)
-                        const eyeSelection = gender_root.append('g')
-                          .attr('class', 'eyes')
-                          .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                          .on('click', this.genderClick)
-                        append_eyes(eyeSelection)
-                        const text_info = gender_root.append('g')
-                          .attr('class', 'text_info')
-                        appendLegendTextWithTransition(text_info, 'legend_gender_text', text_info_font_size, function(textElement) {
-                          appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-                        })
-
-                        
-                        enter.selectAll('.legend_groupname')
-                        .data(d => {
-                              // console.log('d ' + typeof(d))
-                              // console.log(d)
-                              // console.log(Object.keys(d[1]))
-                              const d_arr = Object.keys(d[1]).map((groupname) => {
-                                return [groupname, d[1][groupname]]})
-                              // console.log('d_arr')
-                              // console.log(d_arr)
-                              return d_arr
-                            })
-                        .join(
-                          (enter) => {
-                            // console.log('experiment update > tissue update > gene update > gender enter > groupname enter')
-                            // console.log(enter)
-                            const groupname_root = enter.append('g')
-                              .attr('class', 'legend_groupname')
-                              .style('fill', d => this.getHSL(d[1][0]))
-                              .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
-                                this.legendY_spacing * (i+1)
-                                })`)
-                            const eyeSelection = groupname_root.append('g')
-                              .attr('class', 'eyes')
-                              .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                              .on('click', this.groupnameClick)
-                            append_eyes(eyeSelection)
-                            const text_info = groupname_root.append('g')
-                              .attr('class', 'text_info')
-                            appendLegendTextWithTransition(text_info, 'legend_groupname_text', text_info_font_size, function(textElement) {
-                              appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-                            })
-                            return groupname_root
-                          },
-                          (exit) => exit.remove()
-                        )
-                        return gender_root
-                      },
-                      (update) => {
-                        // console.log('experiment update > tissue update > gene update > gender update')
-                        // console.log(update)
-                        const gender_root = update.attr('transform', (d,i) => `translate(${eye_x_offset}, ${
-                          this.legendY_spacing * d[2]
-                          })`)
-                        gender_root.select('.legend_gender_text')
-                          .text(d => d[0])   
-                        const text_info = gender_root.select('.text_info')
-                        text_info.select('.info')
-                          .each(function(d, i) {
-                            const textElement = d3.select(this.parentNode).select('text').node();
-                            const textElementWidth = textElement.getBBox().width;
-                            d3.select(this).attr('x', textElementWidth + text_info_x_offset);
-                        })
-
-
-                        // text_info.select('.info')
-                        //   .attr('x', (d,i) => {
-                        //     // const text_select = text_info.select('text')
-                        //     // const groups = text_select._groups[0]
-                        //     // const width = groups[i].getBBox().width
-                        //     // console.log('width', width)
-                        //     return text_info.select('text')._groups[0][i].getBBox().width+5})
-
-                        update.selectAll('.legend_groupname')
-                          .data(d => {
-                              const d_arr = Object.keys(d[1]).map((groupname) => {
-                                return [groupname, d[1][groupname]]})
-                              return d_arr
-                            })
-                          .join(
-                            (enter) => {
-                              // console.log('experiment update > tissue update > gene update > gender update > groupname enter')
-                              // console.log(enter)
-                              const groupname_root = enter.append('g')
-                                .attr('class', 'legend_groupname')
-                                .style('fill', d => this.getHSL(d[1][0]))
-                                .attr('transform', (d,i) => `translate(${eye_x_offset}, ${
-                                  this.legendY_spacing * (i+1)
-                                  })`)
-                              const eyeSelection = groupname_root.append('g')
-                                .attr('class', 'eyes')
-                                .attr('transform', (d,i) => `translate(${-eye_x_offset}, ${-eye_y_offset})`)
-                                .on('click', this.groupnameClick)
-                              append_eyes(eyeSelection)
-                              const text_info = groupname_root.append('g')
-                                .attr('class', 'text_info')
-                              appendLegendTextWithTransition(text_info, 'legend_groupname_text', text_info_font_size, function(textElement) {
-                                appendSvgImage(textElement, text_info_x_offset, eye_y_offset, eye_w, eye_h, self);
-                              })
-                              return groupname_root
-                            },
-                            (update) => {
-                              // console.log('experiment update > tissue update > gene update > groupname update')
-                              // console.log(update)
-                              const groupname_root = update.attr('transform', (d,i) => `translate(${eye_x_offset}, ${
-                                this.legendY_spacing * (i+1)
-                                })`)
-                                .style('fill', d => {
-                                  // console.log('d[1][0].identifier' + d[1][0].identifier)
-                                  return this.getHSL(d[1][0])
-                                })
-                              groupname_root.select('.legend_groupname_text')
-                                .text(d => d[0])
-                              const text_info = groupname_root.select('.text_info')
-
-                              text_info.select('.info')
-                                .each(function(d, i) {
-                                  const textElement = d3.select(this.parentNode).select('text').node();
-                                  const textElementWidth = textElement.getBBox().width;
-                                  d3.select(this).attr('x', textElementWidth + text_info_x_offset);
-                              })
-                            },
-                            (exit) => exit.remove()
-                          )
-                      },
-                      (exit) => exit.remove()
-                    )
-                  },  
-                  (exit) => exit.remove()
-                )
-            },
-            (exit) => exit.remove()
-          )     
-        },
-        (exit) => exit.remove()
-      )
-      // Set flag that SVG has been fully generated at least once
+      this.nodes = transformLevel(data);
+      this.expandTreeNodes();
       this.complete = true
+    },
+    expandTreeNodes() {
+      for (let node of this.nodes) {
+        this.expandNode(node);
+      }
+      this.expandedKeys = { ...this.expandedKeys };
+    },
+    expandNode(node) {
+      if (node.children && node.children.length) {
+          this.expandedKeys[node.key] = true;
+          for (let child of node.children) {
+              this.expandNode(child);
+          }
+      }
+    },
+    collapseTreeNodes() {
+      this.expandedKeys = {};
+    },
+    nodeToggled(node) {
+      console.log('nodeToggled')
+      console.log(node)
+    },
+    toggleDatasetVisibility(node) {
+      console.log('toggleDatasetVisibility')
+      console.log(node)
+      // Compute the prefix for the selected node
+      const prefix = this.computePrefixForNode(node);
+      console.log('prefix')
+      console.log(prefix)
+      const newOpacity = node.visible === 1 ? 0 : 1;
+      console.log('newOpacity', newOpacity)
+      node.visible = newOpacity;
+
+      this.toggleVisibility(newOpacity, prefix)
+      this.setNodeVisibilityRecursive(node, newOpacity);
+    },
+    setNodeVisibilityRecursive(node, newOpacity) {
+      node.visible = newOpacity
+      // Process child nodes if they exist
+      if (node.children && node.children.length) {
+        node.children.forEach(childNode => {
+          // Compute prefix for child node
+          this.setNodeVisibilityRecursive(childNode, newOpacity);
+        });
+      }
+    },
+    computePrefixForNode(node) {
+      return node.originalLabel;
     },
     getHSL(sample, gender=false) {
       // Differentiates groups by making one darker and one lighter
@@ -1737,6 +1123,51 @@ export default {
       }
 
       return hsl
+    },
+    getHSLprefix(node) {
+      console.log('getHSLprefix')
+      console.log(node)
+      let prefix = node.originalLabel
+      let group_index = parseInt(node.key.split('-').slice(-1)[0], 10)
+      console.log('group_index ' + group_index)
+      const DEFAULT_COLOR = "#000000"; // default font color, set this to your preferred default
+      const shade_factor = 3;
+      // Split the prefix by underscores.
+      const elements = prefix.split('_');
+      const elementCount = elements.length;
+      
+      console.log(prefix)
+      console.log(elementCount)
+
+      // If fewer than 5 elements, return the default color.
+      if (elementCount < 5) {
+          return DEFAULT_COLOR;
+      }
+
+      let gender = false;
+
+      // Based on the number of elements, determine the current level.
+      if (elementCount === 5) { // Assume that at this level, we're dealing with gender.
+          gender = true;
+      } else if (elementCount === 6) { // Assume that at this level, we're dealing with condition.
+          gender = false;
+          prefix = elements.slice(0, 5).join('_')
+          console.log('new prefix: ' + prefix)
+      } else {
+          console.error('Unexpected number of prefix elements. Defaulting gender to false.');
+      }
+
+      // Get color based on the prefix. Assuming that the cat_map uses the prefix for mapping.
+      let hsl = d3.hsl(this.color(this.cat_map.get(prefix)));
+
+      // If gender flag is false, shade the base color.
+      if (!gender) {
+          const factor = 1 + (((group_index === 0) - 0.5) / shade_factor);
+          hsl.l *= factor;
+      }
+      console.log(hsl.toString())
+
+      return hsl.toString();
     },
     change_color(d3color) {
       this.color = d3.scaleSequential(d3color)
@@ -1838,114 +1269,7 @@ export default {
       }
       bars.transition_attributes('fill-opacity', newOpacity)
     },
-    experimentClick(evt, i) {
-      // Toggle visibility of Experiment data for every child gene and group
-      // console.log('experimentClick')
-      //id="line_Mus-musculus_TRF-Experiment_2019_Adrenal-gland_Clock_Female_ALF"
-      const experiment_root = evt.currentTarget.parentNode
-      // TODO: Fix split
-      // console.log(i[0])
-      const id = i[0]
-      // console.log('id', id)
-      const opacity = experiment_root.querySelector('.eye').getAttribute('opacity')
-      const newOpacity = (opacity == 1) ? 0 : 1
 
-      const eyesOn = experiment_root.querySelectorAll('.eye')
-      const eyesOff = experiment_root.querySelectorAll('.eye-off')
-      eyesOn.forEach(e => e.setAttribute('opacity', newOpacity))
-      eyesOff.forEach(e => e.setAttribute('opacity', opacity))
-
-      this.toggleVisibility(newOpacity, id)
-    },
-    tissueClick(evt, i) {
-      // Toggle visibility of Tissue data for every child gene and group
-      // console.log('tissueClick')
-      // console.log(evt)
-      // console.log(i)
-      const tissue_root = evt.currentTarget.parentNode
-      // console.log('tissue_root')
-      // console.log(tissue_root)
-      const tissue = i[0]
-      const groups = i[1][0][1][0][1]
-      const group_key = Object.keys(groups)[0]
-      const sample = groups[group_key][0]
-      const id = sample.identifier
-      const index = id.indexOf(tissue);
-      const id_prefix = id.substring(0, index + tissue.length);
-
-      const opacity = tissue_root.querySelector('.eye').getAttribute('opacity')
-      const newOpacity = (opacity == 1) ? 0 : 1
-
-      const eyesOn = tissue_root.querySelectorAll('.eye')
-      const eyesOff = tissue_root.querySelectorAll('.eye-off')
-      eyesOn.forEach(e => e.setAttribute('opacity', newOpacity))
-      eyesOff.forEach(e => e.setAttribute('opacity', opacity))
-
-      this.toggleVisibility(newOpacity, id_prefix)
-    },
-    geneClick(evt, i) {
-      // Toggle visibility of Tissue_Gene data for both groups
-      // console.log('geneClick')
-      const gene_root = evt.currentTarget.parentNode
-
-      const gene = i[0]
-      // console.log('gene', gene)
-      const groups = i[1][0][1]
-      const group_key = Object.keys(groups)[0]
-      const sample = groups[group_key][0]
-      const id = sample.identifier
-      const index = id.indexOf(gene);
-      const id_prefix = id.substring(0, index + gene.length);
-      
-      const opacity = gene_root.querySelector('.eye').getAttribute('opacity')
-      const newOpacity = (opacity == 1) ? 0 : 1
-      const eyesOn = gene_root.querySelectorAll('.eye')
-      const eyesOff = gene_root.querySelectorAll('.eye-off')
-      eyesOn.forEach(e => e.setAttribute('opacity', newOpacity))
-      eyesOff.forEach(e => e.setAttribute('opacity', opacity))
-      
-      this.toggleVisibility(newOpacity, id_prefix)
-    },
-    genderClick(evt, i) {
-      // Toggle visibility of Tissue_Gene data for both groups
-      // console.log('genderClick')
-      const gender_root = evt.currentTarget.parentNode
-      
-      const gender = i[0]
-      // console.log('gender', gender)
-      const groups = i[1]
-      const group_key = Object.keys(groups)[0]
-      const sample = groups[group_key][0]
-      const id = sample.identifier
-      const index = id.indexOf(gender);
-      const id_prefix = id.substring(0, index + gender.length);
-      
-      const opacity = gender_root.querySelector('.eye').getAttribute('opacity')
-      const newOpacity = (opacity == 1) ? 0 : 1
-      const eyesOn = gender_root.querySelectorAll('.eye')
-      const eyesOff = gender_root.querySelectorAll('.eye-off')
-      eyesOn.forEach(e => e.setAttribute('opacity', newOpacity))
-      eyesOff.forEach(e => e.setAttribute('opacity', opacity))
-      
-      this.toggleVisibility(newOpacity, id_prefix)
-    },
-    groupnameClick(evt, i) {
-      // Toggle visibility of Tissue_Gene_Groupname data
-      // console.log('groupnameClick')
-      const groupname_root = evt.currentTarget.parentNode
-      // console.log(i[1][0])
-      const id = i[1][0].identifier
-      // console.log('id', id)
-      
-      const opacity = groupname_root.querySelector('.eye').getAttribute('opacity')
-      const newOpacity = (opacity == 1) ? 0 : 1
-      const eyeOn = groupname_root.querySelector('.eye')
-      const eyeOff = groupname_root.querySelector('.eye-off')
-      eyeOn.setAttribute('opacity', newOpacity)
-      eyeOff.setAttribute('opacity', opacity)
-
-      this.toggleVisibility(newOpacity, id)
-    },  
     infoExperimentText(data) {
       // TODO: Add more metadata when new fields created for dataset upload page
       // console.log('infoExperimentText')
@@ -2133,6 +1457,7 @@ export default {
       
       return text
     },
+
     infoHover(evt, d) {
       // console.log('infoHover')
       // console.log(evt)
@@ -2239,8 +1564,8 @@ export default {
 {
   :deep(.p-button) {
     font-size: 0.85rem !important;
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
     padding-top: 0.25rem !important;
     padding-bottom: 0.25rem !important;
   }
@@ -2261,4 +1586,57 @@ export default {
     }
   }
 }
+
+#legend-area {
+  :deep(.p-tree) {
+    padding: 0.25rem !important; /* Removes padding */
+    font-size: 0.75rem; /* Adjusts the font size */
+    // border: 0 !important;
+
+    .p-treenode {
+      padding: 0.0rem !important; /* Removes padding */
+      font-size: 0.75rem; /* Adjusts the font size */
+      // border: 0 !important;
+    }
+
+    .p-treenode-content {
+      padding: 0 !important; /* Removes padding */
+      font-size: 0.75rem; /* Adjusts the font size */
+      border: 0 !important;
+      display:flex;
+      align-items: center;
+    }
+    .p-tree-toggler {
+      // font-size: 0.5em !important;
+      width: 1rem !important;
+      height: 1rem !important;
+      margin-right: 0.25rem !important;
+      .p-tree-toggler-icon {
+        font-size: 0.5em !important;
+        margin-right: 0.0rem !important;
+        margin-left: 0.0rem !important;
+      }
+    }
+    .p-treenode-icon {
+      margin-right:0.0rem !important;
+    }
+
+    .custom-icon {
+      font-size:0.75rem !important;
+    }
+
+    .icon-label {
+      display:flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+  }
+
+  .disabled-node {
+    color: #888;     /* Gray out the text */
+    opacity: 0.3;    /* Make it slightly transparent */
+    // text-decoration: line-through; /* Add strike-through */
+  }
+}
+
 </style>

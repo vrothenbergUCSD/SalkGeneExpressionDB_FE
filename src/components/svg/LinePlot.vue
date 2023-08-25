@@ -40,19 +40,15 @@
       </div>
       <div id="legend-area" class="flex-none">
         <span class="text-center">Legend</span>
-          <!-- <div class="card flex"> -->
-              <Tree :value="this.nodes" class="custom-tree" v-model:expandedKeys="expandedKeys"
-                    selectionMode="single" @nodeSelect="toggleDatasetVisibility">
-                  <template #default="slotProps">
-                      <!-- Render Material Icon for specific nodes -->
-                      <div class="icon-label" :class="{ 'disabled-node': !slotProps.node.visible }" :style="{color: getNodeColor(slotProps.node)}">
-                          <span v-if="slotProps.node.icon" class="material-symbols-outlined custom-icon">{{ getIconText(slotProps.node.icon) }}</span>
-                          <!-- Render node label -->
-                          <span>{{ slotProps.node.label }}</span>
-                      </div>
-                  </template>
-              </Tree>
-          <!-- </div> -->
+          <Tree :value="this.nodes" class="custom-tree" v-model:expandedKeys="expandedKeys"
+                selectionMode="single" @nodeSelect="toggleDatasetVisibility">
+            <template #default="slotProps">
+                <div class="icon-label" :class="{ 'disabled-node': !slotProps.node.visible }" :style="{color: getNodeColor(slotProps.node)}">
+                    <span v-if="slotProps.node.icon" class="material-symbols-outlined custom-icon">{{ getIconText(slotProps.node.icon) }}</span>
+                    <span>{{ slotProps.node.label }}</span>
+                </div>
+            </template>
+          </Tree>
       </div>
       
     </div>
@@ -67,8 +63,6 @@
 <script>
 import * as d3 from "d3"
 import * as svg from 'save-svg-as-png'
-
-import DataService from "@/services/DataService.js"
 
 import ProgressSpinner from 'primevue/progressspinner'
 import InputSwitch from 'primevue/inputswitch'
@@ -229,7 +223,6 @@ export default {
     // Wait for SVG to load before calling legend
     // Fixes bug where info icons don't yet have BBox dimensions to position after text
     const svgElem = document.getElementById('plot-svg')
-    // svgElem.addEventListener('load', this.legend())
 
     this.$nextTick(() => {
       window.addEventListener('resize', this.onResize);
@@ -247,7 +240,6 @@ export default {
             return this.getHSLprefix(node);
         };
     }
-
   },
 
   methods: {
@@ -267,6 +259,7 @@ export default {
         return iconMapping[icon] || ''; // Return an empty string if the icon isn't in the mapping
     },
     async downloadChart(filetype) {
+      // TODO: Use Html2Canvas to download SVG as PNG
       console.log('downloadChart')
       const svgElement = document.getElementById("plot-svg")
       const options = {
@@ -401,10 +394,10 @@ export default {
           e.data_type = data_type[0]
 
           const gender = [...new Set(e.data.map(item => item.gender))];
-          // if (gender.length > 1) {
-          //   // More than 1 gender, may happen
-          //   console.error('WARNING: More than 1 gender in ', table)
-          // }
+          if (gender.length > 2) {
+            // More than 1 gender may happen
+            console.error('WARNING: More than 2 gender in ', table)
+          }
           e.gender = gender.join(',')
 
           const tissue = [...new Set(e.data.map(item => item.tissue))];
@@ -435,7 +428,7 @@ export default {
         console.log('this.expression_merged')
         console.log(this.expression_merged)
 
-        const grouped_species = _.groupBy(this.expression_merged, e => `${e.species}`);
+        // const grouped_species = _.groupBy(this.expression_merged, e => `${e.species}`);
 
         const grouped_species_experiment_year = _.groupBy(this.expression_merged, e => `${e.species}_${e.experiment}`);
 
@@ -2411,11 +2404,5 @@ export default {
     // text-decoration: line-through; /* Add strike-through */
   }
 }
-
-
-
-
-
-
 
 </style>
