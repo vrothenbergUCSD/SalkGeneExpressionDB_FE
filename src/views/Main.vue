@@ -439,7 +439,7 @@ export default {
     const default_species = ['Mus musculus']
     this.species_selected = this.species_list.filter(e => default_species.includes(e.name))
     
-    const default_experiments = ['TRF Experiment 2018', 'WFF Experiment 2020']
+    const default_experiments = ['TRF Experiment 2018']
     this.experiment_selected = this.experiment_list.filter(e => default_experiments.includes(e.name))
     const default_tissues = ['Adrenal gland']
     this.tissue_selected = this.tissue_list.filter(e => default_tissues.includes(e.name))
@@ -456,7 +456,7 @@ export default {
 
     // Line chart at index 0
     // Line = 0, Bar = 1, Heat Map = 2 
-    this.index = 1
+    this.index = 0
 
     const elapsed = Date.now() - start
     console.log('Main mounted time elapsed ', elapsed)
