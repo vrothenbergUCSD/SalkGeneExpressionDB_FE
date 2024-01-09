@@ -36,28 +36,28 @@ const routes = [
       requiresAuth: false,
       onNavbar: true,
     },
-    children: [
-      {
-        path: "bar",
-        name: "Bar",
-        component: BarPlot,
-        meta: {
-          title: "Histogram",
-          requiresAuth: false,
-          onNavbar: false,
-        },
-      },
-      {
-        path: "line",
-        name: "Line",
-        component: LinePlot,
-        meta: {
-          title: "Line",
-          requiresAuth: false,
-          onNavbar: false,
-        },
-      }
-    ]
+    // children: [
+    //   {
+    //     path: "bar",
+    //     name: "Bar",
+    //     component: BarPlot,
+    //     meta: {
+    //       title: "Histogram",
+    //       requiresAuth: false,
+    //       onNavbar: false,
+    //     },
+    //   },
+    //   {
+    //     path: "line",
+    //     name: "Line",
+    //     component: LinePlot,
+    //     meta: {
+    //       title: "Line",
+    //       requiresAuth: false,
+    //       onNavbar: false,
+    //     },
+    //   }
+    // ]
   },
   {
     path: "/about",

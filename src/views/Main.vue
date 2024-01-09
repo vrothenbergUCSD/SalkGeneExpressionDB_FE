@@ -416,6 +416,9 @@ export default {
       sample_categories: ['gender', 'condition'],
     }
   },
+  created() {
+    this.setFiltersFromURL();
+  },
   async mounted() {
     // First check if user exists 
     console.log('Main mounted')
@@ -435,20 +438,25 @@ export default {
       this.load_metadata(),
     ])
 
-    // Default selection
-    const default_species = ['Mus musculus']
-    this.species_selected = this.species_list.filter(e => default_species.includes(e.name))
     
-    const default_experiments = ['TRF Experiment 2018']
-    this.experiment_selected = this.experiment_list.filter(e => default_experiments.includes(e.name))
-    const default_tissues = ['Adrenal gland']
-    this.tissue_selected = this.tissue_list.filter(e => default_tissues.includes(e.name))
-    const default_genders = ['Male']
-    this.gender_selected = this.gender_list.filter(e => default_genders.includes(e.name))
-    const default_conditions = ['ALF', 'TRF']
-    this.condition_selected = this.condition_list.filter(e => default_conditions.includes(e.name))
-    // const default_genes = ['Clock']
-    this.genes_selected = [{ name: 'Clock' }]
+    // Old implementation
+
+    // // Default selection
+    // const default_species = ['Mus musculus']
+    // this.species_selected = this.species_list.filter(e => default_species.includes(e.name))
+    // const default_experiments = ['TRF Experiment 2018']
+    // this.experiment_selected = this.experiment_list.filter(e => default_experiments.includes(e.name))
+    // const default_tissues = ['Adrenal gland']
+    // this.tissue_selected = this.tissue_list.filter(e => default_tissues.includes(e.name))
+    // const default_genders = ['Male']
+    // this.gender_selected = this.gender_list.filter(e => default_genders.includes(e.name))
+    // const default_conditions = ['ALF', 'TRF']
+    // this.condition_selected = this.condition_list.filter(e => default_conditions.includes(e.name))
+    // // const default_genes = ['Clock']
+    // this.genes_selected = [{ name: 'Clock' }]
+
+    // Check for query parameters and set selections
+    this.setInitialSelections()
 
     this.update_lookup_table()
 
@@ -487,6 +495,112 @@ export default {
   },
 
   methods: {
+    updateFilters(newFilters) {
+      // Update your filters based on user interaction
+      this.$router.push({ name: 'Main', query: newFilters });
+    },
+    setFiltersFromURL() {
+      const query = this.$route.query;
+      // Set your filters based on the query parameters
+      // this.updateSelectionFromQuery();
+    },
+    createShareableLink() {
+      const link = this.$router.resolve({ name: 'Main', query: this.selectedFilters });
+      return link.href; // This is the URL you can share
+    },
+    setInitialSelections() {
+      const queryParams = this.$route.query;
+      
+      if (Object.keys(queryParams).length) {
+        // Set selections based on query parameters
+        console.log("Query params")
+        console.log(queryParams)
+        
+        // this.setDefaultSelections();
+        this.updateSelectionFromQuery();
+      } else {
+        this.setDefaultSelections();
+      }
+    },
+    setDefaultSelections() {
+      const defaultSpecies = ['Mus musculus']
+      this.species_selected = this.species_list.filter(e => defaultSpecies.includes(e.name))
+      const default_experiments = ['TRF Experiment 2019']
+      this.experiment_selected = this.experiment_list.filter(e => default_experiments.includes(e.name))
+      const default_tissues = ['Adrenal gland']
+      this.tissue_selected = this.tissue_list.filter(e => default_tissues.includes(e.name))
+      const default_genders = ['Male', 'Female']
+      this.gender_selected = this.gender_list.filter(e => default_genders.includes(e.name))
+      const default_conditions = ['ALF', 'TRF']
+      this.condition_selected = this.condition_list.filter(e => default_conditions.includes(e.name))
+      this.genes_selected = [{ name: 'Clock' }]
+    },
+    updateQueryFromSelections() {
+      console.log('updateQueryFromSelections')
+      const queryParams = this.$route.query;
+
+      // const species_str = this.species_selected.map(d => d.name).toString()
+      // console.log('species_str')
+      // console.log(species_str)
+      // const experiment_str = this.experiment_selected.map(d => d.name).toString()
+      // console.log('experiment_str')
+      // console.log(experiment_str)
+      // const tissue_str = this.tissue_selected.map(d => d.name).toString()
+      // console.log('tissue_str')
+      // console.log(tissue_str)
+      // const genes_str = this.genes_selected.map(d => d.name).toString()
+      // console.log('genes_str')
+      // console.log(genes_str)
+      // const genders_str = this.gender_selected.map(d => d.name).toString()
+      // console.log('genders_str')
+      // console.log(genders_str)
+      // const conditions_str = this.condition_selected.map(d => d.name).toString()
+      // console.log('conditions_str')
+      // console.log(conditions_str)
+
+      const updatedFilters = {
+        species: encodeURIComponent(this.species_selected.map(d => d.name).toString()),
+        experiment: encodeURIComponent(this.experiment_selected.map(d => d.name).toString()),
+        tissue: encodeURIComponent(this.tissue_selected.map(d => d.name).toString()),
+        genes: encodeURIComponent(this.genes_selected.map(d => d.name).toString()),
+        gender: encodeURIComponent(this.gender_selected.map(d => d.name).toString()),
+        condition: encodeURIComponent(this.condition_selected.map(d => d.name).toString()),
+      };
+
+      this.updateFilters(updatedFilters)
+    },
+    updateSelectionFromQuery() {
+      const queryParams = this.$route.query;
+      if (Object.keys(queryParams).length) {
+        // Validate all parameters are specified
+        if (!queryParams.species || !queryParams.experiment || !queryParams.tissue 
+        || !queryParams.genes || !queryParams.gender || !queryParams.condition) {
+          // Missing parameters
+          console.log('Missing parameters')
+          console.log(queryParams)
+          this.$toast.add({ severity: 'error', summary: 'Invalid Query Parameters', 
+            detail: 'No valid datasets for the specified URL query parameters. Check you are logged in with the necessary permissions.', life: 15000 });
+          this.setDefaultSelections();
+        } else {
+          // All parameters available
+          const query_species = decodeURIComponent(queryParams.species).split(',')
+          this.species_selected = this.species_list.filter(e => query_species.includes(e.name))
+          const query_experiments = decodeURIComponent(queryParams.experiment).split(',')
+          this.experiment_selected = this.experiment_list.filter(e => query_experiments.includes(e.name))
+          const query_tissues = decodeURIComponent(queryParams.tissue).split(',')
+          this.tissue_selected = this.tissue_list.filter(e => query_tissues.includes(e.name))
+          const query_genders = decodeURIComponent(queryParams.gender).split(',')
+          this.gender_selected = this.gender_list.filter(e => query_genders.includes(e.name))
+          const query_conditions = decodeURIComponent(queryParams.condition).split(',')
+          this.condition_selected = this.condition_list.filter(e => query_conditions.includes(e.name))
+          const query_genes = decodeURIComponent(queryParams.genes).split(',')
+          this.genes_selected = query_genes.map(geneName => ({ name: geneName }))
+        }
+      } else {
+        // Revert to default if no query parameters
+        this.setDefaultSelections();
+      }
+    },
     updateDefaultSelection(field, selected) {
       return this[field].filter(item => 
         selected.some(sel => sel.name === item.name)
@@ -1117,9 +1231,15 @@ export default {
       console.log('this.condition_filtered')
       console.log(this.condition_filtered)
 
+      // Update query parameters
+      this.updateQueryFromSelections()
+
       const elapsed = Date.now() - start
       console.log('update_lookup_table time elapsed: ', elapsed)
     },
+
+
+
     filter_metadata(category, prevFilterResult) {
       // Filter the metadata by the selected values in the given category
       const debug = false
@@ -1370,6 +1490,13 @@ export default {
       }, 250);
     },
   },
+  watch: {
+    '$route'(to, from) {
+      if (to.query !== from.query) {
+        this.setFiltersFromURL();
+      }
+    }
+  }
 }
 </script>
 

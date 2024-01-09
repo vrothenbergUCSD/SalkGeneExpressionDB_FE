@@ -235,7 +235,8 @@ export default {
             'material-icon-tissue': 'science',
             'material-icon-male': 'male',
             'material-icon-female': 'female',
-            'material-icon-group': ''
+            'material-icon-solid': 'maximize',
+            'material-icon-dashed': 'minimize'
         };
 
         return iconMapping[icon] || ''; // Return an empty string if the icon isn't in the mapping
