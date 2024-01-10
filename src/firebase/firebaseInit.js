@@ -34,6 +34,7 @@ if (process.env.NODE_ENV === 'development') {
     isTokenAutoRefreshEnabled: true
   });
 } else {
+  console.log('Production mode')
   appCheck = initializeAppCheck(firebaseApp, {
     provider: new ReCaptchaEnterpriseProvider('6LdnxEUlAAAAAImoXr09nDxAoE1eRQn-IDSuGBZW'),
     isTokenAutoRefreshEnabled: true // Set to true to allow auto-refresh.

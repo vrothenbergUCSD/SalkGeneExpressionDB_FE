@@ -63,3 +63,6 @@ VITE_MEASUREMENT_ID=G-H3P87PHKBV
 VITE_FASTAPI_URL=https://geneexpressiondbbe-w5oumbwxcq-uw.a.run.app
 VITE_VAR=prodtest
 ```
+
+### ReCaptcha Enterprise
+

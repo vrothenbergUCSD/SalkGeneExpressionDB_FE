@@ -255,8 +255,10 @@ export default {
       console.log(this.db_metadata)
       
       let groupedData = this.db_metadata.reduce((acc, obj) => {
-        // Create experiment name combining obj.experiment and obj.year
-        let experimentName = `${obj.experiment} ${obj.year}`;
+        // // Create experiment name combining obj.experiment and obj.year
+        // let experimentName = `${obj.experiment} ${obj.year}`;
+        // Experiment is only obj.experiment
+        let experimentName = `${obj.experiment}`;
         
         // If this experiment name doesn't exist in the accumulator object, initialize it
         if (!acc[experimentName]) {
