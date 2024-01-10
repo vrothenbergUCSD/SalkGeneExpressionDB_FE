@@ -458,25 +458,25 @@ export default {
                 // Gender
                 const grouping = _.groupBy(gene[1][gender], e => `${e.group_name}`)
                 const keys = Object.keys(grouping).sort()
-                for(let i = 0; i < keys.length; i++) {
+                keys.forEach((key,i) => {
                   // Condition level
-                  const key = keys[i]
+                  // const key = keys[i]
                   const max = Math.max.apply(Math, grouping[key].map(
                     function(o) { return o.gene_expression; }))
                   const min = Math.min.apply(Math, grouping[key].map(
                     function(o) { return o.gene_expression; }))
-                  const mean = _.reduce(grouping[key], function(memo, v) { 
-                    return memo + v.gene_expression; 
-                  }, 0) / grouping[key].length
+                  // const mean = _.reduce(grouping[key], function(memo, v) { 
+                  //   return memo + v.gene_expression; 
+                  // }, 0) / grouping[key].length
                   grouping[key].forEach((sample) => {
                     sample.gene_expression_norm = (sample.gene_expression - tissueGeneMinExpr) / (tissueGeneMaxExpr - tissueGeneMinExpr)
                     sample.group_index = i
                     sample.min = min 
                     sample.max = max
                     sample.amplitude = max-min 
-                    sample.mean = mean
+                    sample.mean = _.reduce(grouping[key], (memo, v) => memo + v.gene_expression, 0) / grouping[key].length;
                   })
-                }
+                });
                 return [gender, grouping];
               })];
             })];
@@ -502,30 +502,23 @@ export default {
         // console.log('grouped_norm')
         // console.log(grouped_norm)
 
+        // Aggregating the normalized gene expressions
+        console.log('Aggregating')
         this.expression_normalized_averaged = _.mapObject(grouped_norm, function(val, key) {
-          // console.log('val')
-          // console.log(val)
-          let o = JSON.parse(JSON.stringify(val[0]))
+          let o = JSON.parse(JSON.stringify(val[0]));
 
-          o.gene_expression_avg = _.reduce(val, function(memo, v) { 
-            return memo + v.gene_expression; 
-          }, 0) / val.length
+          // Average the raw gene expressions
+          o.gene_expression_avg = _.reduce(val, (memo, v) => memo + v.gene_expression, 0) / val.length;
 
           // Average the normalized gene expressions
-          o.gene_expression_norm_avg = _.reduce(val, function(memo, v) { 
-            return memo + v.gene_expression_norm; 
-          }, 0) / val.length
-          o.gene_expression_norm = o.gene_expression_norm_avg
+          o.gene_expression_norm_avg = _.reduce(val, (memo, v) => memo + v.gene_expression_norm, 0) / val.length;
+          o.gene_expression_norm = o.gene_expression_norm_avg;
 
-          o.std_dev = Math.sqrt(_.reduce(val, function(memo, v) { 
-            return memo + Math.pow((v.gene_expression_norm - o.gene_expression_norm_avg), 2); 
-          }, 0) / val.length)
+          // Standard Deviation and Standard Error
+          o.std_dev = Math.sqrt(_.reduce(val, (memo, v) => memo + Math.pow((v.gene_expression_norm - o.gene_expression_norm_avg), 2), 0) / val.length);
+          o.std_err = o.std_dev / Math.sqrt(val.length);
 
-          o.std_err = o.std_dev / Math.sqrt(val.length)
-          // console.log('o')
-          // console.log(o)
-
-          return o
+          return o;
         });
         console.log('this.expression_normalized_averaged')
         console.log(this.expression_normalized_averaged)
@@ -578,7 +571,7 @@ export default {
     initialize_line_plot() {
       console.log('initialize_line_plot')
       // set the dimensions and margins of the graph
-      this.margin = {top: 5, right: 0, bottom: 5, left: 70}
+      this.margin = {top: 5, right: 40, bottom: 50, left: 70}
 
       this.width = this.windowWidth * 0.7 - this.margin.left - this.margin.right,
       this.height = this.windowHeight * 0.7 - this.margin.top - this.margin.bottom;
@@ -1128,6 +1121,8 @@ export default {
       return hsl.toString();
     },
     popover_text(d) {
+      console.log('popover_text')
+      console.log(d)
       let text = `Data Point Details
       Gene: ${d.gene_id}
       Group: ${d.group_name}
@@ -1135,9 +1130,11 @@ export default {
       Age: ${d.age_months} months
       Species: ${d.species}
       Time: ZT${d.time_point}`
+      
       if ('gene_expression_avg' in d) {
-        text += `\n Expr Avg: ${Math.round(d.gene_expression*1000)/1000}`
+        text += `\n Expr Avg: ${Math.round(d.gene_expression_avg*1000)/1000}`
       } else {
+        text += `\n Sample: ${d.sample_name}`
         text += `\n Expr: ${Math.round(d.gene_expression*1000)/1000}`
       }
 
@@ -1203,18 +1200,29 @@ export default {
       // console.log(this.sumstat_visibility)
 
       const avgPoints = d3.select('#avgPoints').selectAll(`[id^='dot_${id}']`)
-      avgPoints.transition_attributes('fill-opacity', newOpacity)
+      // avgPoints.transition_attributes('fill-opacity', newOpacity)
+      // avgPoints.transition_attributes('stroke-opacity', newOpacity)
+      // avgPoints._groups[0].forEach(e => e.__data__.visible = newOpacity)
+
+
+      avgPoints.transition()
+        .attr('fill-opacity', newOpacity)
+        .attr('stroke-opacity', newOpacity)
+        .each(function(d) { d.__data__.visible = newOpacity; });
       // console.log(avgPoints)
       // console.log(newOpacity)
       
-      avgPoints.transition_attributes('stroke-opacity', newOpacity)
-      avgPoints._groups[0].forEach(e => e.__data__.visible = newOpacity)
+      
 
       if (this.showReplicatePoints) {
         const replicatePoints = d3.select('#replicatePoints').selectAll(`[id^='dot_${id}']`)
-        replicatePoints.transition_attributes('fill-opacity', newOpacity)
-        replicatePoints.transition_attributes('stroke-opacity', newOpacity)
-        replicatePoints._groups[0].forEach(e => e.__data__.visible = newOpacity)
+        replicatePoints.transition()
+          .attr('fill-opacity', newOpacity)
+          .attr('stroke-opacity', newOpacity)
+          .each(function(d) { d.__data__.visible = newOpacity; });
+        // replicatePoints.transition_attributes('fill-opacity', newOpacity)
+        // replicatePoints.transition_attributes('stroke-opacity', newOpacity)
+        // replicatePoints._groups[0].forEach(e => e.__data__.visible = newOpacity)
       }
       
       if (this.showErrorBars) {
