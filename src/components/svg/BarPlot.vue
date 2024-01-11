@@ -138,7 +138,7 @@ export default {
 
       complete: false,
       showReplicatePoints: false,
-      showErrorBars: true,
+      showErrorBars: false,
 
       chart_type: 'Grouped',
       chart_type_options: ['Grouped', 'Stacked'],
@@ -212,7 +212,7 @@ export default {
     }
 
     const svgElem = document.getElementById('plot-svg')
-    svgElem.addEventListener('load', this.legend())
+    // svgElem.addEventListener('load', this.legend())
 
     this.$nextTick(() => {
       window.addEventListener('resize', this.onResize);
@@ -507,57 +507,81 @@ export default {
 
         // const grouped_species = _.groupBy(this.expression_merged, e => `${e.species}`);
 
-        const grouped_species_experiment_year = _.groupBy(this.expression_merged, e => `${e.species}_${e.experiment}`);
+        const grouped_species_experiment = _.groupBy(this.expression_merged, e => `${e.species}_${e.experiment}`);
 
-        const grouped_species_experiment_year_tissue = Object.keys(grouped_species_experiment_year).map((year) => {
-          return [year, _.groupBy(grouped_species_experiment_year[year], e => `${e.tissue}`)];
+        const grouped_species_experiment_tissue = Object.keys(grouped_species_experiment).map((experiment) => {
+          return [experiment, _.groupBy(grouped_species_experiment[experiment], e => `${e.tissue}`)];
         });
 
-        const grouped_species_experiment_year_tissue_gene = grouped_species_experiment_year_tissue.map((year) => {
-          return [year[0], Object.keys(year[1]).map((tissue) => {
-            return [tissue, _.groupBy(year[1][tissue], e => `${e.gene_id}`)];
+        const grouped_species_experiment_tissue_gene = grouped_species_experiment_tissue.map((experiment) => {
+          return [experiment[0], Object.keys(experiment[1]).map((tissue) => {
+            return [tissue, _.groupBy(experiment[1][tissue], e => `${e.gene_id}`)];
           })];
         });
 
-        const grouped_species_experiment_year_tissue_gene_gender = grouped_species_experiment_year_tissue_gene.map((year) => {
-          return [year[0], year[1].map((tissue) => {
+        const grouped_species_experiment_tissue_gene_gender = grouped_species_experiment_tissue_gene.map((experiment) => {
+          return [experiment[0], experiment[1].map((tissue) => {
             return [tissue[0], Object.keys(tissue[1]).map((gene) => {
               return [gene, _.groupBy(tissue[1][gene], e => `${e.gender}`)];
             })];
           })];
         });
 
-        const grouped_species_experiment_year_tissue_gene_gender_groupname = grouped_species_experiment_year_tissue_gene_gender.map((year) => {
-          return [year[0].replaceAll(' ', '-'), year[1].map((tissue) => {
+        const grouped_species_experiment_tissue_gene_gender_groupname = grouped_species_experiment_tissue_gene_gender.map((experiment) => {
+          // Experiment
+          return [experiment[0].replaceAll(' ', '-'), experiment[1].map((tissue) => {
+            // Tissue
             return [tissue[0].replaceAll(' ', '-'), tissue[1].map((gene) => {
+              // Gene
+              // console.log('Normalizing at Gene Level')
+              // console.log(gene)
+              // Find global max and min for the gene
+              let tissueGeneMaxExpr = Number.MIN_SAFE_INTEGER;
+              let tissueGeneMinExpr = Number.MAX_SAFE_INTEGER;
+              Object.keys(gene[1]).forEach((gender) => {
+                const grouping = _.groupBy(gene[1][gender], e => `${e.group_name}`);
+                Object.values(grouping).forEach((group) => {
+                  group.forEach((sample) => {
+                    if (sample.gene_expression > tissueGeneMaxExpr) {
+                      tissueGeneMaxExpr = sample.gene_expression;
+                    }
+                    if (sample.gene_expression < tissueGeneMinExpr) {
+                      tissueGeneMinExpr = sample.gene_expression;
+                    }
+                  });
+                });
+              });
+              
               return [gene[0].replaceAll(' ', '-'), Object.keys(gene[1]).map((gender) => {
+                // Gender
                 const grouping = _.groupBy(gene[1][gender], e => `${e.group_name}`)
                 const keys = Object.keys(grouping).sort()
-                for(let i = 0; i < keys.length; i++) {
-                  const key = keys[i]
+                keys.forEach((key,i) => {
+                  // Condition level
+                  // const key = keys[i]
                   const max = Math.max.apply(Math, grouping[key].map(
                     function(o) { return o.gene_expression; }))
                   const min = Math.min.apply(Math, grouping[key].map(
                     function(o) { return o.gene_expression; }))
-                  const mean = _.reduce(grouping[key], function(memo, v) { 
-                    return memo + v.gene_expression; 
-                  }, 0) / grouping[key].length
+                  // const mean = _.reduce(grouping[key], function(memo, v) { 
+                  //   return memo + v.gene_expression; 
+                  // }, 0) / grouping[key].length
                   grouping[key].forEach((sample) => {
-                    sample.gene_expression_norm = (sample.gene_expression - min) / (max - min)
+                    sample.gene_expression_norm = (sample.gene_expression - tissueGeneMinExpr) / (tissueGeneMaxExpr - tissueGeneMinExpr)
                     sample.group_index = i
                     sample.min = min 
                     sample.max = max
                     sample.amplitude = max-min 
-                    sample.mean = mean
+                    sample.mean = _.reduce(grouping[key], (memo, v) => memo + v.gene_expression, 0) / grouping[key].length;
                   })
-                }
+                });
                 return [gender, grouping];
               })];
             })];
           })];
         });
 
-        this.expression_normalized = grouped_species_experiment_year_tissue_gene_gender_groupname
+        this.expression_normalized = grouped_species_experiment_tissue_gene_gender_groupname
         this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized.map(e => e[1]))
         for (let i = 0; i < 2; i++) {
           this.expression_normalized_flattened = [].concat.apply([], this.expression_normalized_flattened.map(e => e[1]));
@@ -571,30 +595,23 @@ export default {
         const grouped_norm = _.groupBy(this.expression_merged, e => 
           `${e.species}_${e.experiment}_${e.tissue}_${e.gene_id}_${e.gender}_${e.group_name}_ZT${e.time_point}`)
 
+        // Aggregating the normalized gene expressions
+        console.log('Aggregating')
         this.expression_normalized_averaged = _.mapObject(grouped_norm, function(val, key) {
-          // console.log('val')
-          // console.log(val)
-          let o = JSON.parse(JSON.stringify(val[0]))
+          let o = JSON.parse(JSON.stringify(val[0]));
 
-          o.gene_expression_avg = _.reduce(val, function(memo, v) { 
-            return memo + v.gene_expression; 
-          }, 0) / val.length
+          // Average the raw gene expressions
+          o.gene_expression_avg = _.reduce(val, (memo, v) => memo + v.gene_expression, 0) / val.length;
 
           // Average the normalized gene expressions
-          o.gene_expression_norm_avg = _.reduce(val, function(memo, v) { 
-            return memo + v.gene_expression_norm; 
-          }, 0) / val.length
-          o.gene_expression_norm = o.gene_expression_norm_avg
+          o.gene_expression_norm_avg = _.reduce(val, (memo, v) => memo + v.gene_expression_norm, 0) / val.length;
+          o.gene_expression_norm = o.gene_expression_norm_avg;
 
-          o.std_dev = Math.sqrt(_.reduce(val, function(memo, v) { 
-            return memo + Math.pow((v.gene_expression_norm - o.gene_expression_norm_avg), 2); 
-          }, 0) / val.length)
+          // Standard Deviation and Standard Error
+          o.std_dev = Math.sqrt(_.reduce(val, (memo, v) => memo + Math.pow((v.gene_expression_norm - o.gene_expression_norm_avg), 2), 0) / val.length);
+          o.std_err = o.std_dev / Math.sqrt(val.length);
 
-          o.std_err = o.std_dev / Math.sqrt(val.length)
-          // console.log('o')
-          // console.log(o)
-
-          return o
+          return o;
         });
         console.log('this.expression_normalized_averaged')
         console.log(this.expression_normalized_averaged)
@@ -1141,8 +1158,9 @@ export default {
       Species: ${d.species}
       Time: ZT${d.time_point}`
       if ('gene_expression_avg' in d) {
-        text += `\n Expr Avg: ${Math.round(d.gene_expression*1000)/1000}`
+        text += `\n Expr Avg: ${Math.round(d.gene_expression_avg*1000)/1000}`
       } else {
+        text += `Sample: ${d.sample_name}`
         text += `\n Expr: ${Math.round(d.gene_expression*1000)/1000}`
       }
 
