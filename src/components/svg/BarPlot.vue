@@ -1160,7 +1160,7 @@ export default {
       if ('gene_expression_avg' in d) {
         text += `\n Expr Avg: ${Math.round(d.gene_expression_avg*1000)/1000}`
       } else {
-        text += `Sample: ${d.sample_name}`
+        text += `\n Sample: ${d.sample_name}`
         text += `\n Expr: ${Math.round(d.gene_expression*1000)/1000}`
       }
 
